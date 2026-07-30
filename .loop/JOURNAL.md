@@ -2,3 +2,4 @@
 [2026-07-31T00:50:00+02:00] Task 8 (Rust system.rs + DashboardPage.vue) implémentée, RED→GREEN réel (cargo test 2/2), spec-compliance ✅ → commit 1b2babc
 [2026-07-31T00:52:00+02:00] Revue qualité Task 8 (1er essai) → échec "spend limit" mid-review, pas de rapport obtenu
 [2026-07-31T00:53:00+02:00] Utilisateur relogué, demande explicite de continuer en autonomie + implémenter tout le scope restant + push GitHub + releases par OS → activation skill autonomous-loop, fichiers .loop/ créés
+[2026-07-31T01:05:00+02:00] Task 8 fix (bug réel CPU 0% permanent, sysinfo System partagé) → commit adace0c, re-vérifié indépendamment (cargo test regression réel + 0 warning) → Task 8 COMPLETE
