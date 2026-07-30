@@ -10,6 +10,7 @@ fn greet(name: &str) -> String {
 
 mod hardware;
 mod sensors;
+mod subprocess;
 mod system;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

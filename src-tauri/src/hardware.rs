@@ -1,5 +1,6 @@
+use crate::subprocess;
 use serde::Serialize;
-use std::process::Command;
+use std::time::Duration;
 
 #[derive(Serialize, Clone)]
 pub struct PciDevice {
@@ -18,17 +19,14 @@ pub fn parse_lspci_line(line: &str) -> Option<PciDevice> {
     })
 }
 
-fn run_lspci() -> Vec<PciDevice> {
-    let output = match Command::new("lspci").output() {
-        Ok(o) => o,
-        Err(_) => return Vec::new(),
-    };
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    stdout.lines().filter_map(parse_lspci_line).collect()
+fn run_lspci() -> Result<Vec<PciDevice>, String> {
+    let stdout = subprocess::run_with_timeout("lspci", &[], Duration::from_secs(5))
+        .map_err(|e| format!("{e} (paquet requis : pciutils)"))?;
+    Ok(stdout.lines().filter_map(parse_lspci_line).collect())
 }
 
 #[tauri::command]
-pub fn get_pci_devices() -> Vec<PciDevice> {
+pub fn get_pci_devices() -> Result<Vec<PciDevice>, String> {
     run_lspci()
 }
 
@@ -48,5 +46,14 @@ mod tests {
     #[test]
     fn skips_malformed_lines() {
         assert!(parse_lspci_line("not a valid line").is_none());
+    }
+
+    #[test]
+    fn drops_line_with_missing_description_separator() {
+        // A trailing colon with nothing after it has no ": " (colon+space)
+        // separator to split on, so this is treated as malformed and
+        // dropped rather than surfaced as a device with an empty
+        // description — an intentional choice, not an oversight.
+        assert!(parse_lspci_line("00:02.0 Some class:").is_none());
     }
 }

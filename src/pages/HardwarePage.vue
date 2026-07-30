@@ -23,7 +23,7 @@ onMounted(async () => {
     <div class="hw-error" v-if="error">
       Impossible de récupérer les composants matériels : {{ error }}
     </div>
-    <table class="hw-table">
+    <table class="hw-table" v-if="devices.length">
       <thead>
         <tr><th>Slot</th><th>Classe</th><th>Description</th></tr>
       </thead>
