@@ -80,4 +80,14 @@ mod tests {
         let entry = parse_journal_line(line).expect("should parse");
         assert_eq!(entry.unit, "");
     }
+
+    #[test]
+    fn skips_line_with_byte_array_message() {
+        // journalctl encodes MESSAGE as a JSON array of byte values instead
+        // of a string when the field isn't valid UTF-8 (observed in real
+        // WSL2 output, e.g. ANSI-colored wsl-pro-service log lines). Must be
+        // skipped gracefully, not panic or produce a garbage entry.
+        let line = r#"{"PRIORITY":"6","MESSAGE":[104,105],"SYSLOG_IDENTIFIER":"x"}"#;
+        assert!(parse_journal_line(line).is_none());
+    }
 }
