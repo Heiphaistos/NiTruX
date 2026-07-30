@@ -26,6 +26,7 @@ describe("LayoutShell", () => {
       slots: { default: "<div class=\"probe\">content</div>", nav: "<div class=\"nav-probe\" />" },
     });
     expect(wrapper.find(".probe").exists()).toBe(true);
+    expect(wrapper.find(`.nx-layout--${id}`).exists()).toBe(true);
   });
 
   it("falls back to sidebar-classic when current holds an invalid layout id", () => {

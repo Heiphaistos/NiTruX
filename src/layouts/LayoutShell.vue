@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, type Component } from "vue";
 import { useLayoutStore } from "@/stores/layoutStore";
 import SidebarClassicLayout from "./SidebarClassicLayout.vue";
 import WidgetsGridLayout from "./WidgetsGridLayout.vue";
@@ -13,7 +13,7 @@ import type { LayoutId } from "@/types/layout";
 
 const layoutStore = useLayoutStore();
 
-const componentMap: Record<LayoutId, unknown> = {
+const componentMap: Record<LayoutId, Component> = {
   "sidebar-classic": SidebarClassicLayout,
   "widgets-grid": WidgetsGridLayout,
   "command-first": CommandFirstLayout,
