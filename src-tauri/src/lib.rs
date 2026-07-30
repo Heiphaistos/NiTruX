@@ -10,6 +10,7 @@ fn greet(name: &str) -> String {
 
 mod drivers;
 mod hardware;
+mod logs;
 mod sensors;
 mod subprocess;
 mod system;
@@ -26,7 +27,8 @@ pub fn run() {
             system::get_system_snapshot,
             sensors::get_sensor_snapshot,
             hardware::get_pci_devices,
-            drivers::get_driver_snapshot
+            drivers::get_driver_snapshot,
+            logs::get_recent_logs
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
