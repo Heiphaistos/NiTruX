@@ -2,25 +2,6 @@ import { defineStore } from "pinia";
 import type { Theme } from "@/types/theme";
 import { builtinThemes } from "@/themes/builtin";
 
-const REQUIRED_COLOR_KEYS: (keyof Theme["colors"])[] = [
-  "bgBase",
-  "bgElevated",
-  "bgOverlay",
-  "border",
-  "textPrimary",
-  "textSecondary",
-  "accentPrimary",
-  "accentSecondary",
-  "accentSuccess",
-  "accentWarning",
-  "accentDanger",
-];
-
-function hasAllRequiredColors(colors: unknown): colors is Theme["colors"] {
-  if (typeof colors !== "object" || colors === null) return false;
-  return REQUIRED_COLOR_KEYS.every((key) => key in (colors as Record<string, unknown>));
-}
-
 const CSS_VAR_MAP: Record<keyof Theme["colors"], string> = {
   bgBase: "--nx-bg-base",
   bgElevated: "--nx-bg-elevated",
@@ -34,6 +15,15 @@ const CSS_VAR_MAP: Record<keyof Theme["colors"], string> = {
   accentWarning: "--nx-accent-warning",
   accentDanger: "--nx-accent-danger",
 };
+
+// Derived from CSS_VAR_MAP (which is exhaustively typed over Theme["colors"])
+// so a new color key can never drift out of sync with the validation list.
+export const REQUIRED_COLOR_KEYS = Object.keys(CSS_VAR_MAP) as (keyof Theme["colors"])[];
+
+function hasAllRequiredColors(colors: unknown): colors is Theme["colors"] {
+  if (typeof colors !== "object" || colors === null) return false;
+  return REQUIRED_COLOR_KEYS.every((key) => key in (colors as Record<string, unknown>));
+}
 
 function applyToDom(theme: Theme) {
   const root = document.documentElement;

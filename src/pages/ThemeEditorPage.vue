@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { useThemeStore } from "@/stores/themeStore";
+import { useThemeStore, REQUIRED_COLOR_KEYS } from "@/stores/themeStore";
 import { useLayoutStore } from "@/stores/layoutStore";
 import { builtinThemes } from "@/themes/builtin";
 import { layoutRegistry } from "@/layouts/registry";
@@ -12,7 +12,7 @@ const activeTab = ref<"theme" | "layout">("theme");
 const themeName = ref(themeStore.active.name);
 const fileInput = ref<HTMLInputElement | null>(null);
 
-const colorKeys = Object.keys(themeStore.active.colors) as (keyof Theme["colors"])[];
+const colorKeys = REQUIRED_COLOR_KEYS;
 
 function selectTheme(theme: Theme) {
   themeStore.setTheme(theme);
@@ -47,7 +47,10 @@ function handleFileImport(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = (ev) => themeStore.importTheme(ev.target?.result as string);
+  reader.onload = (ev) => {
+    const result = themeStore.importTheme(ev.target?.result as string);
+    if (!result.ok) alert(result.error);
+  };
   reader.readAsText(file);
   (event.target as HTMLInputElement).value = "";
 }
