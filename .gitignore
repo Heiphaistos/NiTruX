@@ -1,0 +1,27 @@
+# Node
+node_modules/
+dist/
+
+# Rust
+src-tauri/target/
+
+# Tauri build output
+src-tauri/gen/
+
+# Logs
+.logs/
+
+# Env / secrets
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+
+# Brainstorming companion session files
+.superpowers/
+
+# OS
+.DS_Store
+Thumbs.db
