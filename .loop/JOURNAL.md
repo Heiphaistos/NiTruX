@@ -6,3 +6,4 @@
 [2026-07-31T01:15:00+02:00] Task 9 (sensors.rs battery/temp + Dashboard wiring) → commit b48adb0, re-vérifié indépendamment (cargo test 4/1ignored/0fail, 0 warning) → revue qualité lancée
 [2026-07-31T01:20:00+02:00] Task 9 revue qualité → APPROUVÉE (ready to merge), 2 points mineurs backlog (BAT0 hardcodé, clé Vue temp non garantie unique) → Task 9 COMPLETE
 [2026-07-31T01:25:00+02:00] Task 10 (hardware.rs lspci + HardwarePage.vue) → commit 672bb66, re-vérifié indépendamment (cargo test 6/1ignored/0fail, 0 warning) → revue qualité lancée
+[2026-07-31T01:30:00+02:00] Task 10 revue qualité → 2 points Important cross-cutting (erreur avalée en Vec vide, pas de timeout subprocess) — corrigés maintenant plutôt que répliqués 2x sur Tasks 11-12 (lsmod/journalctl). Fix en cours: Result<T,String> + module subprocess.rs réutilisable.
