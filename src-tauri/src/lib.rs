@@ -8,6 +8,7 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
+mod drivers;
 mod hardware;
 mod sensors;
 mod subprocess;
@@ -24,7 +25,8 @@ pub fn run() {
             greet,
             system::get_system_snapshot,
             sensors::get_sensor_snapshot,
-            hardware::get_pci_devices
+            hardware::get_pci_devices,
+            drivers::get_driver_snapshot
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
