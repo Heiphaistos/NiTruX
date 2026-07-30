@@ -8,6 +8,7 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
+mod sensors;
 mod system;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -17,7 +18,11 @@ pub fn run() {
         // Held for the app's lifetime so CPU usage deltas can be computed
         // across repeated refreshes (see system::build_snapshot doc comment).
         .manage(Mutex::new(System::new_all()))
-        .invoke_handler(tauri::generate_handler![greet, system::get_system_snapshot])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            system::get_system_snapshot,
+            sensors::get_sensor_snapshot
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -9,9 +9,16 @@ interface SystemSnapshot {
   memory_total_bytes: number;
   process_count: number;
 }
+interface SensorSnapshot {
+  battery_percent: number | null;
+  battery_charging: boolean | null;
+  temperatures: { label: string; celsius: number }[];
+}
 
 const snapshot = ref<SystemSnapshot | null>(null);
 const error = ref<string | null>(null);
+const sensors = ref<SensorSnapshot | null>(null);
+const sensorsError = ref<string | null>(null);
 let intervalId: number | undefined;
 
 async function refresh() {
@@ -23,9 +30,22 @@ async function refresh() {
   }
 }
 
+async function refreshSensors() {
+  try {
+    sensors.value = await invoke<SensorSnapshot>("get_sensor_snapshot");
+    sensorsError.value = null;
+  } catch (err) {
+    sensorsError.value = err instanceof Error ? err.message : String(err);
+  }
+}
+
 onMounted(() => {
   refresh();
-  intervalId = window.setInterval(refresh, 2000);
+  refreshSensors();
+  intervalId = window.setInterval(() => {
+    refresh();
+    refreshSensors();
+  }, 2000);
 });
 
 onUnmounted(() => {
@@ -43,6 +63,9 @@ function bytesToGb(bytes: number): string {
     <div class="dash-error" v-if="error">
       Impossible de récupérer les informations système : {{ error }}
     </div>
+    <div class="dash-error" v-if="sensorsError">
+      Impossible de récupérer les capteurs : {{ sensorsError }}
+    </div>
     <div class="dash-grid" v-if="snapshot">
       <div class="dash-card" v-for="(cpu, i) in snapshot.cpus" :key="i">
         <div class="dash-label">{{ cpu.name || `CPU ${i}` }}</div>
@@ -55,6 +78,14 @@ function bytesToGb(bytes: number): string {
       <div class="dash-card">
         <div class="dash-label">Processus</div>
         <div class="dash-value">{{ snapshot.process_count }}</div>
+      </div>
+      <div class="dash-card" v-if="sensors?.battery_percent !== null && sensors?.battery_percent !== undefined">
+        <div class="dash-label">Batterie</div>
+        <div class="dash-value">{{ sensors!.battery_percent }}%{{ sensors!.battery_charging ? " ⚡" : "" }}</div>
+      </div>
+      <div class="dash-card" v-for="t in sensors?.temperatures ?? []" :key="t.label">
+        <div class="dash-label">{{ t.label }}</div>
+        <div class="dash-value">{{ t.celsius.toFixed(0) }}°C</div>
       </div>
     </div>
   </div>
