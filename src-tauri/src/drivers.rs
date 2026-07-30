@@ -71,8 +71,20 @@ mod tests {
     }
 
     #[test]
+    fn detects_i915_driver_from_module_list() {
+        let modules = vec!["i915".to_string()];
+        assert_eq!(detect_gpu_driver(&modules), "i915 (Intel, open-source)");
+    }
+
+    #[test]
     fn parses_lsmod_line_into_module_name() {
         let line = "nvidia               56655872  42";
         assert_eq!(parse_lsmod_line(line), Some("nvidia".to_string()));
+    }
+
+    #[test]
+    fn skips_lsmod_header_row() {
+        let line = "Module                  Size  Used by";
+        assert_eq!(parse_lsmod_line(line), None);
     }
 }
