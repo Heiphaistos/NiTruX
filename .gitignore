@@ -28,3 +28,19 @@ src-tauri/gen/
 # OS
 .DS_Store
 Thumbs.db
+
+# Scaffolder additions (create-tauri-app / Vite defaults)
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+dist-ssr/
+*.local
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
