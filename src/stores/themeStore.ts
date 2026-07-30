@@ -2,6 +2,25 @@ import { defineStore } from "pinia";
 import type { Theme } from "@/types/theme";
 import { builtinThemes } from "@/themes/builtin";
 
+const REQUIRED_COLOR_KEYS: (keyof Theme["colors"])[] = [
+  "bgBase",
+  "bgElevated",
+  "bgOverlay",
+  "border",
+  "textPrimary",
+  "textSecondary",
+  "accentPrimary",
+  "accentSecondary",
+  "accentSuccess",
+  "accentWarning",
+  "accentDanger",
+];
+
+function hasAllRequiredColors(colors: unknown): colors is Theme["colors"] {
+  if (typeof colors !== "object" || colors === null) return false;
+  return REQUIRED_COLOR_KEYS.every((key) => key in (colors as Record<string, unknown>));
+}
+
 const CSS_VAR_MAP: Record<keyof Theme["colors"], string> = {
   bgBase: "--nx-bg-base",
   bgElevated: "--nx-bg-elevated",
@@ -34,6 +53,10 @@ export const useThemeStore = defineStore("theme", {
       this.active = theme;
       applyToDom(theme);
     },
+    updateActiveColor(key: keyof Theme["colors"], value: string) {
+      this.active = { ...this.active, colors: { ...this.active.colors, [key]: value } };
+      applyToDom(this.active);
+    },
     saveCustomTheme(theme: Theme) {
       const existingIndex = this.customThemes.findIndex((t) => t.id === theme.id);
       if (existingIndex >= 0) this.customThemes.splice(existingIndex, 1, theme);
@@ -47,6 +70,9 @@ export const useThemeStore = defineStore("theme", {
         const parsed = JSON.parse(json) as Theme;
         if (!parsed.id || !parsed.colors) {
           return { ok: false, error: "Fichier de thème invalide : id ou colors manquant." };
+        }
+        if (!hasAllRequiredColors(parsed.colors)) {
+          return { ok: false, error: "Fichier de thème invalide : couleurs manquantes dans colors." };
         }
         this.saveCustomTheme(parsed);
         return { ok: true };

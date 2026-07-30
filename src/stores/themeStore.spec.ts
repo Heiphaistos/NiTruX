@@ -41,4 +41,22 @@ describe("themeStore", () => {
     expect(imported.ok).toBe(true);
     expect(store.customThemes.some((t) => t.id === builtinThemes[1].id)).toBe(true);
   });
+
+  it("rejects an imported theme whose colors object is missing required keys", () => {
+    const store = useThemeStore();
+    const incomplete = {
+      id: "incomplete-theme",
+      name: "Incomplete",
+      mode: "dark" as const,
+      colors: {
+        bgBase: "#111111",
+        bgElevated: "#222222",
+        // missing: bgOverlay, border, textPrimary, textSecondary, accentPrimary,
+        // accentSecondary, accentSuccess, accentWarning, accentDanger
+      },
+    };
+    const result = store.importTheme(JSON.stringify(incomplete));
+    expect(result.ok).toBe(false);
+    expect(store.customThemes.some((t) => t.id === "incomplete-theme")).toBe(false);
+  });
 });
