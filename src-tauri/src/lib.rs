@@ -8,6 +8,7 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
+mod hardware;
 mod sensors;
 mod system;
 
@@ -21,7 +22,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             system::get_system_snapshot,
-            sensors::get_sensor_snapshot
+            sensors::get_sensor_snapshot,
+            hardware::get_pci_devices
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
