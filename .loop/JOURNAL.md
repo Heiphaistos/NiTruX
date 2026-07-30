@@ -5,3 +5,4 @@
 [2026-07-31T01:05:00+02:00] Task 8 fix (bug réel CPU 0% permanent, sysinfo System partagé) → commit adace0c, re-vérifié indépendamment (cargo test regression réel + 0 warning) → Task 8 COMPLETE
 [2026-07-31T01:15:00+02:00] Task 9 (sensors.rs battery/temp + Dashboard wiring) → commit b48adb0, re-vérifié indépendamment (cargo test 4/1ignored/0fail, 0 warning) → revue qualité lancée
 [2026-07-31T01:20:00+02:00] Task 9 revue qualité → APPROUVÉE (ready to merge), 2 points mineurs backlog (BAT0 hardcodé, clé Vue temp non garantie unique) → Task 9 COMPLETE
+[2026-07-31T01:25:00+02:00] Task 10 (hardware.rs lspci + HardwarePage.vue) → commit 672bb66, re-vérifié indépendamment (cargo test 6/1ignored/0fail, 0 warning) → revue qualité lancée
