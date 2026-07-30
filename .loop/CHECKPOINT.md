@@ -13,3 +13,7 @@ Contexte pour reprendre à froid :
 - Pattern de vérification établi : ne jamais faire confiance à un rapport de sous-agent sans preuve indépendante (voir LESSONS.md) — toujours re-vérifier via commande réelle (cargo test, npm run test, git show)
 
 En attente de validation humaine : aucune pour l'instant (rien de destructif/irréversible rencontré). Le push GitHub initial (création de repo + premier push) sera fait sans redemander car explicitement demandé par l'utilisateur avant qu'il aille se coucher — mais toute action future qui semblerait dépasser ce cadre (ex: rendre le repo public, supprimer des données) sera listée ici avant d'agir.
+
+## Backlog fast-follow (non bloquant, à traiter avant release stable)
+- sensors.rs: BAT0 hardcodé, ne gère pas BAT1/multi-batterie
+- DashboardPage.vue: :key="t.label" sur temperatures pas garanti unique (labels sysinfo peuvent dupliquer entre chips) → utiliser `${t.label}-${i}`
