@@ -1,3 +1,7 @@
+use std::sync::Mutex;
+
+use sysinfo::System;
+
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -10,6 +14,9 @@ mod system;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        // Held for the app's lifetime so CPU usage deltas can be computed
+        // across repeated refreshes (see system::build_snapshot doc comment).
+        .manage(Mutex::new(System::new_all()))
         .invoke_handler(tauri::generate_handler![greet, system::get_system_snapshot])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
