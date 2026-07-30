@@ -2,12 +2,6 @@ use std::sync::Mutex;
 
 use sysinfo::System;
 
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
-
 mod drivers;
 mod hardware;
 mod logs;
@@ -23,7 +17,6 @@ pub fn run() {
         // across repeated refreshes (see system::build_snapshot doc comment).
         .manage(Mutex::new(System::new_all()))
         .invoke_handler(tauri::generate_handler![
-            greet,
             system::get_system_snapshot,
             sensors::get_sensor_snapshot,
             hardware::get_pci_devices,

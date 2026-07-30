@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, type Component } from "vue";
 import { useThemeStore } from "@/stores/themeStore";
 import LayoutShell from "@/layouts/LayoutShell.vue";
 import DashboardPage from "@/pages/DashboardPage.vue";
@@ -13,7 +13,7 @@ onMounted(() => themeStore.setTheme(themeStore.active));
 
 type PageId = "dashboard" | "hardware" | "drivers" | "logs" | "theme-editor";
 const currentPage = ref<PageId>("dashboard");
-const pages: Record<PageId, unknown> = {
+const pages: Record<PageId, Component> = {
   dashboard: DashboardPage,
   hardware: HardwarePage,
   drivers: DriversPage,
