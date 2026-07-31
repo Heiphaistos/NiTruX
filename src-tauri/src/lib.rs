@@ -5,6 +5,7 @@ use sysinfo::System;
 mod drivers;
 mod hardware;
 mod logs;
+mod packages;
 mod sensors;
 mod subprocess;
 mod system;
