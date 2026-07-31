@@ -3,6 +3,7 @@ use std::sync::Mutex;
 use sysinfo::System;
 
 mod disks;
+mod docker;
 mod drivers;
 mod duplicates;
 mod hardware;
@@ -55,7 +56,8 @@ pub fn run() {
             hashcheck::verify_file_hash,
             smart::get_smart_status,
             network::get_network_snapshot,
-            portscan::scan_ports_cmd
+            portscan::scan_ports_cmd,
+            docker::get_docker_snapshot
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
