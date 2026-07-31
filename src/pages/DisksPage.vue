@@ -27,6 +27,72 @@ async function loadDisks() {
 }
 onMounted(loadDisks);
 
+const formatDevice = ref("");
+const formatFstype = ref<"ext4" | "btrfs" | "xfs" | "vfat">("ext4");
+const formatConfirmText = ref("");
+const formatBusy = ref(false);
+const formatResult = ref<string | null>(null);
+const formatError = ref<string | null>(null);
+
+async function runFormat() {
+  formatBusy.value = true;
+  formatError.value = null;
+  formatResult.value = null;
+  try {
+    formatResult.value = await invoke<string>("format_partition", { device: formatDevice.value, fstype: formatFstype.value });
+    formatConfirmText.value = "";
+    await loadDisks();
+  } catch (e) {
+    formatError.value = String(e);
+  } finally {
+    formatBusy.value = false;
+  }
+}
+
+const extendDevice = ref("");
+const extendDisk = ref("");
+const extendPartNumber = ref("");
+const extendBusy = ref(false);
+const extendResult = ref<string | null>(null);
+const extendError = ref<string | null>(null);
+
+async function runExtend() {
+  extendBusy.value = true;
+  extendError.value = null;
+  extendResult.value = null;
+  try {
+    extendResult.value = await invoke<string>("extend_partition", {
+      device: extendDevice.value,
+      disk: extendDisk.value,
+      partNumber: extendPartNumber.value,
+    });
+    await loadDisks();
+  } catch (e) {
+    extendError.value = String(e);
+  } finally {
+    extendBusy.value = false;
+  }
+}
+
+const cloneSourceDisk = ref("");
+const cloneDestPath = ref("");
+const cloneBusy = ref(false);
+const cloneResult = ref<string | null>(null);
+const cloneError = ref<string | null>(null);
+
+async function runClone() {
+  cloneBusy.value = true;
+  cloneError.value = null;
+  cloneResult.value = null;
+  try {
+    cloneResult.value = await invoke<string>("clone_disk", { sourceDisk: cloneSourceDisk.value, destPath: cloneDestPath.value });
+  } catch (e) {
+    cloneError.value = String(e);
+  } finally {
+    cloneBusy.value = false;
+  }
+}
+
 const scanDir = ref("");
 const duplicateGroups = ref<DuplicateGroup[]>([]);
 const duplicatesError = ref<string | null>(null);
@@ -112,6 +178,53 @@ function bytesToMb(bytes: number): string {
         <span>{{ u.mountpoint }}</span>
         <span>{{ bytesToGb(u.used_bytes) }} / {{ bytesToGb(u.total_bytes) }} GB ({{ u.used_percent }}%)</span>
       </div>
+
+      <h2 class="disks-section-title">Formater une partition</h2>
+      <p class="disks-warning">Cette action efface DÉFINITIVEMENT toutes les données de la partition. Aucune récupération possible.</p>
+      <div class="disks-form-row">
+        <input v-model="formatDevice" class="disks-input" placeholder="Périphérique (ex: /dev/sda1)" />
+        <select v-model="formatFstype">
+          <option value="ext4">ext4</option>
+          <option value="btrfs">btrfs</option>
+          <option value="xfs">xfs</option>
+          <option value="vfat">vfat</option>
+        </select>
+      </div>
+      <div class="disks-form-row">
+        <input
+          v-model="formatConfirmText"
+          class="disks-input"
+          :placeholder="`Tapez « ${formatDevice} » pour confirmer`"
+        />
+        <button
+          :disabled="formatBusy || formatDevice === '' || formatConfirmText !== formatDevice"
+          class="disks-danger-button"
+          @click="runFormat"
+        >
+          {{ formatBusy ? "Formatage..." : "Formater" }}
+        </button>
+      </div>
+      <div v-if="formatError" class="disks-error">{{ formatError }}</div>
+      <div v-if="formatResult" class="disks-success">{{ formatResult }}</div>
+
+      <h2 class="disks-section-title">Étendre une partition</h2>
+      <div class="disks-form-row">
+        <input v-model="extendDevice" class="disks-input" placeholder="Partition (ex: /dev/sda1)" />
+        <input v-model="extendDisk" class="disks-input" placeholder="Disque (ex: /dev/sda)" />
+        <input v-model="extendPartNumber" class="disks-input-small" placeholder="N° (ex: 1)" />
+        <button :disabled="extendBusy" @click="runExtend">{{ extendBusy ? "Extension..." : "Étendre" }}</button>
+      </div>
+      <div v-if="extendError" class="disks-error">{{ extendError }}</div>
+      <div v-if="extendResult" class="disks-success">{{ extendResult }}</div>
+
+      <h2 class="disks-section-title">Cloner un disque</h2>
+      <div class="disks-form-row">
+        <input v-model="cloneSourceDisk" class="disks-input" placeholder="Disque source (ex: /dev/sda)" />
+        <input v-model="cloneDestPath" class="disks-input" placeholder="Fichier image de destination" />
+        <button :disabled="cloneBusy" @click="runClone">{{ cloneBusy ? "Clonage..." : "Cloner" }}</button>
+      </div>
+      <div v-if="cloneError" class="disks-error">{{ cloneError }}</div>
+      <div v-if="cloneResult" class="disks-success">{{ cloneResult }}</div>
     </section>
 
     <section v-else-if="activeTab === 'duplicates'" class="disks-panel">
@@ -168,4 +281,8 @@ function bytesToMb(bytes: number): string {
 .disks-input-small { width: 80px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--nx-border); background: var(--nx-bg-elevated); color: var(--nx-text-primary); }
 .disks-dup-group { background: var(--nx-bg-elevated); border: 1px solid var(--nx-border); border-radius: 10px; padding: 12px; font-size: 13px; }
 .disks-hash-result { font-family: monospace; padding: 10px 14px; border-radius: 8px; background: var(--nx-bg-elevated); border: 1px solid var(--nx-border); word-break: break-all; }
+.disks-section-title { font-size: 14px; margin: 16px 0 6px; color: var(--nx-text-secondary); }
+.disks-warning { padding: 10px 14px; border-radius: 8px; background: color-mix(in srgb, var(--nx-accent-danger) 10%, transparent); border: 1px solid var(--nx-accent-danger); color: var(--nx-accent-danger); font-weight: 600; font-size: 13px; }
+.disks-danger-button { background: var(--nx-accent-danger); color: white; border-color: var(--nx-accent-danger); }
+.disks-success { padding: 10px 14px; border-radius: 8px; background: color-mix(in srgb, var(--nx-accent-success) 15%, transparent); border: 1px solid var(--nx-accent-success); }
 </style>
