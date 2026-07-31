@@ -1,19 +1,22 @@
 # Checkpoint
 
-Dernière étape réussie : Task 7 (Theme & Layout editor page) complète — implémentée, spec-vérifiée, qualité-vérifiée avec 2 rounds de fix (déjà mergés dans le fix commit `721abb5`). Task 8 (Rust system snapshot + Dashboard) implémentée et spec-vérifiée (commit `1b2babc`), revue qualité relancée après une coupure quota (première tentative a échoué sur "spend limit").
+Dernière étape réussie : **Phase 1 (Fondations) COMPLÈTE** — 13/13 tâches implémentées, spec-vérifiées, qualité-vérifiées (avec cycles de fix appliqués où nécessaire), mergées sur `master` (commit `9b628e6` merge + `aa23f2a` fix vitest glob), poussées sur GitHub (`Heiphaistos/NiTruX`).
 
-Prochaine action : récupérer le résultat de la revue qualité Task 8 (agent `ae10515ac1f99f111` lancé en arrière-plan), appliquer les fix si besoin, puis enchaîner Tasks 9→13 du plan Phase 1 via subagent-driven-development (implémenteur → revue spec → revue qualité → fix si besoin, comme sur Tasks 1-7).
+Bug réel trouvé et corrigé lors de la vérification finale sur master : `vitest.config.ts` scannait aussi `.worktrees/` (gitignored mais pas exclu du glob Vitest), doublant les tests et causant des faux échecs par collision d'état localStorage entre les 2 copies. Corrigé (`aa23f2a`).
+
+Prochaine action : 
+1. Nettoyer le dossier `.worktrees/phase-1-fondations` restant sur disque (verrouillé par Windows au moment du nettoyage, `git worktree remove` a réussi côté git mais `rm -rf` a échoué "Device or resource busy" — gitignored donc sans risque fonctionnel, juste de l'espace disque à libérer manuellement plus tard si le verrou persiste)
+2. Tenter un premier build de release (.deb/.rpm/AppImage via bundler Tauri) pour valider que Phase 1 est réellement packageable
+3. Écrire le plan Phase 2 (Paquets & applications) avec `writing-plans`, même format que Phase 1
+4. Exécuter Phase 2 en `subagent-driven-development` dans un nouveau worktree
+5. Répéter pour Phase 3 (Disques & stockage) et Phase 4 (Réseau/sécurité/maintenance)
 
 Contexte pour reprendre à froid :
-- Repo local : `C:\Users\Momo\Desktop\NiTruX` (git, pas encore de remote GitHub configuré)
-- Travail Phase 1 dans le worktree : `C:\Users\Momo\Desktop\NiTruX\.worktrees\phase-1-fondations` (branche `phase-1-fondations`)
-- Plan Phase 1 : `docs/superpowers/plans/2026-07-30-nitrux-phase1.md`
+- Repo local : `C:\Users\Momo\Desktop\NiTruX`, remote `https://github.com/Heiphaistos/NiTruX.git` (privé)
+- `master` contient maintenant tout Phase 1 : scaffold+branding+theme(12 palettes)+layout(8 dispositions)+editor+backend(system/sensors/hardware/drivers/logs)
 - Spec design complète : `docs/superpowers/specs/2026-07-30-nitrux-design.md`
-- Environnement : WSL2 Ubuntu pour npm/cargo/tauri (`wsl.exe -e bash -lc "cd /mnt/c/Users/Momo/Desktop/NiTruX/.worktrees/phase-1-fondations && <cmd>"`), git côté Windows uniquement (voir LESSONS.md et mémoire globale `feedback_wsl2_git_worktree_path_mismatch`)
-- Pattern de vérification établi : ne jamais faire confiance à un rapport de sous-agent sans preuve indépendante (voir LESSONS.md) — toujours re-vérifier via commande réelle (cargo test, npm run test, git show)
+- Plan Phase 1 (référence historique) : `docs/superpowers/plans/2026-07-30-nitrux-phase1.md`
+- Convention backend établie : toute commande qui shell out utilise `subprocess::run_with_timeout` (dans `src-tauri/src/subprocess.rs`) + retourne `Result<T, String>`, jamais de `Command::new()` brut ni de swallow d'erreur en valeur vide
+- npm audit : 8 vulnérabilités high, toutes dans la chaîne devDependency (`vue-tsc`/`@vue/test-utils`, jamais dans le bundle livré) — `npm audit fix --force` bloqué par le classificateur auto-mode (changement breaking non supervisé), backlog en attente de décision humaine, PAS bloquant pour les releases (dev-tooling uniquement)
 
-En attente de validation humaine : aucune pour l'instant (rien de destructif/irréversible rencontré). Le push GitHub initial (création de repo + premier push) sera fait sans redemander car explicitement demandé par l'utilisateur avant qu'il aille se coucher — mais toute action future qui semblerait dépasser ce cadre (ex: rendre le repo public, supprimer des données) sera listée ici avant d'agir.
-
-## Backlog fast-follow (non bloquant, à traiter avant release stable)
-- sensors.rs: BAT0 hardcodé, ne gère pas BAT1/multi-batterie
-- DashboardPage.vue: :key="t.label" sur temperatures pas garanti unique (labels sysinfo peuvent dupliquer entre chips) → utiliser `${t.label}-${i}`
+En attente de validation humaine : le fix npm audit (breaking change vue-tsc 2.x→3.3.8), bloqué par le classificateur — décision à prendre par Momo au réveil, pas de contournement tenté.
