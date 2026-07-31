@@ -35,6 +35,22 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "linux": {
+      "deb": {
+        "files": {
+          "/usr/share/polkit-1/actions/org.heiphaistos.nitrux.packages.policy": "packaging/org.heiphaistos.nitrux.packages.policy",
+          "/usr/share/polkit-1/actions/org.heiphaistos.nitrux.network.policy": "packaging/org.heiphaistos.nitrux.network.policy",
+          "/usr/bin/nitrux-pkexec-helper": "packaging/nitrux-pkexec-helper"
+        }
+      },
+      "rpm": {
+        "files": {
+          "/usr/share/polkit-1/actions/org.heiphaistos.nitrux.packages.policy": "packaging/org.heiphaistos.nitrux.packages.policy",
+          "/usr/share/polkit-1/actions/org.heiphaistos.nitrux.network.policy": "packaging/org.heiphaistos.nitrux.network.policy",
+          "/usr/bin/nitrux-pkexec-helper": "packaging/nitrux-pkexec-helper"
+        }
+      }
+    }
   }
 }
