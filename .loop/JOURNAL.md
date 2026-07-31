@@ -24,3 +24,4 @@
 [2026-07-31T03:20:00+02:00] Release v0.2.0-phase2part1 publiée (.deb+.rpm, apt vérifié réel 17 MAJ, snap vérifié réel 0 MAJ). Version bumpée 0.1.0→0.2.0 partout (tauri.conf.json/Cargo.toml/package.json). Phase 2 Part 1 mergée+poussée+release. Prochaine étape : plan Phase 3 (Disques & stockage).
 [2026-07-31T04:50:00+02:00] Reconnexion utilisateur. Plan Phase 3 Part 1 (outils disque lecture seule) écrit+poussé. P3-T1 (disks.rs lsblk+df) → commit b78e14a, re-vérifié indépendamment (48/1ignored/0fail, 0 warning). Vérifié contre vraies commandes lsblk/df WSL2 (disques sans table de partition = cas réel découvert et géré) → Task 1 COMPLETE
 [2026-07-31T04:56:00+02:00] P3-T2 (duplicates.rs SHA-256) → commit 05e1165, re-vérifié indépendamment (51/1ignored/0fail, 0 warning) → Task 2 COMPLETE
+[2026-07-31T04:59:00+02:00] P3-T3 (largefiles.rs) → commit 62d305e, re-vérifié indépendamment (54/1ignored/0fail, 0 warning) → Task 3 COMPLETE
