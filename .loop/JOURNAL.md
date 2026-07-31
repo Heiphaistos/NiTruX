@@ -32,3 +32,4 @@
 [2026-07-31T05:42:00+02:00] P4-T1 (network.rs) → commit 20014f9, re-vérifié indépendamment (69/1ignored/0fail, 0 warning). Sous-agent a trouvé et corrigé un vrai bug dans mon plan (parse_ss_line indexait le mauvais champ), vérifié contre vraie sortie ss -tulnp WSL2 + 2 tests de régression ajoutés → Task 1 COMPLETE
 [2026-07-31T05:47:00+02:00] P4-T2 (portscan.rs) → commit 8f6b377, re-vérifié indépendamment (73/1ignored/0fail, 0 warning, cap 200 ports + timeout 300ms réellement câblés) → Task 2 COMPLETE
 [2026-07-31T05:51:00+02:00] P4-T3 (docker.rs) → commit 1cbafae, re-vérifié indépendamment (77/1ignored/0fail, 0 warning). Docker absent confirmé (which docker), pas de faux-semblant → Task 3 COMPLETE. Backend Phase 4 Part 1 terminé (network/portscan/docker).
+[2026-07-31T05:53:00+02:00] P4-T4 (NetworkPage.vue) → commit eaf6180, re-vérifié indépendamment (vue-tsc clean, 7 interfaces TS↔Rust cross-vérifiées) → Task 4 COMPLETE
