@@ -122,7 +122,7 @@ validate_quarantine_path() {
 # that this case pattern alone is sufficient input validation.
 validate_partition_device() {
   case "$1" in
-    /dev/sd[a-z][0-9]*|/dev/vd[a-z][0-9]*|/dev/nvme[0-9]*n[0-9]*p[0-9]*|/dev/mmcblk[0-9]*p[0-9]*) : ;;
+    /dev/sd[a-z][0-9]*|/dev/vd[a-z][0-9]*|/dev/nvme[0-9]*n[0-9]*p[0-9]*|/dev/mmcblk[0-9]*p[0-9]*|/dev/loop[0-9]*p[0-9]*) : ;;
     *) die "not a recognized partition device path (expected e.g. /dev/sda1, /dev/nvme0n1p1): $1" ;;
   esac
   if [ ! -b "$1" ]; then

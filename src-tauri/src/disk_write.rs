@@ -45,7 +45,32 @@ pub fn validate_partition_device(device: &str) -> Result<(), String> {
     let looks_like_mmc_partition = device.starts_with("/dev/mmcblk")
         && device.contains('p')
         && device.chars().last().is_some_and(|c| c.is_ascii_digit());
-    if !(looks_like_partition || looks_like_nvme_partition || looks_like_mmc_partition) {
+    // Loop-device partitions (/dev/loopNpM) are a real, legitimate device
+    // shape -- not just a testing convenience -- e.g. formatting a
+    // partition inside a loop-mounted disk image (custom OS images, VM
+    // disk files). Mirrors validate_disk_device already accepting
+    // /dev/loopN as a whole disk; this closes the matching partition-level
+    // gap (found live: the shell helper originally lacked this pattern
+    // too, fixed alongside this Rust-side addition).
+    //
+    // NOTE: unlike "nvme"/"mmcblk", the word "loop" itself contains the
+    // letter 'p' -- a naive `.contains('p')` check would wrongly accept
+    // the whole-disk path "/dev/loop0" as a partition (caught live by
+    // this function's own unit test). The suffix after "/dev/loop" must
+    // structurally be <digits>p<digits>, checked explicitly below rather
+    // than with a substring search.
+    let looks_like_loop_partition = device
+        .strip_prefix("/dev/loop")
+        .is_some_and(|suffix| match suffix.split_once('p') {
+            Some((disk_num, part_num)) => {
+                !disk_num.is_empty()
+                    && disk_num.bytes().all(|b| b.is_ascii_digit())
+                    && !part_num.is_empty()
+                    && part_num.bytes().all(|b| b.is_ascii_digit())
+            }
+            None => false,
+        });
+    if !(looks_like_partition || looks_like_nvme_partition || looks_like_mmc_partition || looks_like_loop_partition) {
         return Err(format!(
             "chemin de partition invalide (attendu par ex. /dev/sda1, /dev/nvme0n1p1) : {device}"
         ));
@@ -173,12 +198,14 @@ mod tests {
         assert!(validate_partition_device("/dev/sda1").is_ok());
         assert!(validate_partition_device("/dev/nvme0n1p1").is_ok());
         assert!(validate_partition_device("/dev/vdb2").is_ok());
+        assert!(validate_partition_device("/dev/loop0p1").is_ok());
     }
 
     #[test]
     fn rejects_whole_disk_devices() {
         assert!(validate_partition_device("/dev/sda").is_err());
         assert!(validate_partition_device("/dev/nvme0n1").is_err());
+        assert!(validate_partition_device("/dev/loop0").is_err());
     }
 
     #[test]
