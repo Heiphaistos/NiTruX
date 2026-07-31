@@ -3,7 +3,7 @@ import { onMounted, ref, type Component } from "vue";
 import { useThemeStore } from "@/stores/themeStore";
 import LayoutShell from "@/layouts/LayoutShell.vue";
 import DashboardPage from "@/pages/DashboardPage.vue";
-import HardwarePage from "@/pages/HardwarePage.vue";
+import DiagnosticPage from "@/pages/DiagnosticPage.vue";
 import DriversPage from "@/pages/DriversPage.vue";
 import LogsPage from "@/pages/LogsPage.vue";
 import ThemeEditorPage from "@/pages/ThemeEditorPage.vue";
@@ -28,7 +28,7 @@ type PageId =
 const currentPage = ref<PageId>("dashboard");
 const pages: Record<PageId, Component> = {
   dashboard: DashboardPage,
-  hardware: HardwarePage,
+  hardware: DiagnosticPage,
   drivers: DriversPage,
   logs: LogsPage,
   "theme-editor": ThemeEditorPage,
