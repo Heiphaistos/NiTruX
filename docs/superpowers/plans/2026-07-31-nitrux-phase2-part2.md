@@ -550,25 +550,66 @@ git commit -m "feat: install package and upgrade-all UI on PackagesPage"
 
 **Files:** None (verification-only task)
 
-- [ ] **Step 1: Run the full test suite one more time**
+> **SCOPE ADJUSTMENT (2026-07-31, applied at execution time):** the user's Debian test VM referenced throughout this plan was not ready yet when this task ran — it was being prepared separately, the same night, but not finished. Step 2 below (live `pkexec` integration test inside the VM) was **not attempted**. No `pkexec`/`sudo`/package-install/package-upgrade call of any kind was run anywhere — not in the VM (doesn't exist yet), not in WSL2 (the real daily-driver dev environment, not disposable), not on the host. Step 1 (test suites) ran as planned, safe and privilege-free. Step 3 is written below reflecting this adjusted, narrower scope — it documents what was proven across all of Phase 2 Part 2, not just this task, and is more conservative than the plan's original Step 3 text since the VM-based `pkexec`/`pkaction` proof described in Task 3 Step 3 and this task's Step 2 did not happen either. See "Phase 2 Part 2 — Final Verification State" below for the full record.
+
+- [x] **Step 1: Run the full test suite one more time**
 
 Run: `npm run test` (expect 25 passed, unchanged — no new frontend spec files this plan), `cd src-tauri && cargo test` (expect 101 passed, 1 ignored), `npx vue-tsc --noEmit` (clean).
 
-- [ ] **Step 2: Real end-to-end proof in the VM — install a package through the actual compiled binary, not just the shell wrapper**
+**Actual result (2026-07-31, run in WSL2, no privileged calls):**
+- `npm run test` → 6 test files, **25 passed**, 0 failed. Matches expectation exactly.
+- `cd src-tauri && cargo test` → **100 passed**, 1 ignored (`system::tests::repeated_refresh_on_shared_system_computes_nonzero_cpu_delta`, pre-existing, deliberately timing-sensitive/manual-only), 0 failed. This is 101 total tests counting the ignored one, matching the plan's "95 pre-existing + 6 from Task 2 = 101" arithmetic; the ignored test was already ignored before this plan and is unrelated to Task 2's `install.rs` tests, which all show as passing individually (`packages::install::tests::*`, 6/6 green).
+- `npx vue-tsc --noEmit` → clean, exit code 0.
 
-This is the one piece not yet proven: that the Rust `install_package`/`upgrade_all_packages` commands, compiled into the real NiTruX binary and invoked exactly as the frontend would invoke them, actually work — not just the shell wrapper tested manually in Task 1.
+No drift from the plan's expectations. No privileged/system-modifying command was run to produce this result.
 
-Since there's no desktop session in the VM for a real Tauri GUI + polkit auth dialog, write a temporary `#[ignore]`d integration test that calls `install_package("apt".to_string(), "sl".to_string())` directly (bypassing Tauri's IPC layer, calling the Rust function itself — this still exercises the real `pkexec` invocation and real system effect), run it via SSH in the VM with `cargo test --ignored -- --nocapture`, confirm `which sl` succeeds afterward, then revert the scratch test (not part of this plan's committed file set).
+- [~] **Step 2: Real end-to-end proof in the VM — SKIPPED, not attempted (scope adjustment)**
 
-**Important:** this test will genuinely trigger polkit's `auth_admin` requirement. In the headless VM, running the real compiled test binary via SSH as the `nitrux` user (who has passwordless sudo per cloud-init, but that's `sudo`, not automatically `pkexec`/polkit authorization) may cause `pkexec` to fail with "Authentication is needed" since there's no polkit agent to prompt. If this happens: that IS the honest, correct result to report — it demonstrates the real, expected constraint (interactive GUI auth is genuinely required for `pkexec` and cannot be tested headless), not a bug in the implementation. Document this finding precisely rather than working around it (e.g. do NOT install a passwordless polkit rule just to make the test pass — that would test something other than the real production behavior).
+**Not done.** The plan's Debian/Ubuntu test VM does not exist yet at the time this task ran — the user is building a proper Debian test VM separately, the same night, but it was not ready. Per explicit instruction for this task, no `pkexec`/`sudo`/package-install/package-upgrade call was attempted anywhere: not against a VM (none available), not against WSL2 (the real daily-driver development environment — running real package installs there would be a live mutation of the developer's actual machine, not a disposable test target), not against the host Windows machine. The temporary `#[ignore]`d integration test described in this step was not written, and no privileged command of any kind was executed during this task. This is a deliberate scope cut, not an oversight, an omission, or a failure — see the final section below for the full honest accounting.
 
-- [ ] **Step 3: Document the verification gap explicitly**
+- [x] **Step 3: Document the verification gap explicitly (adjusted scope — see final section below)**
 
-Add a short note to `docs/superpowers/plans/2026-07-31-nitrux-phase2-part2.md` itself (append below this line, or in the final task's completion report — implementer's choice) recording precisely what was and wasn't proven end-to-end: the shell wrapper script (Task 1) was proven against a real system via direct `sudo` invocation; the polkit policy XML and file placement were proven structurally (`pkaction --verbose`); the actual interactive `pkexec` GUI authentication flow was NOT exercised (no desktop environment available) and remains the one genuinely untested layer. This is a known, deliberately-scoped-out gap, not an oversight — a future task with a desktop-environment VM (e.g. Ubuntu Desktop + xrdp, or a lightweight X11 + polkit-gnome-authentication-agent setup) would close it.
+Rather than the narrower gap described in the plan's original text (which assumed Task 3's VM install and this task's live `pkexec` test would have already happened), the section below, **"Phase 2 Part 2 — Final Verification State (2026-07-31)"**, documents the full, honest state of what was and wasn't proven across the entire Phase 2 Part 2 plan, since the adjustment affects more than just this one step.
 
-- [ ] **Step 4: No commit for this task** — it's pure verification. If Step 3's documentation note is added to a file, commit that single addition:
+- [x] **Step 4: Commit the documentation addition**
 
 ```bash
 git add docs/superpowers/plans/2026-07-31-nitrux-phase2-part2.md
 git commit -m "docs: record Phase 2 Part 2 verification coverage and known polkit-GUI test gap"
 ```
+
+---
+
+## Phase 2 Part 2 — Final Verification State (2026-07-31)
+
+This section is the authoritative, honest record of what was and was not proven for real across all of Phase 2 Part 2 (Tasks 1-5), written at the point where the plan's original assumption — a working Debian test VM available tonight — turned out not to hold. The VM is being built separately by the user and was not ready when Task 5 ran. **No `pkexec`, `sudo`, package-install, or package-upgrade command was executed for real anywhere during this plan's verification pass** — not in a test VM (none exists yet), not in WSL2 (the real daily-driver development environment, not a disposable target), not on the host Windows machine.
+
+### What WAS proven for real tonight
+
+- **Task 1 — shell wrapper (`nitrux-pkexec-helper`):** verified via rigorous static/manual trace-through, not live execution. Every rejection path (`validate_package_name`, `validate_manager`, unknown subcommand, empty argument) was traced by hand against the script's `case` logic; injection-vector analysis (shell metacharacters, `../` traversal, `$()`/backticks/pipes/`;`/`&&`, argv-vs-shell-string boundary at the `pkexec`→helper call site) found no issues. The script has never actually been run with real privileges — the VM-based `sudo` exercise described in the plan's Task 1 Step 3 was not performed.
+- **Task 2 — Rust validation logic (`validate_package_name`, `validate_manager_id`):** genuinely proven, no gap. Real, passing unit tests: `accepts_well_formed_package_names`, `rejects_empty_package_name`, `rejects_shell_metacharacters_in_package_name`, `accepts_known_managers`, `rejects_unknown_manager` — all 6 tests (5 shown, `rejects_shell_metacharacters_in_package_name` covers 7 assertions) pass under `cargo test`, confirmed again in this task's Step 1 run (100 passed, 0 failed, 1 unrelated pre-existing ignored test).
+- **Task 3 — bundling:** verified for real. The `.deb`/`.rpm` were actually built, and `dpkg-deb -c` confirmed both files (`org.heiphaistos.nitrux.packages.policy`, `nitrux-pkexec-helper`) land at their correct absolute paths (`/usr/share/polkit-1/actions/...`, `/usr/bin/nitrux-pkexec-helper`) with correct permissions. Critically, the packaged helper script's shebang line was verified byte-for-byte (`23 21 2f 62 69 6e 2f 73 68 0a`, i.e. `#!/bin/sh\n`, confirmed twice independently) to have survived the Windows/WSL2 checkout with no CRLF corruption — a real, concrete risk on this dual-filesystem dev setup that was actually checked, not assumed. What was **not** done for Task 3: installing the built `.deb` inside a real VM and confirming `pkaction --action-id ... --verbose` recognizes the registered polkit actions post-install (Task 3 Step 3) — this requires the VM and did not happen.
+- **Task 4 — frontend UI:** `PackagesPage.vue`'s install/upgrade additions type-check cleanly under `vue-tsc --noEmit` and call the correct Tauri command signatures (`install_package(manager, package)`, `upgrade_all_packages()`) matching the Rust `#[tauri::command]` definitions exactly.
+- **Task 5 — full test suite re-run:** `npm run test` 25/25 passed, `cargo test` 100 passed / 1 ignored (pre-existing, unrelated) / 0 failed, `vue-tsc --noEmit` clean. All safe, non-privileged commands.
+
+### What was NOT proven and remains a real, deliberate gap
+
+- The actual `pkexec` invocation chain — Rust `install_package`/`upgrade_all_packages` → `pkexec` → `nitrux-pkexec-helper` → real `apt-get`/`dnf`/`pacman`/`zypper` — **has never been executed for real, anywhere, tonight.**
+- The interactive polkit GUI authentication dialog has never been triggered or observed.
+- No real package installation or system upgrade has occurred through this feature.
+- `pkaction --verbose` has not been run against a real installed `.deb` to confirm polkit recognizes the two registered actions (`org.heiphaistos.nitrux.install-package`, `org.heiphaistos.nitrux.upgrade-all`) post-install.
+- The scratch `#[ignore]`d integration test described in the plan's Task 5 Step 2 (calling `install_package("apt", "sl")` directly against a real system) was never written or run.
+
+**All of the above is deferred pending the user's Debian test VM, which is in progress but not ready yet.** This is a scope cut made explicitly for this task, not a silently-dropped requirement — it is recorded here specifically so a future session picks it up rather than assuming it already happened.
+
+### Release status — explicit stop point
+
+**Nothing in Phase 2 Part 2 should be considered production-ready, merged to `master`, or released until the live `pkexec`/polkit verification above happens in a real VM.** This is a deliberate departure from every prior phase completed tonight (Phases 1 through 5 Part 1), which were all read-only, fully verified live, and correctly got the complete "verify → merge → release" treatment including version bumps. Phase 2 Part 2 is the **first** phase tonight that introduces a privileged, system-mutating code path, and it is the first phase that must **not** follow that same merge/release pattern yet.
+
+Concretely, as of the end of this task:
+- Branch `phase-2-part2` remains **unmerged** into `master`.
+- **No version bump** was made or should be made as part of this task.
+- **No release/tag** was created.
+- The branch should stay pushed and open until a Task 5b (or equivalent) live-verification pass happens against a real desktop-capable or SSH-`sudo`-capable Debian/Ubuntu VM, exercising the real `pkexec` chain, the real polkit action registration, and — package install and upgrade being genuinely irreversible-ish, real-system-effect operations — treated with the same "confirm before touching real data/systems" caution as any other production-adjacent action.
+
+**Next step:** wait for the user's Debian test VM to be ready, then run a Task 5b live-verification pass (VM-based `sudo`/`pkexec` exercise of the shell wrapper and the compiled Rust commands, `pkaction --verbose` confirmation, and the scratch `#[ignore]`d integration test from the plan's original Task 5 Step 2) before merging `phase-2-part2` to `master` or cutting any release.
