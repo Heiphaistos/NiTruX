@@ -1,0 +1,140 @@
+/* src/styles/style-tokens.css
+ *
+ * Defines the 7 CSS custom properties every Nx* shared component reads
+ * for its visual "style" character (independent of the active color
+ * palette, set by themeStore, and the active structural layout, set by
+ * layoutStore). Scoped by the `data-nx-style` attribute that styleStore
+ * writes to <html>. Falls back to glass-glow's values via the unscoped
+ * :root block below, so components never see an unset custom property
+ * even before styleStore's mount-time hook runs.
+ */
+
+:root {
+  --nx-style-radius: 14px;
+  --nx-style-border-width: 1px;
+  --nx-style-border-color: color-mix(in srgb, var(--nx-accent-primary) 30%, transparent);
+  --nx-style-shadow: 0 0 24px color-mix(in srgb, var(--nx-accent-primary) 20%, transparent);
+  --nx-style-blur: 12px;
+  --nx-style-bg: color-mix(in srgb, var(--nx-bg-elevated) 60%, transparent);
+  --nx-style-font-family: inherit;
+}
+
+[data-nx-style="glass-glow"] {
+  --nx-style-radius: 14px;
+  --nx-style-border-width: 1px;
+  --nx-style-border-color: color-mix(in srgb, var(--nx-accent-primary) 30%, transparent);
+  --nx-style-shadow: 0 0 24px color-mix(in srgb, var(--nx-accent-primary) 20%, transparent);
+  --nx-style-blur: 12px;
+  --nx-style-bg: color-mix(in srgb, var(--nx-bg-elevated) 60%, transparent);
+  --nx-style-font-family: inherit;
+}
+
+[data-nx-style="flat-modern"] {
+  --nx-style-radius: 8px;
+  --nx-style-border-width: 1px;
+  --nx-style-border-color: var(--nx-border);
+  --nx-style-shadow: none;
+  --nx-style-blur: 0px;
+  --nx-style-bg: var(--nx-bg-elevated);
+  --nx-style-font-family: inherit;
+}
+
+[data-nx-style="neon-terminal"] {
+  --nx-style-radius: 4px;
+  --nx-style-border-width: 1px;
+  --nx-style-border-color: color-mix(in srgb, var(--nx-accent-primary) 40%, transparent);
+  --nx-style-shadow: inset 0 0 16px color-mix(in srgb, var(--nx-accent-primary) 10%, transparent);
+  --nx-style-blur: 0px;
+  --nx-style-bg: var(--nx-bg-elevated);
+  --nx-style-font-family: "Courier New", monospace;
+}
+
+[data-nx-style="neumorphism"] {
+  --nx-style-radius: 14px;
+  --nx-style-border-width: 0px;
+  --nx-style-border-color: transparent;
+  --nx-style-shadow: 6px 6px 12px color-mix(in srgb, black 15%, transparent), -6px -6px 12px color-mix(in srgb, white 6%, transparent);
+  --nx-style-blur: 0px;
+  --nx-style-bg: var(--nx-bg-elevated);
+  --nx-style-font-family: inherit;
+}
+
+[data-nx-style="brutalism"] {
+  --nx-style-radius: 0px;
+  --nx-style-border-width: 3px;
+  --nx-style-border-color: var(--nx-text-primary);
+  --nx-style-shadow: 5px 5px 0 var(--nx-text-primary);
+  --nx-style-blur: 0px;
+  --nx-style-bg: var(--nx-bg-elevated);
+  --nx-style-font-family: inherit;
+}
+
+[data-nx-style="paper"] {
+  --nx-style-radius: 6px;
+  --nx-style-border-width: 1px;
+  --nx-style-border-color: var(--nx-border);
+  --nx-style-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  --nx-style-blur: 0px;
+  --nx-style-bg: var(--nx-bg-elevated);
+  --nx-style-font-family: inherit;
+}
+
+[data-nx-style="aero-glass"] {
+  --nx-style-radius: 10px;
+  --nx-style-border-width: 1px;
+  --nx-style-border-color: color-mix(in srgb, white 40%, transparent);
+  --nx-style-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), inset 0 1px 0 color-mix(in srgb, white 50%, transparent);
+  --nx-style-blur: 6px;
+  --nx-style-bg: linear-gradient(180deg, color-mix(in srgb, white 30%, transparent), color-mix(in srgb, white 5%, transparent));
+  --nx-style-font-family: inherit;
+}
+
+[data-nx-style="cyber-grid"] {
+  --nx-style-radius: 2px;
+  --nx-style-border-width: 1px;
+  --nx-style-border-color: color-mix(in srgb, var(--nx-accent-primary) 35%, transparent);
+  --nx-style-shadow: 0 0 12px color-mix(in srgb, var(--nx-accent-primary) 15%, transparent);
+  --nx-style-blur: 0px;
+  --nx-style-bg: color-mix(in srgb, var(--nx-accent-primary) 5%, var(--nx-bg-elevated));
+  --nx-style-font-family: inherit;
+}
+
+[data-nx-style="line-art"] {
+  --nx-style-radius: 2px;
+  --nx-style-border-width: 1px;
+  --nx-style-border-color: var(--nx-border);
+  --nx-style-shadow: none;
+  --nx-style-blur: 0px;
+  --nx-style-bg: transparent;
+  --nx-style-font-family: "Courier New", monospace;
+}
+
+[data-nx-style="gradient-mesh"] {
+  --nx-style-radius: 14px;
+  --nx-style-border-width: 1px;
+  --nx-style-border-color: color-mix(in srgb, white 30%, transparent);
+  --nx-style-shadow: none;
+  --nx-style-blur: 8px;
+  --nx-style-bg: linear-gradient(135deg, color-mix(in srgb, var(--nx-accent-primary) 25%, transparent), color-mix(in srgb, var(--nx-accent-secondary) 25%, transparent));
+  --nx-style-font-family: inherit;
+}
+
+[data-nx-style="amber-crt"] {
+  --nx-style-radius: 2px;
+  --nx-style-border-width: 1px;
+  --nx-style-border-color: color-mix(in srgb, var(--nx-accent-primary) 40%, transparent);
+  --nx-style-shadow: inset 0 0 16px color-mix(in srgb, var(--nx-accent-primary) 10%, transparent);
+  --nx-style-blur: 0px;
+  --nx-style-bg: var(--nx-bg-elevated);
+  --nx-style-font-family: "Courier New", monospace;
+}
+
+[data-nx-style="mono-contrast"] {
+  --nx-style-radius: 0px;
+  --nx-style-border-width: 2px;
+  --nx-style-border-color: var(--nx-text-primary);
+  --nx-style-shadow: none;
+  --nx-style-blur: 0px;
+  --nx-style-bg: var(--nx-bg-base);
+  --nx-style-font-family: inherit;
+}
