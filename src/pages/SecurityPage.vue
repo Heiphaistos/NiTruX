@@ -7,7 +7,7 @@ interface FirewallStatus { active: boolean; rules: string[] }
 interface MalwareFinding { path: string; signature: string }
 interface SnapshotInfo { id: string; date: string }
 
-type Tab = "firewall" | "malware" | "snapshots";
+type Tab = "firewall" | "malware" | "snapshots" | "troubleshoot";
 const activeTab = ref<Tab>("firewall");
 
 const firewall = ref<FirewallStatus | null>(null);
@@ -61,6 +61,61 @@ function onTabClick(tab: Tab) {
     loadSnapshots();
   }
 }
+
+const TROUBLESHOOT_ACTIONS: { id: string; label: string }[] = [
+  { id: "clean-cache", label: "Vider le cache des paquets" },
+  { id: "fix-broken", label: "Réparer les paquets cassés" },
+  { id: "restart-network", label: "Redémarrer le réseau" },
+  { id: "vacuum-logs", label: "Purger les anciens journaux" },
+];
+const troubleshootBusy = ref<string | null>(null); // holds the action id currently running, or null
+const troubleshootResult = ref<string | null>(null);
+const troubleshootError = ref<string | null>(null);
+
+async function runTroubleshootAction(actionId: string) {
+  troubleshootBusy.value = actionId;
+  troubleshootError.value = null;
+  troubleshootResult.value = null;
+  try {
+    troubleshootResult.value = await invoke<string>("run_troubleshoot_action", { action: actionId });
+  } catch (e) {
+    troubleshootError.value = String(e);
+  } finally {
+    troubleshootBusy.value = null;
+  }
+}
+
+const snapshotCreating = ref(false);
+const snapshotCreateError = ref<string | null>(null);
+
+async function createSnapshotNow() {
+  snapshotCreating.value = true;
+  snapshotCreateError.value = null;
+  try {
+    await invoke("create_snapshot");
+    await loadSnapshots();
+  } catch (e) {
+    snapshotCreateError.value = String(e);
+  } finally {
+    snapshotCreating.value = false;
+  }
+}
+
+const quarantining = ref<string | null>(null); // holds the path currently being quarantined, or null
+const quarantineError = ref<string | null>(null);
+
+async function quarantineFinding(path: string) {
+  quarantining.value = path;
+  quarantineError.value = null;
+  try {
+    await invoke("quarantine_file", { path });
+    findings.value = findings.value.filter((f) => f.path !== path);
+  } catch (e) {
+    quarantineError.value = String(e);
+  } finally {
+    quarantining.value = null;
+  }
+}
 </script>
 
 <template>
@@ -71,6 +126,7 @@ function onTabClick(tab: Tab) {
       <button :class="{ active: activeTab === 'firewall' }" @click="onTabClick('firewall')">Pare-feu</button>
       <button :class="{ active: activeTab === 'malware' }" @click="onTabClick('malware')">Scan malware</button>
       <button :class="{ active: activeTab === 'snapshots' }" @click="onTabClick('snapshots')">Snapshots</button>
+      <button :class="{ active: activeTab === 'troubleshoot' }" @click="onTabClick('troubleshoot')">Dépannage</button>
     </div>
 
     <section v-if="activeTab === 'firewall'" class="sec-panel">
@@ -90,17 +146,36 @@ function onTabClick(tab: Tab) {
       </div>
       <div v-if="scanError" class="sec-error">{{ scanError }}</div>
       <div v-else-if="scanDone && findings.length === 0" class="sec-empty">Aucune menace détectée.</div>
+      <div v-if="quarantineError" class="sec-error">{{ quarantineError }}</div>
       <div v-for="f in findings" :key="f.path" class="sec-row sec-finding">
         <span>{{ f.path }}</span>
         <span>{{ f.signature }}</span>
+        <button :disabled="quarantining !== null" @click="quarantineFinding(f.path)">
+          {{ quarantining === f.path ? "Mise en quarantaine..." : "Mettre en quarantaine" }}
+        </button>
       </div>
     </section>
 
     <section v-else-if="activeTab === 'snapshots'" class="sec-panel">
+      <div class="sec-form-row">
+        <button :disabled="snapshotCreating" @click="createSnapshotNow">{{ snapshotCreating ? "Création..." : "Créer un instantané" }}</button>
+      </div>
+      <div v-if="snapshotCreateError" class="sec-error">{{ snapshotCreateError }}</div>
       <div v-if="snapshotsError" class="sec-error">{{ snapshotsError }}</div>
       <div v-for="s in snapshots" :key="s.id" class="sec-row">
         <span>#{{ s.id }}</span>
         <span>{{ s.date }}</span>
+      </div>
+    </section>
+
+    <section v-else-if="activeTab === 'troubleshoot'" class="sec-panel">
+      <div v-if="troubleshootError" class="sec-error">{{ troubleshootError }}</div>
+      <div v-if="troubleshootResult" class="sec-success">{{ troubleshootResult }}</div>
+      <div v-for="a in TROUBLESHOOT_ACTIONS" :key="a.id" class="sec-form-row">
+        <span class="sec-troubleshoot-label">{{ a.label }}</span>
+        <button :disabled="troubleshootBusy !== null" @click="runTroubleshootAction(a.id)">
+          {{ troubleshootBusy === a.id ? "En cours..." : "Exécuter" }}
+        </button>
       </div>
     </section>
   </div>
@@ -120,4 +195,6 @@ function onTabClick(tab: Tab) {
 .sec-form-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
 .sec-input { flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--nx-border); background: var(--nx-bg-elevated); color: var(--nx-text-primary); }
 .sec-empty { color: var(--nx-text-secondary); margin-top: 10px; }
+.sec-success { padding: 10px 14px; border-radius: 8px; background: color-mix(in srgb, var(--nx-accent-success) 15%, transparent); border: 1px solid var(--nx-accent-success); margin-bottom: 10px; }
+.sec-troubleshoot-label { flex: 1; }
 </style>

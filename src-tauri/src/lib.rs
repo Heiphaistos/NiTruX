@@ -16,6 +16,7 @@ mod network;
 mod network_write;
 mod packages;
 mod portscan;
+mod security_write;
 mod sensors;
 mod smart;
 mod snapshots;
@@ -70,7 +71,10 @@ pub fn run() {
             network_write::write_hosts_file,
             network_write::set_dns_servers,
             network_write::add_firewall_rule,
-            network_write::remove_firewall_rule
+            network_write::remove_firewall_rule,
+            security_write::run_troubleshoot_action,
+            security_write::create_snapshot,
+            security_write::quarantine_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
