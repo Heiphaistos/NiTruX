@@ -63,7 +63,9 @@ pub fn run() {
             docker::get_docker_snapshot,
             firewall::get_firewall_status,
             malwarescan::scan_for_malware,
-            snapshots::list_snapshots
+            snapshots::list_snapshots,
+            packages::install::install_package,
+            packages::install::upgrade_all_packages
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
