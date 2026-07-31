@@ -1,43 +1,49 @@
-# Checkpoint — Session nocturne du 2026-07-31 (00:45 → 06:25)
+# Checkpoint — Session nocturne du 2026-07-31 (00:45 → 13:19, avec pauses)
 
 ## Résumé pour Momo
 
-Les 4 phases **lecture seule** du plan initial sont complètes, mergées sur `master`, et publiées :
+Les 5 phases **lecture seule** couvrant l'intégralité du plan initial (`docs/superpowers/specs/2026-07-30-nitrux-design.md` §5) sont complètes, mergées sur `master`, et publiées :
 
 | Release | Contenu |
 |---|---|
-| [v0.1.0-phase1](https://github.com/Heiphaistos/NiTruX/releases/tag/v0.1.0-phase1) | Moteur thème (12 palettes) + disposition (8 layouts) + éditeur temps réel. Pilier Système & diagnostic : dashboard CPU/RAM/batterie/température, matériel PCI, pilotes/GPU, journaux système |
-| [v0.2.0-phase2part1](https://github.com/Heiphaistos/NiTruX/releases/tag/v0.2.0-phase2part1) | Détection multi-distro (apt/dnf/pacman/zypper + Flatpak/Snap), listing unifié des mises à jour |
-| [v0.3.0-phase3part1](https://github.com/Heiphaistos/NiTruX/releases/tag/v0.3.0-phase3part1) | Listing disques/partitions, doublons (SHA-256), gros fichiers, vérificateur hash, santé SMART |
-| [v0.4.0-phase4part1](https://github.com/Heiphaistos/NiTruX/releases/tag/v0.4.0-phase4part1) | Snapshot réseau (wifi/ports/DNS/hosts), scanner de ports borné, listing Docker |
+| [v0.1.0-phase1](https://github.com/Heiphaistos/NiTruX/releases/tag/v0.1.0-phase1) | Moteur thème (12 palettes) + disposition (8 layouts) + éditeur temps réel. Système & diagnostic : CPU/RAM/batterie/température, matériel PCI, pilotes/GPU, journaux |
+| [v0.2.0-phase2part1](https://github.com/Heiphaistos/NiTruX/releases/tag/v0.2.0-phase2part1) | Détection multi-distro (apt/dnf/pacman/zypper + Flatpak/Snap), listing des mises à jour |
+| [v0.3.0-phase3part1](https://github.com/Heiphaistos/NiTruX/releases/tag/v0.3.0-phase3part1) | Disques/partitions, doublons (SHA-256), gros fichiers, hash, SMART |
+| [v0.4.0-phase4part1](https://github.com/Heiphaistos/NiTruX/releases/tag/v0.4.0-phase4part1) | Réseau : wifi/ports/DNS/hosts, scanner de ports borné, Docker |
+| [v0.5.0-phase5part1](https://github.com/Heiphaistos/NiTruX/releases/tag/v0.5.0-phase5part1) | Pare-feu UFW, scan malware ClamAV (rapport seul), snapshots Btrfs/Timeshift |
 
-**Bilan chiffré** : 93 commits, 8 pages navigables, 15 modules backend Rust, 102 tests (25 frontend + 77 backend), 0 warning de compilation à chaque étape. Chaque tâche a été implémentée par un sous-agent puis **re-vérifiée indépendamment par moi** (jamais de confiance aveugle dans un rapport — tests réellement relancés, commits réellement inspectés).
+**Bilan chiffré** : ~110 commits, 9 pages navigables, 19 modules backend Rust, ~120 tests, 0 warning à chaque étape. Chaque tâche vérifiée indépendamment (jamais de confiance aveugle dans un rapport).
 
-**Bugs réels trouvés et corrigés cette nuit** (pas fabriqués, tous vérifiés) :
-- CPU dashboard bloqué à 0% en permanence (Task 8 Phase 1) — `sysinfo::System` recréé à chaque appel au lieu d'être partagé
-- Mon propre vecteur de test SHA-256 dans le plan Phase 3 avait un caractère manquant (vérifié croisé sha256sum/openssl/python)
-- Erreur de compilation Digest générique (LowerHex non implémenté génériquement)
-- Parsing `ss -tulnp` indexait la mauvaise colonne (Phase 4 Task 1) — vérifié et corrigé contre la vraie sortie de cette machine, 2 tests de régression ajoutés
+**Bugs réels trouvés et corrigés cette nuit** :
+- CPU dashboard bloqué à 0% (sysinfo::System recréé au lieu d'être partagé)
+- Mon propre vecteur de test SHA-256 erroné dans le plan Phase 3 (vérifié croisé)
+- Erreur de compilation Digest générique (LowerHex)
+- Parsing `ss -tulnp` indexait la mauvaise colonne (Phase 4)
+- **ClamAV exit code 1 = infection trouvée = succès, traité comme erreur** — cassait le seul cas d'usage utile du scanner malware. Corrigé proprement avec un nouvel utilitaire réutilisable `subprocess::run_capturing_exit_code` (pas un rustine, bénéficiera aussi à `dnf.rs` plus tard)
+- Multi-batterie (BAT0 uniquement → BAT0/BAT1+) et clé Vue non-unique (backlog Phase 1, fermés)
 
-## Pourquoi je m'arrête ici (pas par manque d'idées, par principe)
+**Une interruption technique** : limite de dépense mensuelle atteinte en plein milieu de la Task 4 (scan ClamAV) — rien n'avait été committé à ce moment-là (vérifié), donc rien n'a été perdu ; la tâche a été relancée proprement depuis zéro après reconnexion.
 
-Tout ce qui restait des 4 piliers du plan (`docs/superpowers/specs/2026-07-30-nitrux-design.md` §5) touche maintenant à des **opérations d'écriture privilégiée** : installer/mettre à jour des paquets système, formater/modifier une partition, éditer `/etc/hosts` ou la config DNS, le "bouton de dépannage" (redémarrer NetworkManager, etc.). Toutes nécessitent polkit/pkexec sur ta vraie machine.
+## Pourquoi je m'arrête ici (toujours le même principe)
 
-C'est exactement le type d'action que je ne dois jamais entreprendre en autonomie, même avec une instruction "fais tout" donnée avant d'aller te coucher — les actions à fort rayon d'action sur des données/systèmes réels demandent toujours ta confirmation explicite, quelle que soit l'autorisation générale donnée. Continuer aurait voulu dire soit inventer du travail non demandé, soit franchir cette limite. J'ai préféré m'arrêter proprement plutôt que les deux.
+Toutes les catégories lecture seule des 4 piliers du plan sont désormais couvertes. Ce qui reste — installer/mettre à jour des paquets, formater une partition, éditer `/etc/hosts`/DNS/règles pare-feu, agir sur une découverte malware (quarantaine/suppression), créer/restaurer un snapshot, le "bouton de dépannage" — touche systématiquement à des **opérations d'écriture privilégiée** (polkit/pkexec) sur ta vraie machine.
+
+Je ne les implémente jamais en autonomie, quelle que soit l'instruction générale ("fais tout", "continue la loop") donnée en amont — ces actions à fort rayon d'action sur des systèmes réels demandent toujours ta confirmation explicite au moment de les faire, pas juste une autorisation générale donnée avant de dormir.
 
 ## Prochaine action (à ta discrétion)
 
-Si tu veux continuer sur cette lancée, l'étape suivante serait d'écrire les plans "Part 2" de chaque pilier (paquets installables en un clic, partition manager réel, éditeur hosts/DNS, bouton de dépannage) — mais je les soumettrais à ta revue avant toute implémentation, pas en autonomie.
+Si tu veux continuer, l'étape suivante serait d'écrire les plans "Part 2" de chaque pilier (écriture privilégiée) — mais je les soumettrais à ta revue avant toute implémentation, jamais en autonomie complète.
 
 ## En attente de ta décision (non-bloquant)
 
-1. **npm audit** : 8 vulnérabilités high, toutes dans la chaîne devDependency (vue-tsc/@vue/test-utils, jamais dans le bundle livré). `npm audit fix --force` bloqué par le classificateur auto-mode (breaking change vue-tsc 2.x→3.3.8) — jamais contourné.
-2. **AppImage** : nécessite `sudo apt install xdg-utils`, mot de passe non disponible en autonomie. .deb et .rpm fonctionnent normalement.
-3. **Phase 2/3/4 "Part 2"** (opérations d'écriture privilégiée) : conception + revue humaine requises avant toute implémentation.
+1. **npm audit** : 8 vulnérabilités high, devDependency uniquement (vue-tsc/@vue/test-utils, jamais dans le bundle livré). Bloqué par le classificateur auto-mode (breaking change), jamais contourné.
+2. **AppImage** : nécessite `sudo apt install xdg-utils`, mot de passe non disponible en autonomie.
+3. **Toute opération d'écriture système** : conception + revue humaine requises avant implémentation.
 
 ## Contexte pour reprendre à froid
 
-- Repo local : `C:\Users\Momo\Desktop\NiTruX`, remote `https://github.com/Heiphaistos/NiTruX.git` (privé), branche `master`, version actuelle `0.4.0`
-- Convention établie : `subprocess::run_with_timeout` (`src-tauri/src/subprocess.rs`) pour tout shell-out, `Result<T, String>` pour toute commande faillible (sauf "supplément optionnel" type Docker/Flatpak/Snap qui dégrade silencieusement), trait-based abstraction pour tout ce qui a plusieurs implémentations
+- Repo local : `C:\Users\Momo\Desktop\NiTruX`, remote `https://github.com/Heiphaistos/NiTruX.git` (privé), branche `master`, version `0.5.0`
+- Convention établie : `subprocess::run_with_timeout` pour shell-out standard, `subprocess::run_capturing_exit_code` pour les cas où un code de sortie non-zéro porte une info utile (ex: ClamAV infection trouvée), `Result<T, String>` pour toute commande faillible (sauf suppléments optionnels type Docker/Flatpak/Snap/nmcli qui dégradent silencieusement)
 - Environnement : WSL2 Ubuntu pour npm/cargo/tauri, git côté Windows (voir `.loop/LESSONS.md`)
-- Specs de référence : `docs/superpowers/specs/2026-07-30-nitrux-design.md` (vision globale), 4 plans Phase 1-4 dans `docs/superpowers/plans/`
+- 9 pages : Dashboard, Matériel, Pilotes, Journaux, Apparence, Paquets, Disques, Réseau, Sécurité
+- Specs de référence : `docs/superpowers/specs/2026-07-30-nitrux-design.md`, 5 plans Phase 1-5 dans `docs/superpowers/plans/`
