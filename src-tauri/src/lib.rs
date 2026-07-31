@@ -17,6 +17,7 @@ mod packages;
 mod portscan;
 mod sensors;
 mod smart;
+mod snapshots;
 mod subprocess;
 mod system;
 
@@ -61,7 +62,8 @@ pub fn run() {
             portscan::scan_ports_cmd,
             docker::get_docker_snapshot,
             firewall::get_firewall_status,
-            malwarescan::scan_for_malware
+            malwarescan::scan_for_malware,
+            snapshots::list_snapshots
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
