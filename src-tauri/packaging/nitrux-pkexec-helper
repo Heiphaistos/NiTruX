@@ -1,0 +1,58 @@
+#!/bin/sh
+set -eu
+
+# Usage:
+#   nitrux-pkexec-helper install-package <manager> <package>
+#   nitrux-pkexec-helper upgrade-all
+
+die() {
+  echo "nitrux-pkexec-helper: $1" >&2
+  exit 1
+}
+
+validate_package_name() {
+  case "$1" in
+    '') die "empty package name" ;;
+    *[!a-zA-Z0-9.+:_-]*) die "package name contains disallowed characters: $1" ;;
+  esac
+}
+
+validate_manager() {
+  case "$1" in
+    apt|dnf|pacman|zypper) : ;;
+    *) die "unknown package manager: $1" ;;
+  esac
+}
+
+cmd="${1:-}"
+
+case "$cmd" in
+  install-package)
+    manager="${2:-}"
+    package="${3:-}"
+    validate_manager "$manager"
+    validate_package_name "$package"
+    case "$manager" in
+      apt) exec apt-get install -y --no-install-recommends "$package" ;;
+      dnf) exec dnf install -y "$package" ;;
+      pacman) exec pacman -S --noconfirm "$package" ;;
+      zypper) exec zypper --non-interactive install "$package" ;;
+    esac
+    ;;
+  upgrade-all)
+    if [ -x /usr/bin/apt-get ]; then
+      exec apt-get upgrade -y
+    elif [ -x /usr/bin/dnf ]; then
+      exec dnf upgrade -y
+    elif [ -x /usr/bin/pacman ]; then
+      exec pacman -Syu --noconfirm
+    elif [ -x /usr/bin/zypper ]; then
+      exec zypper --non-interactive update
+    else
+      die "no supported package manager found"
+    fi
+    ;;
+  *)
+    die "unknown subcommand: $cmd"
+    ;;
+esac
