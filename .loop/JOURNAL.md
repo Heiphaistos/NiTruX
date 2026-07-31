@@ -17,3 +17,4 @@
 [2026-07-31T02:39:00+02:00] P2-T1 (PackageManager trait + stubs) → commit f0671e4, re-vérifié indépendamment (27/1ignored/0fail, 0 warning). Implémenteur a trouvé et corrigé une vraie erreur dans mon propre plan (dead_code warnings mal anticipés) → Task 1 COMPLETE
 [2026-07-31T02:47:00+02:00] P2-T2 (Apt réel) → commit 510ce67, re-vérifié indépendamment (30/1ignored/0fail, 0 warning). Vérifié contre vrai apt WSL2 (17 paquets réels, cas multi-repo découvert et géré correctement) → Task 2 COMPLETE
 [2026-07-31T02:50:00+02:00] P2-T3 (Dnf) → commit b6fae23, re-vérifié indépendamment (33/1ignored/0fail, 0 warning). Pas de dnf en WSL2, seule la logique de parsing testée (attendu, cohérent avec Task 11 Phase 1) → Task 3 COMPLETE
+[2026-07-31T02:53:00+02:00] P2-T4 (Pacman) → commit da37aca, re-vérifié indépendamment (36/1ignored/0fail, 0 warning) → Task 4 COMPLETE
