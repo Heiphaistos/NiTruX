@@ -6,15 +6,18 @@ mod disks;
 mod docker;
 mod drivers;
 mod duplicates;
+mod firewall;
 mod hardware;
 mod hashcheck;
 mod largefiles;
 mod logs;
+mod malwarescan;
 mod network;
 mod packages;
 mod portscan;
 mod sensors;
 mod smart;
+mod snapshots;
 mod subprocess;
 mod system;
 
@@ -57,7 +60,10 @@ pub fn run() {
             smart::get_smart_status,
             network::get_network_snapshot,
             portscan::scan_ports_cmd,
-            docker::get_docker_snapshot
+            docker::get_docker_snapshot,
+            firewall::get_firewall_status,
+            malwarescan::scan_for_malware,
+            snapshots::list_snapshots
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
