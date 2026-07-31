@@ -1,28 +1,12 @@
 use serde::Serialize;
 
-// NOTE (temporary, remove once Task 6 lands): nothing in the app's reachable
-// call graph invokes this module yet — the aggregating `list_updates` Tauri
-// command that wires `detect_package_managers()` into `generate_handler!` is
-// Task 6's job, not Task 1's. Until then, rustc's dead_code analysis (which
-// starts from actual roots like `#[tauri::command]` handlers, not from
-// "is this called by other unused code") correctly, if unhelpfully, flags
-// every item below as unused even though `detect_package_managers()`
-// genuinely references all four managers and every item is covered by
-// tests. These `allow`s suppress that expected noise without hiding real
-// dead code — mod tests below still exercises everything for real.
-#[allow(dead_code)]
 pub mod apt;
-#[allow(dead_code)]
 pub mod dnf;
-#[allow(dead_code)]
 pub mod pacman;
-#[allow(dead_code)]
 pub mod universal;
-#[allow(dead_code)]
 pub mod zypper;
 
 #[derive(Serialize, Clone)]
-#[allow(dead_code)]
 pub struct PackageUpdate {
     pub name: String,
     pub current_version: String,
@@ -33,7 +17,6 @@ pub struct PackageUpdate {
     pub source: String,
 }
 
-#[allow(dead_code)]
 pub trait PackageManager {
     fn id(&self) -> &'static str;
     fn list_upgradable(&self) -> Result<Vec<PackageUpdate>, String>;
@@ -41,7 +24,6 @@ pub trait PackageManager {
 
 /// True if `binary` is found on PATH (via `which`), false otherwise —
 /// including if `which` itself is missing, which just means "not found".
-#[allow(dead_code)]
 pub fn binary_exists(binary: &str) -> bool {
     std::process::Command::new("which")
         .arg(binary)
@@ -55,7 +37,6 @@ pub fn binary_exists(binary: &str) -> bool {
 /// Detects which native package managers are present on this host by binary
 /// presence. Multiple can be detected simultaneously (e.g. a distro that
 /// ships both for historical reasons) — every detected one is queried.
-#[allow(dead_code)]
 pub fn detect_package_managers() -> Vec<Box<dyn PackageManager>> {
     let mut managers: Vec<Box<dyn PackageManager>> = Vec::new();
     if binary_exists("apt") {
