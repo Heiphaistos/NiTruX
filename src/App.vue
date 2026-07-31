@@ -10,6 +10,7 @@ import ThemeEditorPage from "@/pages/ThemeEditorPage.vue";
 import PackagesPage from "@/pages/PackagesPage.vue";
 import DisksPage from "@/pages/DisksPage.vue";
 import NetworkPage from "@/pages/NetworkPage.vue";
+import SecurityPage from "@/pages/SecurityPage.vue";
 
 const themeStore = useThemeStore();
 onMounted(() => themeStore.setTheme(themeStore.active));
@@ -22,7 +23,8 @@ type PageId =
   | "theme-editor"
   | "packages"
   | "disks"
-  | "network";
+  | "network"
+  | "security";
 const currentPage = ref<PageId>("dashboard");
 const pages: Record<PageId, Component> = {
   dashboard: DashboardPage,
@@ -33,6 +35,7 @@ const pages: Record<PageId, Component> = {
   packages: PackagesPage,
   disks: DisksPage,
   network: NetworkPage,
+  security: SecurityPage,
 };
 </script>
 
@@ -87,6 +90,12 @@ const pages: Record<PageId, Component> = {
           @click="currentPage = 'network'"
         >
           Réseau
+        </button>
+        <button
+          :class="{ active: currentPage === 'security' }"
+          @click="currentPage = 'security'"
+        >
+          Sécurité
         </button>
       </nav>
     </template>
