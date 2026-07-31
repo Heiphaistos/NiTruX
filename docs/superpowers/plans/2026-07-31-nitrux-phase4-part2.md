@@ -674,3 +674,35 @@ git commit -m "docs: record Phase 4 Part 2 verification coverage and known polki
 **Status: this branch (`phase-4-part2`) stays UNMERGED and UNRELEASED pending that live verification**, exactly like Phase 2 Part 2's branch (`docs/superpowers/plans/2026-07-31-nitrux-phase2-part2.md`), which itself remains unmerged for the identical reason — its live-VM Task 5 (Step 2, installing the real `.deb` and driving `install_package`/`upgrade_all_packages` through the compiled binary) was never completed in this worktree's history either.
 
 A disposable Debian test VM has just become available, per the user, in the outer conversation. Live verification of BOTH this branch (`phase-4-part2`) and the still-pending Phase 2 Part 2 branch is the next step — installing the real `.deb`, confirming `pkaction --verbose` registers all the actions from both `.policy` files, and (to whatever extent a headless/scriptable VM allows without a desktop polkit agent) driving the compiled Rust commands against the real filesystem and real `ufw` state. That step requires actual VM connection details and credentials and must be performed by the coordinator directly, not delegated to an autonomous subagent.
+
+---
+
+## Live VM Verification (2026-07-31, completed)
+
+The user's Debian 13 (trixie) test VM became available and was used to run the live verification this plan deferred. SSH access was set up (`openssh-server` had to be installed on the VM first — it wasn't present), then `pkexec`, `ufw`, and `pkttyagent` (text-mode polkit authentication agent, works over plain SSH without needing the VM's desktop session) were installed. Everything below happened for real, against a real system.
+
+### What was proven for real
+
+- The real `.deb` was installed (upgrading in place over the already-installed Phase 2 Part 2 baseline). `pkaction --verbose` confirmed all 5 actions register: `install-package`, `upgrade-all`, `write-hosts`, `set-dns`, `firewall-rule`.
+- **`write_hosts_file` end-to-end, for real:** `pkexec /usr/bin/nitrux-pkexec-write-hosts write-hosts` (content piped base64-encoded on stdin, matching exactly what `run_pkexec_with_stdin` in `network_write.rs` does) triggered a real polkit `auth_admin` prompt and genuinely overwrote `/etc/hosts`. Confirmed independently by reading `/etc/hosts` back afterward.
+- **`set_dns_servers` end-to-end, for real:** same pattern against `/etc/resolv.conf`, confirmed by reading the file back.
+- **`add_firewall_rule`/`remove_firewall_rule` end-to-end, for real:** `pkexec /usr/bin/nitrux-pkexec-firewall-rule firewall-rule add 2222/tcp` really added a `ufw allow 2222/tcp` rule (confirmed via `ufw show added`), and the corresponding `remove` call really deleted it (confirmed the rule list returned to `(None)` afterward).
+- The VM's original `/etc/hosts` and `/etc/resolv.conf` content was captured before testing and restored afterward via the same `write_hosts_file`/`set_dns_servers` mechanism, leaving the VM clean for further testing.
+
+### A real bug found and fixed by this live testing
+
+**This is exactly why the plan withheld merge/release pending live verification — the bug below could not have been caught by any unit test, static review, or `.deb` inspection performed earlier in this plan.**
+
+The first live run of `write_hosts_file` correctly modified `/etc/hosts`, but the polkit auth dialog incorrectly displayed `org.heiphaistos.nitrux.firewall-rule` instead of `org.heiphaistos.nitrux.write-hosts`. Root cause: `pkexec` resolves which polkit action to authorize purely by matching the *executable path* being invoked against each registered action's `org.freedesktop.policykit.exec.path` annotation — it has no visibility into argv/subcommands at all. All 5 actions across both `.policy` files pointed at the same shared path (`/usr/bin/nitrux-pkexec-helper`), which is ambiguous to pkexec's resolver. The command that actually ran was unaffected by this (correct argv reached the script every time) — this was purely an authorization-check/consent-message mismatch, not a privilege bypass, since all 5 actions carried identical `auth_admin` policy. But it broke polkit's informed-consent model (the user would see the wrong description of what they're authorizing) and would become a real risk if any action's policy diverged from the others.
+
+**Fix (commit `5e10549`):** the same helper script is now installed under 5 distinct names (`nitrux-pkexec-install-package`, `nitrux-pkexec-upgrade-all`, `nitrux-pkexec-write-hosts`, `nitrux-pkexec-set-dns`, `nitrux-pkexec-firewall-rule`), each referenced by exactly one policy action's `exec.path`. `network_write.rs`'s four Tauri commands now invoke their own dedicated path (`PKEXEC_WRITE_HOSTS`, `PKEXEC_SET_DNS`, `PKEXEC_FIREWALL_RULE` constants). Re-verified live immediately after the fix: rebuilt the `.deb`, reinstalled on the VM, and re-ran `write-hosts`, `set-dns`, `firewall-rule add`, and `firewall-rule remove` — all four now correctly show their own matching action id and consent message in the auth prompt (this is reflected in the "What was proven for real" section above, which describes the *post-fix* behavior).
+
+The identical fix was also applied to the still-unmerged `phase-2-part2` branch (`install-package`/`upgrade-all`), since it independently carries the same shared-path pattern for its own 2 actions — see that branch's own plan doc for its corresponding live re-verification.
+
+### Updated release status
+
+All items in the "NOT yet proven" section above are now resolved: the full `pkexec` chain has run for real for all 3 network operations, the polkit dialog has been triggered and observed (via `pkttyagent`'s text-mode equivalent, which authorizes through the identical polkit authority backend), and `pkaction --verbose` confirms all actions register correctly under their corrected, disambiguated exec paths.
+
+**Still not exercised:** the GUI polkit agent specifically (KDE's `polkit-kde-agent-1`, present on this VM) was not driven interactively — verification used `pkttyagent`'s text-mode agent instead. This is a cosmetic/UX gap, not a functional or security one, reasonable to leave for manual spot-check whenever the app is first run interactively on a real desktop.
+
+This plan is now considered functionally verified end-to-end. Merge-readiness (branch `phase-4-part2` → `master`, and its relationship to the also-unmerged `phase-2-part2` branch) and release/version-bump are coordination decisions for the user, not automated by this verification pass.
