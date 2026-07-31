@@ -1,0 +1,5 @@
+# Force LF line endings for Linux polkit packaging assets, regardless of the
+# platform's core.autocrlf setting. These files are bundled verbatim into the
+# .deb/.rpm packages and executed on Linux at package-install/runtime; a CRLF
+# shebang (`#!/bin/sh\r`) breaks execution with "bad interpreter" errors.
+src-tauri/packaging/* text eol=lf
