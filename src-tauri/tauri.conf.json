@@ -40,13 +40,15 @@
       "deb": {
         "files": {
           "/usr/share/polkit-1/actions/org.heiphaistos.nitrux.packages.policy": "packaging/org.heiphaistos.nitrux.packages.policy",
-          "/usr/bin/nitrux-pkexec-helper": "packaging/nitrux-pkexec-helper"
+          "/usr/bin/nitrux-pkexec-install-package": "packaging/nitrux-pkexec-helper",
+          "/usr/bin/nitrux-pkexec-upgrade-all": "packaging/nitrux-pkexec-helper"
         }
       },
       "rpm": {
         "files": {
           "/usr/share/polkit-1/actions/org.heiphaistos.nitrux.packages.policy": "packaging/org.heiphaistos.nitrux.packages.policy",
-          "/usr/bin/nitrux-pkexec-helper": "packaging/nitrux-pkexec-helper"
+          "/usr/bin/nitrux-pkexec-install-package": "packaging/nitrux-pkexec-helper",
+          "/usr/bin/nitrux-pkexec-upgrade-all": "packaging/nitrux-pkexec-helper"
         }
       }
     }

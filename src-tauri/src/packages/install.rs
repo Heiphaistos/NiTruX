@@ -26,13 +26,22 @@ pub fn validate_manager_id(manager: &str) -> Result<(), String> {
 /// 5-minute timeout is deliberately generous — a real package install can
 /// pull dependencies over the network, unlike every read-only command in
 /// this codebase (5-20s).
+///
+/// Invokes the dedicated `nitrux-pkexec-install-package` path rather than
+/// a path shared with other actions: pkexec resolves which polkit action
+/// to authorize purely by matching the executable path against each
+/// action's exec.path annotation, with no visibility into argv. A shared
+/// path across multiple actions is ambiguous to it — confirmed live on a
+/// real polkit stack, where pkexec authorized under the wrong action when
+/// two actions shared one path. Each action gets its own on-disk copy of
+/// the same script under its own name to remove the ambiguity.
 #[tauri::command]
 pub fn install_package(manager: String, package: String) -> Result<String, String> {
     validate_manager_id(&manager)?;
     validate_package_name(&package)?;
     subprocess::run_with_timeout(
         "pkexec",
-        &["/usr/bin/nitrux-pkexec-helper", "install-package", &manager, &package],
+        &["/usr/bin/nitrux-pkexec-install-package", "install-package", &manager, &package],
         Duration::from_secs(300),
     )
 }
@@ -40,11 +49,13 @@ pub fn install_package(manager: String, package: String) -> Result<String, Strin
 /// Upgrades every detected package source. Same generous timeout
 /// rationale as `install_package`, extended further since a full system
 /// upgrade can be substantially slower than a single package install.
+/// See `install_package`'s doc comment for why this uses its own
+/// dedicated `nitrux-pkexec-upgrade-all` exec path.
 #[tauri::command]
 pub fn upgrade_all_packages() -> Result<String, String> {
     subprocess::run_with_timeout(
         "pkexec",
-        &["/usr/bin/nitrux-pkexec-helper", "upgrade-all"],
+        &["/usr/bin/nitrux-pkexec-upgrade-all", "upgrade-all"],
         Duration::from_secs(1800),
     )
 }
