@@ -104,6 +104,22 @@ validate_quarantine_path() {
 # WHOLE DISK. Formatting a whole disk (e.g. /dev/sda) destroys the
 # partition table, not just one filesystem's data -- almost never what is
 # intended, and far more destructive than formatting one partition.
+#
+# NOTE on the case pattern below: `[0-9]*` matches one digit followed by
+# ANY trailing characters -- it is NOT anchored to the end of the string,
+# so e.g. "/dev/sda1;rm -rf /" technically matches this case arm (verified
+# empirically). This is safe in practice ONLY because of two other layers,
+# not because the pattern itself is a strict allowlist:
+#   1. The `-b` check below requires a REAL, EXISTING block device node at
+#      that exact literal path. An attacker cannot make one exist at an
+#      arbitrary path of their choosing without already having the root
+#      privileges this script exists to gate.
+#   2. Every call site below passes $device through `exec cmd "$device"`
+#      with quoted argv -- never through a shell (`sh -c`, `eval`, etc.) --
+#      so even a real device node with shell metacharacters in its path
+#      could never have those characters reinterpreted as shell syntax.
+# Do not remove or weaken either of those two layers on the assumption
+# that this case pattern alone is sufficient input validation.
 validate_partition_device() {
   case "$1" in
     /dev/sd[a-z][0-9]*|/dev/vd[a-z][0-9]*|/dev/nvme[0-9]*n[0-9]*p[0-9]*|/dev/mmcblk[0-9]*p[0-9]*) : ;;
