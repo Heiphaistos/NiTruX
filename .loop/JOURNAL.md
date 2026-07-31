@@ -18,3 +18,4 @@
 [2026-07-31T02:47:00+02:00] P2-T2 (Apt réel) → commit 510ce67, re-vérifié indépendamment (30/1ignored/0fail, 0 warning). Vérifié contre vrai apt WSL2 (17 paquets réels, cas multi-repo découvert et géré correctement) → Task 2 COMPLETE
 [2026-07-31T02:50:00+02:00] P2-T3 (Dnf) → commit b6fae23, re-vérifié indépendamment (33/1ignored/0fail, 0 warning). Pas de dnf en WSL2, seule la logique de parsing testée (attendu, cohérent avec Task 11 Phase 1) → Task 3 COMPLETE
 [2026-07-31T02:53:00+02:00] P2-T4 (Pacman) → commit da37aca, re-vérifié indépendamment (36/1ignored/0fail, 0 warning) → Task 4 COMPLETE
+[2026-07-31T03:01:00+02:00] P2-T5 (Zypper + Flatpak/Snap) → commit 96d6085, re-vérifié indépendamment (43/1ignored/0fail comme prévu par le plan, 0 warning). Snap réellement présent en WSL2, vérifié end-to-end (0 entrée retournée, message "up to date" va sur stderr donc pas de faux positif) → Task 5 COMPLETE. Les 4 gestionnaires natifs + Flatpak/Snap tous implémentés.
