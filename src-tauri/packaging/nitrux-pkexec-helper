@@ -9,17 +9,19 @@
 # Rust-side validation happens too, but this script NEVER trusts that and
 # re-validates everything itself.
 #
-# This same script is installed under 5 distinct names (one per polkit
+# This same script is installed under 8 distinct names (one per polkit
 # action): nitrux-pkexec-install-package, nitrux-pkexec-upgrade-all,
 # nitrux-pkexec-write-hosts, nitrux-pkexec-set-dns,
-# nitrux-pkexec-firewall-rule. pkexec resolves which action to authorize
-# by matching the *executable path* against each action's exec.path
-# annotation -- it cannot see argv, so a single shared path across
-# multiple actions is ambiguous to it (confirmed live: pkexec authorized
-# under the wrong action when actions shared one path). Giving each
-# action its own on-disk copy under its own name removes the ambiguity.
-# The dispatch logic below is unchanged -- it still reads the subcommand
-# from argv[1], regardless of which name it was invoked under.
+# nitrux-pkexec-firewall-rule, nitrux-pkexec-troubleshoot,
+# nitrux-pkexec-create-snapshot, nitrux-pkexec-quarantine-file. pkexec
+# resolves which action to authorize by matching the *executable path*
+# against each action's exec.path annotation -- it cannot see argv, so a
+# single shared path across multiple actions is ambiguous to it (confirmed
+# live: pkexec authorized under the wrong action when actions shared one
+# path). Giving each action its own on-disk copy under its own name
+# removes the ambiguity. The dispatch logic below is unchanged -- it still
+# reads the subcommand from argv[1], regardless of which name it was
+# invoked under.
 #
 # Usage:
 #   nitrux-pkexec-install-package install-package <manager> <package>
@@ -27,6 +29,9 @@
 #   nitrux-pkexec-write-hosts write-hosts               (base64 content on stdin)
 #   nitrux-pkexec-set-dns set-dns                       (base64 content on stdin)
 #   nitrux-pkexec-firewall-rule firewall-rule <add|remove> <port/proto>
+#   nitrux-pkexec-troubleshoot troubleshoot <clean-cache|fix-broken|restart-network|vacuum-logs>
+#   nitrux-pkexec-create-snapshot create-snapshot
+#   nitrux-pkexec-quarantine-file quarantine-file <absolute-path>
 set -eu
 
 die() {
@@ -62,6 +67,30 @@ validate_port_proto() {
   case "$1" in
     [0-9]*/tcp|[0-9]*/udp) : ;;
     *) die "invalid port/protocol format (expected e.g. 22/tcp): $1" ;;
+  esac
+}
+
+validate_troubleshoot_action() {
+  case "$1" in
+    clean-cache|fix-broken|restart-network|vacuum-logs) : ;;
+    *) die "unknown troubleshoot action: $1" ;;
+  esac
+}
+
+# Quarantine only ever accepts an ABSOLUTE path with no ".." traversal
+# component and no shell metacharacters -- this runs as root and moves
+# whatever it's given, so the validation here is the only thing standing
+# between a caller and moving an arbitrary root-owned file.
+validate_quarantine_path() {
+  case "$1" in
+    '') die "empty quarantine path" ;;
+    /*) : ;;
+    *) die "quarantine path must be absolute: $1" ;;
+  esac
+  case "$1" in
+    *..*) die "quarantine path must not contain '..': $1" ;;
+    *'*'*|*'?'*|*'$'*|*'`'*|*';'*|*'|'*|*'&'*|*'<'*|*'>'*|*'\n'*)
+      die "quarantine path contains disallowed characters: $1" ;;
   esac
 }
 
@@ -131,6 +160,50 @@ case "$cmd" in
       remove) exec ufw delete allow "$portproto" ;;
       *)      die "unknown firewall action: $action (expected add or remove)" ;;
     esac
+    ;;
+  troubleshoot)
+    action="${2:-}"
+    validate_troubleshoot_action "$action"
+    case "$action" in
+      clean-cache)
+        if command -v apt-get >/dev/null 2>&1; then apt-get clean; fi
+        if command -v dnf >/dev/null 2>&1; then dnf clean all; fi
+        if command -v pacman >/dev/null 2>&1; then pacman -Scc --noconfirm; fi
+        if command -v zypper >/dev/null 2>&1; then zypper clean --all; fi
+        ;;
+      fix-broken)
+        if command -v apt-get >/dev/null 2>&1; then
+          dpkg --configure -a
+          apt-get install -f -y
+        elif command -v zypper >/dev/null 2>&1; then
+          zypper verify -y
+        else
+          echo "no repair step defined for the detected package manager on this system" >&2
+        fi
+        ;;
+      restart-network)
+        exec systemctl restart NetworkManager
+        ;;
+      vacuum-logs)
+        exec journalctl --vacuum-time=7d
+        ;;
+    esac
+    ;;
+  create-snapshot)
+    exec timeshift --create --comments "NiTruX manual snapshot"
+    ;;
+  quarantine-file)
+    path="${2:-}"
+    validate_quarantine_path "$path"
+    if [ ! -e "$path" ]; then
+      die "quarantine target does not exist: $path"
+    fi
+    mkdir -p /var/lib/nitrux/quarantine
+    chmod 700 /var/lib/nitrux/quarantine
+    dest="/var/lib/nitrux/quarantine/$(date +%s)-$(basename "$path")"
+    mv "$path" "$dest"
+    chmod 000 "$dest"
+    echo "quarantined: $dest"
     ;;
   *)
     die "unknown subcommand: $cmd"
