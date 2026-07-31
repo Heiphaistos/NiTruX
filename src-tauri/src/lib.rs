@@ -11,6 +11,7 @@ mod largefiles;
 mod logs;
 mod packages;
 mod sensors;
+mod smart;
 mod subprocess;
 mod system;
 
@@ -49,7 +50,8 @@ pub fn run() {
             duplicates::find_duplicate_files,
             largefiles::find_large_files_cmd,
             hashcheck::compute_file_hash,
-            hashcheck::verify_file_hash
+            hashcheck::verify_file_hash,
+            smart::get_smart_status
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
