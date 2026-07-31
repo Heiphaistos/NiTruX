@@ -13,7 +13,7 @@
       <allow_inactive>auth_admin</allow_inactive>
       <allow_active>auth_admin</allow_active>
     </defaults>
-    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/nitrux-pkexec-helper</annotate>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/nitrux-pkexec-write-hosts</annotate>
   </action>
 
   <action id="org.heiphaistos.nitrux.set-dns">
@@ -24,7 +24,7 @@
       <allow_inactive>auth_admin</allow_inactive>
       <allow_active>auth_admin</allow_active>
     </defaults>
-    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/nitrux-pkexec-helper</annotate>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/nitrux-pkexec-set-dns</annotate>
   </action>
 
   <action id="org.heiphaistos.nitrux.firewall-rule">
@@ -35,6 +35,6 @@
       <allow_inactive>auth_admin</allow_inactive>
       <allow_active>auth_admin</allow_active>
     </defaults>
-    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/nitrux-pkexec-helper</annotate>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/nitrux-pkexec-firewall-rule</annotate>
   </action>
 </policyconfig>

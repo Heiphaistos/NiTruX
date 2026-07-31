@@ -10,7 +10,18 @@ use std::time::Duration;
 
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 
-const PKEXEC_HELPER: &str = "/usr/bin/nitrux-pkexec-helper";
+// Each polkit action gets its own dedicated exec path (not a shared one).
+// pkexec resolves which action to authorize purely by matching the
+// executable path against each action's `exec.path` annotation — it has
+// no visibility into argv/subcommands. If multiple actions shared one
+// path, pkexec could resolve to the WRONG action (confirmed on a live
+// polkit stack: it silently authorized under a different action than the
+// one actually invoked). Each path below is a separate on-disk copy of
+// the same `nitrux-pkexec-helper` script content, installed under a
+// distinct name so polkit can tell them apart.
+const PKEXEC_WRITE_HOSTS: &str = "/usr/bin/nitrux-pkexec-write-hosts";
+const PKEXEC_SET_DNS: &str = "/usr/bin/nitrux-pkexec-set-dns";
+const PKEXEC_FIREWALL_RULE: &str = "/usr/bin/nitrux-pkexec-firewall-rule";
 const WRITE_TIMEOUT: Duration = Duration::from_secs(15);
 
 /// A `/etc/hosts` file with no content, or one missing a `localhost`
@@ -76,11 +87,11 @@ fn validate_port_proto(value: &str) -> Result<(), String> {
 /// `pkexec`'s own prompt/exec behavior returning in bounded time. Unifying
 /// this with the argv-only timeout helper in `subprocess.rs` is a
 /// reasonable future improvement, not something this task builds.
-fn run_pkexec_with_stdin(subcommand: &str, content: &str, _timeout: Duration) -> Result<String, String> {
+fn run_pkexec_with_stdin(helper_path: &str, subcommand: &str, content: &str, _timeout: Duration) -> Result<String, String> {
     let encoded = STANDARD.encode(content.as_bytes());
 
     let mut child = Command::new("pkexec")
-        .args([PKEXEC_HELPER, subcommand])
+        .args([helper_path, subcommand])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -117,14 +128,14 @@ fn run_pkexec_with_stdin(subcommand: &str, content: &str, _timeout: Duration) ->
 #[tauri::command]
 pub fn write_hosts_file(content: String) -> Result<(), String> {
     validate_hosts_content(&content)?;
-    run_pkexec_with_stdin("write-hosts", &content, WRITE_TIMEOUT)?;
+    run_pkexec_with_stdin(PKEXEC_WRITE_HOSTS, "write-hosts", &content, WRITE_TIMEOUT)?;
     Ok(())
 }
 
 #[tauri::command]
 pub fn set_dns_servers(content: String) -> Result<(), String> {
     validate_dns_content(&content)?;
-    run_pkexec_with_stdin("set-dns", &content, WRITE_TIMEOUT)?;
+    run_pkexec_with_stdin(PKEXEC_SET_DNS, "set-dns", &content, WRITE_TIMEOUT)?;
     Ok(())
 }
 
@@ -133,7 +144,7 @@ pub fn add_firewall_rule(port_proto: String) -> Result<String, String> {
     validate_port_proto(&port_proto)?;
     crate::subprocess::run_with_timeout(
         "pkexec",
-        &[PKEXEC_HELPER, "firewall-rule", "add", &port_proto],
+        &[PKEXEC_FIREWALL_RULE, "firewall-rule", "add", &port_proto],
         Duration::from_secs(15),
     )
 }
@@ -143,7 +154,7 @@ pub fn remove_firewall_rule(port_proto: String) -> Result<String, String> {
     validate_port_proto(&port_proto)?;
     crate::subprocess::run_with_timeout(
         "pkexec",
-        &[PKEXEC_HELPER, "firewall-rule", "remove", &port_proto],
+        &[PKEXEC_FIREWALL_RULE, "firewall-rule", "remove", &port_proto],
         Duration::from_secs(15),
     )
 }
