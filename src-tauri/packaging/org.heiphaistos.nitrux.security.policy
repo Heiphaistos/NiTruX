@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>NiTruX</vendor>
+  <vendor_url>https://github.com/Heiphaistos/NiTruX</vendor_url>
+
+  <action id="org.heiphaistos.nitrux.troubleshoot">
+    <description>Exécuter une action de dépannage système</description>
+    <message>NiTruX veut exécuter une action de dépannage système</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/nitrux-pkexec-troubleshoot</annotate>
+  </action>
+
+  <action id="org.heiphaistos.nitrux.create-snapshot">
+    <description>Créer un instantané système</description>
+    <message>NiTruX veut créer un instantané système</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/nitrux-pkexec-create-snapshot</annotate>
+  </action>
+
+  <action id="org.heiphaistos.nitrux.quarantine-file">
+    <description>Mettre un fichier en quarantaine</description>
+    <message>NiTruX veut mettre un fichier détecté en quarantaine</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/nitrux-pkexec-quarantine-file</annotate>
+  </action>
+</policyconfig>
