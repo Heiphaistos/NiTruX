@@ -2,11 +2,16 @@ use std::sync::Mutex;
 
 use sysinfo::System;
 
+mod disks;
 mod drivers;
+mod duplicates;
 mod hardware;
+mod hashcheck;
+mod largefiles;
 mod logs;
 mod packages;
 mod sensors;
+mod smart;
 mod subprocess;
 mod system;
 
@@ -39,7 +44,14 @@ pub fn run() {
             hardware::get_pci_devices,
             drivers::get_driver_snapshot,
             logs::get_recent_logs,
-            list_updates
+            list_updates,
+            disks::list_disks,
+            disks::list_disk_usage,
+            duplicates::find_duplicate_files,
+            largefiles::find_large_files_cmd,
+            hashcheck::compute_file_hash,
+            hashcheck::verify_file_hash,
+            smart::get_smart_status
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

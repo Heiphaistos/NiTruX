@@ -8,6 +8,7 @@ import DriversPage from "@/pages/DriversPage.vue";
 import LogsPage from "@/pages/LogsPage.vue";
 import ThemeEditorPage from "@/pages/ThemeEditorPage.vue";
 import PackagesPage from "@/pages/PackagesPage.vue";
+import DisksPage from "@/pages/DisksPage.vue";
 
 const themeStore = useThemeStore();
 onMounted(() => themeStore.setTheme(themeStore.active));
@@ -18,7 +19,8 @@ type PageId =
   | "drivers"
   | "logs"
   | "theme-editor"
-  | "packages";
+  | "packages"
+  | "disks";
 const currentPage = ref<PageId>("dashboard");
 const pages: Record<PageId, Component> = {
   dashboard: DashboardPage,
@@ -27,6 +29,7 @@ const pages: Record<PageId, Component> = {
   logs: LogsPage,
   "theme-editor": ThemeEditorPage,
   packages: PackagesPage,
+  disks: DisksPage,
 };
 </script>
 
@@ -69,6 +72,12 @@ const pages: Record<PageId, Component> = {
           @click="currentPage = 'packages'"
         >
           Paquets
+        </button>
+        <button
+          :class="{ active: currentPage === 'disks' }"
+          @click="currentPage = 'disks'"
+        >
+          Disques
         </button>
       </nav>
     </template>
