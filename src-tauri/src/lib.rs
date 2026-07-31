@@ -11,6 +11,7 @@ mod largefiles;
 mod logs;
 mod network;
 mod packages;
+mod portscan;
 mod sensors;
 mod smart;
 mod subprocess;
@@ -53,7 +54,8 @@ pub fn run() {
             hashcheck::compute_file_hash,
             hashcheck::verify_file_hash,
             smart::get_smart_status,
-            network::get_network_snapshot
+            network::get_network_snapshot,
+            portscan::scan_ports_cmd
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
