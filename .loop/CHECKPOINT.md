@@ -1,49 +1,24 @@
-# Checkpoint — Session nocturne du 2026-07-31 (00:45 → 13:19, avec pauses)
+# Checkpoint — Redesign (R1–R5), session démarrée 2026-08-01
 
-## Résumé pour Momo
+## État antérieur (terminé, référence uniquement)
 
-Les 5 phases **lecture seule** couvrant l'intégralité du plan initial (`docs/superpowers/specs/2026-07-30-nitrux-design.md` §5) sont complètes, mergées sur `master`, et publiées :
+Les 4 piliers originaux (lecture + écriture privilégiée, Phases 1 à 5 Part 2) sont **complets, mergés, publiés jusqu'à v0.8.0** (voir git log/releases GitHub). Toutes les opérations pkexec ont été vérifiées en live sur VM Debian jetable. Ce travail n'est PAS remis en cause par la refonte — voir spec §7 "Out of scope" : aucune modification des commandes backend déjà livrées, seulement réutilisation.
 
-| Release | Contenu |
-|---|---|
-| [v0.1.0-phase1](https://github.com/Heiphaistos/NiTruX/releases/tag/v0.1.0-phase1) | Moteur thème (12 palettes) + disposition (8 layouts) + éditeur temps réel. Système & diagnostic : CPU/RAM/batterie/température, matériel PCI, pilotes/GPU, journaux |
-| [v0.2.0-phase2part1](https://github.com/Heiphaistos/NiTruX/releases/tag/v0.2.0-phase2part1) | Détection multi-distro (apt/dnf/pacman/zypper + Flatpak/Snap), listing des mises à jour |
-| [v0.3.0-phase3part1](https://github.com/Heiphaistos/NiTruX/releases/tag/v0.3.0-phase3part1) | Disques/partitions, doublons (SHA-256), gros fichiers, hash, SMART |
-| [v0.4.0-phase4part1](https://github.com/Heiphaistos/NiTruX/releases/tag/v0.4.0-phase4part1) | Réseau : wifi/ports/DNS/hosts, scanner de ports borné, Docker |
-| [v0.5.0-phase5part1](https://github.com/Heiphaistos/NiTruX/releases/tag/v0.5.0-phase5part1) | Pare-feu UFW, scan malware ClamAV (rapport seul), snapshots Btrfs/Timeshift |
+## Nouveau travail en cours
 
-**Bilan chiffré** : ~110 commits, 9 pages navigables, 19 modules backend Rust, ~120 tests, 0 warning à chaque étape. Chaque tâche vérifiée indépendamment (jamais de confiance aveugle dans un rapport).
+Spec écrite et committée : `docs/superpowers/specs/2026-08-01-nitrux-redesign-design.md` (commit `69b2bf2`). Utilisateur a validé la structure de nav (9 catégories), le système visuel 3 axes (12 palettes × 8 dispositions × 12 styles), et les 4 nouvelles fonctionnalités via le compagnon visuel, puis a dit "oui fait tout je vais me coucher" — autorisation complète, pas d'attente de revue supplémentaire de la spec.
 
-**Bugs réels trouvés et corrigés cette nuit** :
-- CPU dashboard bloqué à 0% (sysinfo::System recréé au lieu d'être partagé)
-- Mon propre vecteur de test SHA-256 erroné dans le plan Phase 3 (vérifié croisé)
-- Erreur de compilation Digest générique (LowerHex)
-- Parsing `ss -tulnp` indexait la mauvaise colonne (Phase 4)
-- **ClamAV exit code 1 = infection trouvée = succès, traité comme erreur** — cassait le seul cas d'usage utile du scanner malware. Corrigé proprement avec un nouvel utilitaire réutilisable `subprocess::run_capturing_exit_code` (pas un rustine, bénéficiera aussi à `dnf.rs` plus tard)
-- Multi-batterie (BAT0 uniquement → BAT0/BAT1+) et clé Vue non-unique (backlog Phase 1, fermés)
+**Dernière action avant écriture de ce checkpoint** : spec committée, fichiers `.loop/` réinitialisés pour ce nouveau travail. Étape suivante : invoquer `writing-plans` pour Phase R1 (Foundation), puis exécuter en `subagent-driven-development`.
 
-**Une interruption technique** : limite de dépense mensuelle atteinte en plein milieu de la Task 4 (scan ClamAV) — rien n'avait été committé à ce moment-là (vérifié), donc rien n'a été perdu ; la tâche a été relancée proprement depuis zéro après reconnexion.
+## Prochaine action
 
-## Pourquoi je m'arrête ici (toujours le même principe)
-
-Toutes les catégories lecture seule des 4 piliers du plan sont désormais couvertes. Ce qui reste — installer/mettre à jour des paquets, formater une partition, éditer `/etc/hosts`/DNS/règles pare-feu, agir sur une découverte malware (quarantaine/suppression), créer/restaurer un snapshot, le "bouton de dépannage" — touche systématiquement à des **opérations d'écriture privilégiée** (polkit/pkexec) sur ta vraie machine.
-
-Je ne les implémente jamais en autonomie, quelle que soit l'instruction générale ("fais tout", "continue la loop") donnée en amont — ces actions à fort rayon d'action sur des systèmes réels demandent toujours ta confirmation explicite au moment de les faire, pas juste une autorisation générale donnée avant de dormir.
-
-## Prochaine action (à ta discrétion)
-
-Si tu veux continuer, l'étape suivante serait d'écrire les plans "Part 2" de chaque pilier (écriture privilégiée) — mais je les soumettrais à ta revue avant toute implémentation, jamais en autonomie complète.
-
-## En attente de ta décision (non-bloquant)
-
-1. **npm audit** : 8 vulnérabilités high, devDependency uniquement (vue-tsc/@vue/test-utils, jamais dans le bundle livré). Bloqué par le classificateur auto-mode (breaking change), jamais contourné.
-2. **AppImage** : nécessite `sudo apt install xdg-utils`, mot de passe non disponible en autonomie.
-3. **Toute opération d'écriture système** : conception + revue humaine requises avant implémentation.
+Écrire `docs/superpowers/plans/2026-08-01-nitrux-r1-foundation.md` (skill writing-plans), puis worktree `phase-r1-foundation`, puis dispatch tâche par tâche.
 
 ## Contexte pour reprendre à froid
 
-- Repo local : `C:\Users\Momo\Desktop\NiTruX`, remote `https://github.com/Heiphaistos/NiTruX.git` (privé), branche `master`, version `0.5.0`
-- Convention établie : `subprocess::run_with_timeout` pour shell-out standard, `subprocess::run_capturing_exit_code` pour les cas où un code de sortie non-zéro porte une info utile (ex: ClamAV infection trouvée), `Result<T, String>` pour toute commande faillible (sauf suppléments optionnels type Docker/Flatpak/Snap/nmcli qui dégradent silencieusement)
-- Environnement : WSL2 Ubuntu pour npm/cargo/tauri, git côté Windows (voir `.loop/LESSONS.md`)
-- 9 pages : Dashboard, Matériel, Pilotes, Journaux, Apparence, Paquets, Disques, Réseau, Sécurité
-- Specs de référence : `docs/superpowers/specs/2026-07-30-nitrux-design.md`, 5 plans Phase 1-5 dans `docs/superpowers/plans/`
+- Repo local : `C:\Users\Momo\Desktop\NiTruX`, remote `https://github.com/Heiphaistos/NiTruX.git`, branche `master`, version `0.8.0`
+- App.vue actuel : liste plate de 9 boutons, `Record<PageId,Component>` — c'est exactement ce qui doit disparaître en R1/R2
+- LayoutShell.vue : slot-based, les 8 layouts ne changent PAS — juste ce qui est injecté dans le slot `#nav`/défaut change
+- themeStore/layoutStore : pattern existant à reproduire pour le nouveau 3ème axe "style"
+- Playwright headless bloqué (libnspr4 manquant, sudo interactif indisponible) — vérification visuelle par lecture de code/tests, pas par screenshot, jusqu'à ce que l'utilisateur installe les libs manquantes lui-même
+- Référence Windows : `C:\Users\Momo\Desktop\Nitrite 2.0\src\` (navigation.ts, AppSidebar.vue, MasterInstallPage.vue, StatsReportsPage.vue, DriversPage.vue, UpdatesPage.vue) — consulter pour inspiration de contenu/structure, jamais copier le code React/autre framework tel quel (NiTriTe est en Vue aussi en fait — vérifier le framework exact si besoin de réutiliser des patterns)

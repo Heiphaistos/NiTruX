@@ -1,37 +1,35 @@
-# But
+# Goal: NiTruX Redesign (R1–R5)
 
-Faire progresser NiTruX (port Linux de NiTriTe, Tauri v2+Rust+Vue3) le plus loin possible de façon autonome pendant que Momo dort :
-1. Terminer Phase 1 (Fondations) déjà en plan : `docs/superpowers/plans/2026-07-30-nitrux-phase1.md`, Tasks 8→13 restantes.
-2. Merger `phase-1-fondations` sur `master` une fois Phase 1 vérifiée complète.
-3. Créer le repo GitHub privé (`Heiphaistos/NiTruX` ou nom équivalent, suivre convention portefeuille) et pousser `master`.
-4. Enchaîner Phase 2 (Paquets & applications), Phase 3 (Disques & stockage), Phase 4 (Réseau/sécurité/maintenance) — voir `docs/superpowers/specs/2026-07-30-nitrux-design.md` §5 pour le détail fonctionnel de chaque pilier.
-5. Corriger tout bug réel trouvé en cours de route (jamais fabriqué — seulement des bugs reproduits et vérifiés).
-6. Dès qu'un état buildable/stable est atteint (au minimum après Phase 1 mergée), builder et publier une release GitHub avec les 3 formats de paquet Linux (.deb, .rpm, AppImage — via le bundler Tauri, voir spec §2 "Packaging cible"). Republier une release à chaque phase complétée.
+(Previous goal — Phase 1-4/original 4 pillars — is complete: shipped through v0.8.0, all merged/released. This file now tracks the NEW redesign effort.)
 
-## Critère de fin (vérifiable)
+Implement the full redesign per `docs/superpowers/specs/2026-08-01-nitrux-redesign-design.md`, authorized end-to-end by the user ("fait tout je vais me coucher" — full autonomy, no further check-ins required until done or genuinely blocked).
 
-Pas de "fin" unique — c'est une boucle de progression continue. S'arrêter et rapporter quand :
-- Phase 4 est complète et vérifiée (tous les piliers du plan implémentés, testés, mergés, poussés, release publiée), OU
-- `max_iterations` atteint, OU
-- `stop_si_pas_de_progres` déclenché (aucun progrès mesurable sur N itérations consécutives).
+## Verifiable completion criteria (per phase, all must hold before merging that phase)
+- `cargo test` (src-tauri) — full suite green, 0 new warnings
+- `npm run test -- --run` — full suite green
+- `npx vue-tsc --noEmit` — clean
+- Independent re-verification of each subagent's work (read the actual diff, don't just trust the report) — same discipline as Phases 2–5 Part 2 tonight
+- Phase committed, merged to master, version bumped, tests re-run on master post-merge
 
-Chaque itération doit produire un résultat vérifiable (tests passants, build réussi, commit réel) — jamais une simple déclaration de progrès.
+## Scope (5 phases, see spec §8)
+- R1 — Foundation: categories.ts, AppNav.vue, 3rd visual-style axis (12 styles), NxCard/NxButton/NxInput/NxStatTile/NxBadge/NxSectionHeader component library, ThemeEditorPage extended to 3 pickers
+- R2 — Restructure existing pages onto new nav + shared primitives (Disks split, Security split, Network, Hardware→Diagnostic, Packages, Logs, ThemeEditor moves)
+- R3 — Applications > Installation rapide (curated app catalog, apt-only installable in v1)
+- R4 — Maintenance > Mises à jour + Pilotes enrichment
+- R5 — Rapports > Générateur de rapport (HTML/MD/TXT/JSON)
 
-## Hors-scope
-
-- Pas de suppression de code existant hors dead-code évident.
-- Pas d'action destructive/irréversible sur données réelles (aucune donnée réelle en jeu ici, projet neuf).
-- Pas de changement de stack (Tauri v2+Rust+Vue3 reste la stack, voir CLAUDE.md §2).
-- Live USB/ISO builder, GRUB avancé, extensions DE spécifiques — explicitement "Hors scope v1" dans la spec design, ne pas les implémenter même si le temps le permet.
-- Ne jamais committer secrets/logs/artefacts de build (`.gitignore` déjà en place, le respecter).
+## Explicit out of scope (do NOT do these without stopping to ask)
+- Flatpak/Snap install (new privileged surface, deferred per spec §7)
+- Any change to already-shipped/VM-verified pkexec commands from Phases 2–5 Part 2 (reuse only, don't modify)
+- Driver install/update actions (display-only enrichment)
+- vue-router
 
 ## Bornes
 
-max_iterations: 60
-stop_si_pas_de_progres: 5
+max_iterations: none imposé (session continue jusqu'à R5 fini ou blocage réel)
+stop_si_pas_de_progres: 3 tâches consécutives sans progrès mesurable
 
-## Méthode par tâche
-
-- Tâches Phase 1 restantes (8-13) : continuer `subagent-driven-development` déjà en cours (implémenteur + revue spec + revue qualité, cycle complet par tâche) — c'est le pattern déjà validé sur les tâches 1-7.
-- Phase 2-4 : plan absent (pas encore écrit en détail tâche par tâche comme Phase 1). Avant de coder, écrire un plan d'implémentation par pilier (skill `writing-plans`, même format que `2026-07-30-nitrux-phase1.md`) puis exécuter en `subagent-driven-development`. Ne pas coder à l'aveugle sans plan écrit — même en autonomie, TDD + plan restent la discipline.
-- Toujours vérifier réellement (tests, cargo check, npm run test, build) avant de marquer une tâche terminée dans CHECKPOINT.md.
+## Method
+- Same subagent-driven-development pattern validated across Phases 1-5 Part 2 tonight: writing-plans per phase → dispatch implementer subagent per task → independent re-verification by coordinator (never trust the subagent report alone) → commit → next task.
+- No privileged/destructive live-VM testing needed for R1–R5 — frontend/presentation-layer redesign, backend commands reused as-is.
+- Real verification only: tests + vue-tsc + reading the actual diff before marking any task done in CHECKPOINT.md.
