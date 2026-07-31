@@ -17,10 +17,85 @@ const activeTab = ref<Tab>("overview");
 const snapshot = ref<NetworkSnapshot | null>(null);
 const docker = ref<DockerSnapshot | null>(null);
 
+const hostsEditable = ref("");
+const hostsSaving = ref(false);
+const hostsSaveError = ref<string | null>(null);
+const hostsSaveSuccess = ref(false);
+
+const dnsEditable = ref("");
+const dnsSaving = ref(false);
+const dnsSaveError = ref<string | null>(null);
+const dnsSaveSuccess = ref(false);
+
+const firewallPortProto = ref("");
+const firewallResult = ref<string | null>(null);
+const firewallError = ref<string | null>(null);
+const firewallBusy = ref(false);
+
 onMounted(async () => {
   snapshot.value = await invoke<NetworkSnapshot>("get_network_snapshot");
   docker.value = await invoke<DockerSnapshot>("get_docker_snapshot");
+  if (snapshot.value) {
+    hostsEditable.value = snapshot.value.hosts_file;
+    dnsEditable.value = snapshot.value.dns_servers.join("\n");
+  }
 });
+
+async function saveHosts() {
+  hostsSaving.value = true;
+  hostsSaveError.value = null;
+  hostsSaveSuccess.value = false;
+  try {
+    await invoke("write_hosts_file", { content: hostsEditable.value });
+    hostsSaveSuccess.value = true;
+    snapshot.value = await invoke<NetworkSnapshot>("get_network_snapshot");
+  } catch (e) {
+    hostsSaveError.value = String(e);
+  } finally {
+    hostsSaving.value = false;
+  }
+}
+
+async function saveDns() {
+  dnsSaving.value = true;
+  dnsSaveError.value = null;
+  dnsSaveSuccess.value = false;
+  try {
+    await invoke("set_dns_servers", { content: dnsEditable.value });
+    dnsSaveSuccess.value = true;
+    snapshot.value = await invoke<NetworkSnapshot>("get_network_snapshot");
+  } catch (e) {
+    dnsSaveError.value = String(e);
+  } finally {
+    dnsSaving.value = false;
+  }
+}
+
+async function addFirewallRule() {
+  firewallBusy.value = true;
+  firewallError.value = null;
+  firewallResult.value = null;
+  try {
+    firewallResult.value = await invoke<string>("add_firewall_rule", { portProto: firewallPortProto.value });
+  } catch (e) {
+    firewallError.value = String(e);
+  } finally {
+    firewallBusy.value = false;
+  }
+}
+
+async function removeFirewallRule() {
+  firewallBusy.value = true;
+  firewallError.value = null;
+  firewallResult.value = null;
+  try {
+    firewallResult.value = await invoke<string>("remove_firewall_rule", { portProto: firewallPortProto.value });
+  } catch (e) {
+    firewallError.value = String(e);
+  } finally {
+    firewallBusy.value = false;
+  }
+}
 
 const scanHost = ref("127.0.0.1");
 const scanPortsInput = ref("22,80,443,3000,8080");
@@ -73,6 +148,31 @@ async function runScan() {
 
       <h2>/etc/hosts</h2>
       <pre class="net-hosts">{{ snapshot.hosts_file }}</pre>
+
+      <h2>Modifier /etc/hosts</h2>
+      <textarea v-model="hostsEditable" class="net-textarea" rows="8"></textarea>
+      <div class="net-form-row">
+        <button :disabled="hostsSaving" @click="saveHosts">{{ hostsSaving ? "Enregistrement..." : "Enregistrer" }}</button>
+      </div>
+      <div v-if="hostsSaveError" class="net-error">{{ hostsSaveError }}</div>
+      <div v-if="hostsSaveSuccess" class="net-success">Fichier hosts mis à jour.</div>
+
+      <h2>Modifier les serveurs DNS</h2>
+      <textarea v-model="dnsEditable" class="net-textarea" rows="4" placeholder="nameserver 1.1.1.1"></textarea>
+      <div class="net-form-row">
+        <button :disabled="dnsSaving" @click="saveDns">{{ dnsSaving ? "Enregistrement..." : "Enregistrer" }}</button>
+      </div>
+      <div v-if="dnsSaveError" class="net-error">{{ dnsSaveError }}</div>
+      <div v-if="dnsSaveSuccess" class="net-success">Configuration DNS mise à jour.</div>
+
+      <h2>Règle de pare-feu</h2>
+      <div class="net-form-row">
+        <input v-model="firewallPortProto" class="net-input" placeholder="ex: 8080/tcp" />
+        <button :disabled="firewallBusy" @click="addFirewallRule">Autoriser</button>
+        <button :disabled="firewallBusy" @click="removeFirewallRule">Supprimer</button>
+      </div>
+      <div v-if="firewallError" class="net-error">{{ firewallError }}</div>
+      <div v-if="firewallResult" class="net-success">Règle appliquée.</div>
     </section>
 
     <section v-else-if="activeTab === 'portscan'" class="net-panel">
@@ -114,6 +214,8 @@ async function runScan() {
 .net-panel h2 { font-size: 14px; margin: 16px 0 6px; color: var(--nx-text-secondary); }
 .net-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; border-bottom: 1px solid var(--nx-border); }
 .net-hosts { background: var(--nx-bg-elevated); border: 1px solid var(--nx-border); border-radius: 8px; padding: 12px; font-size: 12px; overflow: auto; max-height: 200px; }
+.net-textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--nx-border); background: var(--nx-bg-elevated); color: var(--nx-text-primary); font-family: monospace; font-size: 12px; margin-bottom: 8px; }
+.net-success { margin-top: 10px; padding: 10px 14px; border-radius: 8px; background: color-mix(in srgb, var(--nx-accent-success) 15%, transparent); border: 1px solid var(--nx-accent-success); }
 .net-form-row { display: flex; gap: 10px; align-items: center; }
 .net-input { flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--nx-border); background: var(--nx-bg-elevated); color: var(--nx-text-primary); }
 .net-error { margin-top: 10px; padding: 10px 14px; border-radius: 8px; background: color-mix(in srgb, var(--nx-accent-danger) 15%, transparent); border: 1px solid var(--nx-accent-danger); }

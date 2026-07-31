@@ -13,6 +13,7 @@ mod largefiles;
 mod logs;
 mod malwarescan;
 mod network;
+mod network_write;
 mod packages;
 mod portscan;
 mod sensors;
@@ -65,7 +66,11 @@ pub fn run() {
             malwarescan::scan_for_malware,
             snapshots::list_snapshots,
             packages::install::install_package,
-            packages::install::upgrade_all_packages
+            packages::install::upgrade_all_packages,
+            network_write::write_hosts_file,
+            network_write::set_dns_servers,
+            network_write::add_firewall_rule,
+            network_write::remove_firewall_rule
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
