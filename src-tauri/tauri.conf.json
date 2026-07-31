@@ -49,7 +49,11 @@
           "/usr/share/polkit-1/actions/org.heiphaistos.nitrux.security.policy": "packaging/org.heiphaistos.nitrux.security.policy",
           "/usr/bin/nitrux-pkexec-troubleshoot": "packaging/nitrux-pkexec-helper",
           "/usr/bin/nitrux-pkexec-create-snapshot": "packaging/nitrux-pkexec-helper",
-          "/usr/bin/nitrux-pkexec-quarantine-file": "packaging/nitrux-pkexec-helper"
+          "/usr/bin/nitrux-pkexec-quarantine-file": "packaging/nitrux-pkexec-helper",
+          "/usr/share/polkit-1/actions/org.heiphaistos.nitrux.disks.policy": "packaging/org.heiphaistos.nitrux.disks.policy",
+          "/usr/bin/nitrux-pkexec-format-partition": "packaging/nitrux-pkexec-helper",
+          "/usr/bin/nitrux-pkexec-extend-partition": "packaging/nitrux-pkexec-helper",
+          "/usr/bin/nitrux-pkexec-clone-disk": "packaging/nitrux-pkexec-helper"
         }
       },
       "rpm": {
@@ -64,7 +68,11 @@
           "/usr/share/polkit-1/actions/org.heiphaistos.nitrux.security.policy": "packaging/org.heiphaistos.nitrux.security.policy",
           "/usr/bin/nitrux-pkexec-troubleshoot": "packaging/nitrux-pkexec-helper",
           "/usr/bin/nitrux-pkexec-create-snapshot": "packaging/nitrux-pkexec-helper",
-          "/usr/bin/nitrux-pkexec-quarantine-file": "packaging/nitrux-pkexec-helper"
+          "/usr/bin/nitrux-pkexec-quarantine-file": "packaging/nitrux-pkexec-helper",
+          "/usr/share/polkit-1/actions/org.heiphaistos.nitrux.disks.policy": "packaging/org.heiphaistos.nitrux.disks.policy",
+          "/usr/bin/nitrux-pkexec-format-partition": "packaging/nitrux-pkexec-helper",
+          "/usr/bin/nitrux-pkexec-extend-partition": "packaging/nitrux-pkexec-helper",
+          "/usr/bin/nitrux-pkexec-clone-disk": "packaging/nitrux-pkexec-helper"
         }
       }
     }
