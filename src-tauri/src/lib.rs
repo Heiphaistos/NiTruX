@@ -11,6 +11,7 @@ mod hardware;
 mod hashcheck;
 mod largefiles;
 mod logs;
+mod malwarescan;
 mod network;
 mod packages;
 mod portscan;
@@ -59,7 +60,8 @@ pub fn run() {
             network::get_network_snapshot,
             portscan::scan_ports_cmd,
             docker::get_docker_snapshot,
-            firewall::get_firewall_status
+            firewall::get_firewall_status,
+            malwarescan::scan_for_malware
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
