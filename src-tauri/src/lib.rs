@@ -4,6 +4,7 @@ use sysinfo::System;
 
 mod disks;
 mod drivers;
+mod duplicates;
 mod hardware;
 mod logs;
 mod packages;
@@ -42,7 +43,8 @@ pub fn run() {
             logs::get_recent_logs,
             list_updates,
             disks::list_disks,
-            disks::list_disk_usage
+            disks::list_disk_usage,
+            duplicates::find_duplicate_files
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
