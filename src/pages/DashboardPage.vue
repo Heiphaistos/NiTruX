@@ -83,7 +83,7 @@ function bytesToGb(bytes: number): string {
         <div class="dash-label">Batterie</div>
         <div class="dash-value">{{ sensors!.battery_percent }}%{{ sensors!.battery_charging ? " ⚡" : "" }}</div>
       </div>
-      <div class="dash-card" v-for="t in sensors?.temperatures ?? []" :key="t.label">
+      <div class="dash-card" v-for="(t, i) in sensors?.temperatures ?? []" :key="`${t.label}-${i}`">
         <div class="dash-label">{{ t.label }}</div>
         <div class="dash-value">{{ t.celsius.toFixed(0) }}°C</div>
       </div>
