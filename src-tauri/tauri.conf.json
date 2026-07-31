@@ -45,7 +45,11 @@
           "/usr/bin/nitrux-pkexec-upgrade-all": "packaging/nitrux-pkexec-helper",
           "/usr/bin/nitrux-pkexec-write-hosts": "packaging/nitrux-pkexec-helper",
           "/usr/bin/nitrux-pkexec-set-dns": "packaging/nitrux-pkexec-helper",
-          "/usr/bin/nitrux-pkexec-firewall-rule": "packaging/nitrux-pkexec-helper"
+          "/usr/bin/nitrux-pkexec-firewall-rule": "packaging/nitrux-pkexec-helper",
+          "/usr/share/polkit-1/actions/org.heiphaistos.nitrux.security.policy": "packaging/org.heiphaistos.nitrux.security.policy",
+          "/usr/bin/nitrux-pkexec-troubleshoot": "packaging/nitrux-pkexec-helper",
+          "/usr/bin/nitrux-pkexec-create-snapshot": "packaging/nitrux-pkexec-helper",
+          "/usr/bin/nitrux-pkexec-quarantine-file": "packaging/nitrux-pkexec-helper"
         }
       },
       "rpm": {
@@ -56,7 +60,11 @@
           "/usr/bin/nitrux-pkexec-upgrade-all": "packaging/nitrux-pkexec-helper",
           "/usr/bin/nitrux-pkexec-write-hosts": "packaging/nitrux-pkexec-helper",
           "/usr/bin/nitrux-pkexec-set-dns": "packaging/nitrux-pkexec-helper",
-          "/usr/bin/nitrux-pkexec-firewall-rule": "packaging/nitrux-pkexec-helper"
+          "/usr/bin/nitrux-pkexec-firewall-rule": "packaging/nitrux-pkexec-helper",
+          "/usr/share/polkit-1/actions/org.heiphaistos.nitrux.security.policy": "packaging/org.heiphaistos.nitrux.security.policy",
+          "/usr/bin/nitrux-pkexec-troubleshoot": "packaging/nitrux-pkexec-helper",
+          "/usr/bin/nitrux-pkexec-create-snapshot": "packaging/nitrux-pkexec-helper",
+          "/usr/bin/nitrux-pkexec-quarantine-file": "packaging/nitrux-pkexec-helper"
         }
       }
     }
