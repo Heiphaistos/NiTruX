@@ -5,9 +5,26 @@ use sysinfo::System;
 mod drivers;
 mod hardware;
 mod logs;
+mod packages;
 mod sensors;
 mod subprocess;
 mod system;
+
+#[tauri::command]
+fn list_updates() -> Result<Vec<packages::PackageUpdate>, String> {
+    let mut all_updates = Vec::new();
+    for manager in packages::detect_package_managers() {
+        // Attribute the error to the manager that raised it (e.g. "apt:
+        // permission denied") so the frontend can surface something
+        // actionable rather than a bare, unattributed message.
+        let updates = manager
+            .list_upgradable()
+            .map_err(|e| format!("{}: {}", manager.id(), e))?;
+        all_updates.extend(updates);
+    }
+    all_updates.extend(packages::universal::list_universal_updates());
+    Ok(all_updates)
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -21,7 +38,8 @@ pub fn run() {
             sensors::get_sensor_snapshot,
             hardware::get_pci_devices,
             drivers::get_driver_snapshot,
-            logs::get_recent_logs
+            logs::get_recent_logs,
+            list_updates
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
