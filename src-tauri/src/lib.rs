@@ -6,6 +6,7 @@ mod disks;
 mod drivers;
 mod duplicates;
 mod hardware;
+mod largefiles;
 mod logs;
 mod packages;
 mod sensors;
@@ -44,7 +45,8 @@ pub fn run() {
             list_updates,
             disks::list_disks,
             disks::list_disk_usage,
-            duplicates::find_duplicate_files
+            duplicates::find_duplicate_files,
+            largefiles::find_large_files_cmd
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
