@@ -7,11 +7,18 @@ import HardwarePage from "@/pages/HardwarePage.vue";
 import DriversPage from "@/pages/DriversPage.vue";
 import LogsPage from "@/pages/LogsPage.vue";
 import ThemeEditorPage from "@/pages/ThemeEditorPage.vue";
+import PackagesPage from "@/pages/PackagesPage.vue";
 
 const themeStore = useThemeStore();
 onMounted(() => themeStore.setTheme(themeStore.active));
 
-type PageId = "dashboard" | "hardware" | "drivers" | "logs" | "theme-editor";
+type PageId =
+  | "dashboard"
+  | "hardware"
+  | "drivers"
+  | "logs"
+  | "theme-editor"
+  | "packages";
 const currentPage = ref<PageId>("dashboard");
 const pages: Record<PageId, Component> = {
   dashboard: DashboardPage,
@@ -19,6 +26,7 @@ const pages: Record<PageId, Component> = {
   drivers: DriversPage,
   logs: LogsPage,
   "theme-editor": ThemeEditorPage,
+  packages: PackagesPage,
 };
 </script>
 
@@ -55,6 +63,12 @@ const pages: Record<PageId, Component> = {
           @click="currentPage = 'theme-editor'"
         >
           Apparence
+        </button>
+        <button
+          :class="{ active: currentPage === 'packages' }"
+          @click="currentPage = 'packages'"
+        >
+          Paquets
         </button>
       </nav>
     </template>
