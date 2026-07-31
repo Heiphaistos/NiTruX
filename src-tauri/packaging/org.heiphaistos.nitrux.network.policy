@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>NiTruX</vendor>
+  <vendor_url>https://github.com/Heiphaistos/NiTruX</vendor_url>
+
+  <action id="org.heiphaistos.nitrux.write-hosts">
+    <description>Modifier le fichier /etc/hosts</description>
+    <message>NiTruX veut modifier le fichier /etc/hosts</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/nitrux-pkexec-helper</annotate>
+  </action>
+
+  <action id="org.heiphaistos.nitrux.set-dns">
+    <description>Modifier les serveurs DNS</description>
+    <message>NiTruX veut modifier la configuration DNS</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/nitrux-pkexec-helper</annotate>
+  </action>
+
+  <action id="org.heiphaistos.nitrux.firewall-rule">
+    <description>Modifier une règle de pare-feu</description>
+    <message>NiTruX veut ajouter ou supprimer une règle de pare-feu</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/nitrux-pkexec-helper</annotate>
+  </action>
+</policyconfig>

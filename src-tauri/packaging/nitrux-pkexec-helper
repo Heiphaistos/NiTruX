@@ -4,6 +4,9 @@ set -eu
 # Usage:
 #   nitrux-pkexec-helper install-package <manager> <package>
 #   nitrux-pkexec-helper upgrade-all
+#   nitrux-pkexec-helper write-hosts               (base64 content on stdin)
+#   nitrux-pkexec-helper set-dns                   (base64 content on stdin)
+#   nitrux-pkexec-helper firewall-rule <add|remove> <port/proto>
 
 die() {
   echo "nitrux-pkexec-helper: $1" >&2
@@ -21,6 +24,19 @@ validate_manager() {
   case "$1" in
     apt|dnf|pacman|zypper) : ;;
     *) die "unknown package manager: $1" ;;
+  esac
+}
+
+# DNS servers and hosts-file content arrive as base64-encoded stdin, not
+# argv, to avoid any shell-argv-length limits and to sidestep argv-based
+# injection concerns entirely for multi-line content -- the helper decodes
+# and writes verbatim, with NO shell interpretation of the decoded bytes
+# at any point (base64 decode -> direct file write, never through a shell).
+validate_port_proto() {
+  # e.g. "22/tcp", "80/tcp", "53/udp" -- matches ufw's own rule syntax.
+  case "$1" in
+    [0-9]*/tcp|[0-9]*/udp) : ;;
+    *) die "invalid port/protocol format (expected e.g. 22/tcp): $1" ;;
   esac
 }
 
@@ -51,6 +67,40 @@ case "$cmd" in
     else
       die "no supported package manager found"
     fi
+    ;;
+  write-hosts)
+    # Content arrives base64-encoded on stdin to avoid argv length limits
+    # and multi-line/quoting issues entirely. Decoded bytes are written
+    # directly to the target file -- never passed through a shell.
+    base64 -d > /etc/hosts.nitrux-tmp
+    # Sanity check: refuse to install an empty or suspiciously tiny result
+    # (a truncated/failed decode could otherwise wipe /etc/hosts to
+    # near-nothing, breaking basic name resolution like "localhost").
+    size=$(wc -c < /etc/hosts.nitrux-tmp)
+    if [ "$size" -lt 10 ]; then
+      rm -f /etc/hosts.nitrux-tmp
+      die "decoded hosts content suspiciously small ($size bytes), refusing to write"
+    fi
+    mv /etc/hosts.nitrux-tmp /etc/hosts
+    ;;
+  set-dns)
+    base64 -d > /etc/resolv.conf.nitrux-tmp
+    size=$(wc -c < /etc/resolv.conf.nitrux-tmp)
+    if [ "$size" -lt 5 ]; then
+      rm -f /etc/resolv.conf.nitrux-tmp
+      die "decoded resolv.conf content suspiciously small ($size bytes), refusing to write"
+    fi
+    mv /etc/resolv.conf.nitrux-tmp /etc/resolv.conf
+    ;;
+  firewall-rule)
+    action="${2:-}"
+    portproto="${3:-}"
+    validate_port_proto "$portproto"
+    case "$action" in
+      add)    exec ufw allow "$portproto" ;;
+      remove) exec ufw delete allow "$portproto" ;;
+      *)      die "unknown firewall action: $action (expected add or remove)" ;;
+    esac
     ;;
   *)
     die "unknown subcommand: $cmd"
