@@ -2,13 +2,16 @@
 import { ref } from "vue";
 import { useThemeStore, REQUIRED_COLOR_KEYS } from "@/stores/themeStore";
 import { useLayoutStore } from "@/stores/layoutStore";
+import { useStyleStore } from "@/stores/styleStore";
 import { builtinThemes } from "@/themes/builtin";
 import { layoutRegistry } from "@/layouts/registry";
+import { styleRegistry } from "@/styles/registry";
 import type { Theme } from "@/types/theme";
 
 const themeStore = useThemeStore();
 const layoutStore = useLayoutStore();
-const activeTab = ref<"theme" | "layout">("theme");
+const styleStore = useStyleStore();
+const activeTab = ref<"theme" | "layout" | "style">("theme");
 const themeName = ref(themeStore.active.name);
 const fileInput = ref<HTMLInputElement | null>(null);
 
@@ -61,6 +64,7 @@ function handleFileImport(event: Event) {
     <div class="te-tabs">
       <button :class="{ active: activeTab === 'theme' }" @click="activeTab = 'theme'">Thème</button>
       <button :class="{ active: activeTab === 'layout' }" @click="activeTab = 'layout'">Disposition</button>
+      <button :class="{ active: activeTab === 'style' }" @click="activeTab = 'style'">Style</button>
     </div>
 
     <section v-if="activeTab === 'theme'" class="te-panel">
@@ -92,7 +96,7 @@ function handleFileImport(event: Event) {
       </div>
     </section>
 
-    <section v-else class="te-panel">
+    <section v-else-if="activeTab === 'layout'" class="te-panel">
       <div class="te-layouts">
         <button
           v-for="layout in layoutRegistry"
@@ -103,6 +107,21 @@ function handleFileImport(event: Event) {
         >
           <strong>{{ layout.name }}</strong>
           <p>{{ layout.description }}</p>
+        </button>
+      </div>
+    </section>
+
+    <section v-else class="te-panel">
+      <div class="te-layouts">
+        <button
+          v-for="style in styleRegistry"
+          :key="style.id"
+          class="te-layout-option te-style-option"
+          :class="{ active: styleStore.current === style.id }"
+          @click="styleStore.setStyle(style.id)"
+        >
+          <strong>{{ style.name }}</strong>
+          <p>{{ style.description }}</p>
         </button>
       </div>
     </section>
