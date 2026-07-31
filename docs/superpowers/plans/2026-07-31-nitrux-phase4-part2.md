@@ -647,3 +647,30 @@ git commit -m "feat: hosts/DNS editing and firewall rule UI on NetworkPage"
 git add docs/superpowers/plans/2026-07-31-nitrux-phase4-part2.md
 git commit -m "docs: record Phase 4 Part 2 verification coverage and known polkit-GUI test gap"
 ```
+
+---
+
+## Verification State (as of completion)
+
+**Proven for real (with what evidence):**
+
+- The 8 unit tests for `validate_hosts_content`/`validate_dns_content`/`validate_port_proto` in `src-tauri/src/network_write.rs` pass: `cargo test network_write::` → `test result: ok. 8 passed; 0 failed; 0 ignored`.
+- The full Rust suite passes with no regressions: `cargo test` → `test result: ok. 103 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out` (the ignored test is the pre-existing timing-sensitive `system::tests::repeated_refresh_on_shared_system_computes_nonzero_cpu_delta`, unrelated to this plan, same as every prior phase). `src/main.rs` and doc-tests both report 0 tests, as expected.
+- The full frontend test suite passes with no regressions: `npm run test -- --run` → 6 test files, 25 tests, all passed, 0 failed. Unchanged count from before this plan, confirming no existing spec broke.
+- `npx vue-tsc --noEmit` produced no output — clean, no type errors introduced by `NetworkPage.vue`'s new editing UI.
+- A real `.deb` and `.rpm` were built (`npm run tauri build -- --bundles deb,rpm`, artifacts present at `src-tauri/target/release/bundle/deb/NiTruX_0.5.0_amd64.deb` and `.../rpm/NiTruX-0.5.0-1.x86_64.rpm`) and the `.deb` was inspected directly:
+  - `dpkg-deb -c` lists all three packaging files at their correct paths with executable permissions: `usr/bin/nitrux-pkexec-helper` (`-rwxr-xr-x`), `usr/share/polkit-1/actions/org.heiphaistos.nitrux.packages.policy`, and `usr/share/polkit-1/actions/org.heiphaistos.nitrux.network.policy`.
+  - The bundled helper script was extracted (`dpkg-deb -x` to a scratch temp dir) and its shebang byte-verified with `od -An -tx1 -N10`: `23 21 2f 62 69 6e 2f 73 68 0a` — exactly `#!/bin/sh\n`, no CR byte, confirmed on the UPDATED script (containing the new `write-hosts`/`set-dns`/`firewall-rule` branches), not assumed still-clean from Phase 2 Part 2's check of the old version. A whole-file grep for `\r` also came back clean.
+  - Both `.policy` XML files (`packages.policy` and `network.policy`) were parsed with Python's `xml.dom.minidom` from inside the extracted `.deb` and confirmed well-formed.
+  - The `.rpm` was built and its file size/presence confirmed, but its contents were not directly inspected — the `rpm` query tool is not installed in this WSL2 environment, so `rpm -qlp` could not be run. This is a narrower check than the `.deb`'s; it is not claimed as proven to the same depth.
+- The `case`-pattern injection-safety property of `validate_port_proto` in the shell wrapper (`src-tauri/packaging/nitrux-pkexec-helper`) was empirically proven, not just reasoned about, via a disposable scratch test run directly in WSL2 (a throwaway shell function reproducing the exact `case "$1" in [0-9]*/tcp|[0-9]*/udp) ... ;; *) ... ;; esac` pattern from the real script): `"22/tcp"` and `"22/udp"` matched as expected; `"22/tcp; rm -rf /"`, `` "22/tcp$(rm -rf /)" ``, `"22/tcpfoo"`, and `"abc/tcp"` all correctly fell through to `NO MATCH`. This confirms POSIX `case` patterns fully anchor the whole string (no partial/prefix match), so trailing shell metacharacters after a valid `port/proto` cannot sneak through — no bug found, no fix was needed. This matches and reinforces the Rust-side test `rejects_malformed_port_proto`, which independently asserts the same string is rejected by `validate_port_proto` in `network_write.rs`.
+
+**NOT yet proven (explicit gap):**
+
+- The live `pkexec` → polkit `auth_admin` dialog → `nitrux-pkexec-helper` → actual `/etc/hosts` write / actual `/etc/resolv.conf` write / actual `ufw allow`/`ufw delete allow` execution chain has never been run for real, anywhere. No command in this branch's entire history has touched a real `/etc/hosts`, a real `/etc/resolv.conf`, or the real `ufw` state on any machine.
+- The built `.deb`/`.rpm` have not been installed on a real system. Nothing has confirmed that the new `org.heiphaistos.nitrux.network` actions actually register with polkit (`pkaction --verbose` showing `org.heiphaistos.nitrux.write-hosts` / `.set-dns` / `.firewall-rule`), and nothing has confirmed that a real desktop polkit agent (GNOME's or KDE's) actually prompts correctly for these 3 new actions with the right message text.
+- Correspondingly, the Rust `write_hosts_file`/`set_dns_servers`/`add_firewall_rule`/`remove_firewall_rule` commands have only been exercised through their pure validation logic (`validate_hosts_content`/`validate_dns_content`/`validate_port_proto`) — the `run_pkexec_with_stdin` code path that actually spawns `pkexec` and pipes base64 to its stdin has never executed against a real `nitrux-pkexec-helper` on a real system.
+
+**Status: this branch (`phase-4-part2`) stays UNMERGED and UNRELEASED pending that live verification**, exactly like Phase 2 Part 2's branch (`docs/superpowers/plans/2026-07-31-nitrux-phase2-part2.md`), which itself remains unmerged for the identical reason — its live-VM Task 5 (Step 2, installing the real `.deb` and driving `install_package`/`upgrade_all_packages` through the compiled binary) was never completed in this worktree's history either.
+
+A disposable Debian test VM has just become available, per the user, in the outer conversation. Live verification of BOTH this branch (`phase-4-part2`) and the still-pending Phase 2 Part 2 branch is the next step — installing the real `.deb`, confirming `pkaction --verbose` registers all the actions from both `.policy` files, and (to whatever extent a headless/scriptable VM allows without a desktop polkit agent) driving the compiled Rust commands against the real filesystem and real `ufw` state. That step requires actual VM connection details and credentials and must be performed by the coordinator directly, not delegated to an autonomous subagent.
