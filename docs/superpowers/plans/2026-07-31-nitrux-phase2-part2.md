@@ -613,3 +613,33 @@ Concretely, as of the end of this task:
 - The branch should stay pushed and open until a Task 5b (or equivalent) live-verification pass happens against a real desktop-capable or SSH-`sudo`-capable Debian/Ubuntu VM, exercising the real `pkexec` chain, the real polkit action registration, and — package install and upgrade being genuinely irreversible-ish, real-system-effect operations — treated with the same "confirm before touching real data/systems" caution as any other production-adjacent action.
 
 **Next step:** wait for the user's Debian test VM to be ready, then run a Task 5b live-verification pass (VM-based `sudo`/`pkexec` exercise of the shell wrapper and the compiled Rust commands, `pkaction --verbose` confirmation, and the scratch `#[ignore]`d integration test from the plan's original Task 5 Step 2) before merging `phase-2-part2` to `master` or cutting any release.
+
+---
+
+## Task 5b — Live VM Verification (2026-07-31, completed)
+
+The user's disposable Debian 13 (trixie) test VM became available and was used to run the live verification this plan deferred. Everything below happened for real, against a real system, over SSH (`dev` user, sudo/polkit-admin group member) with a text-mode polkit agent (`pkttyagent`) providing interactive authentication — no GUI session was required, though the VM does have one available (KDE, active at seat0).
+
+### What was proven for real
+
+- The real `.deb` was installed on the VM via `apt-get install -y ./NiTruX_0.5.0_amd64.deb`, pulling in real runtime dependencies (webkit2gtk, etc.) cleanly.
+- `pkaction --verbose` confirmed both `org.heiphaistos.nitrux.install-package` and `org.heiphaistos.nitrux.upgrade-all` registered correctly with polkit, each annotated with the expected `exec.path`.
+- **`install_package` end-to-end, for real:** `pkexec /usr/bin/nitrux-pkexec-install-package install-package apt cowsay` triggered a real polkit `auth_admin` prompt, authenticated as `dev` (their own password — Debian's default polkit config maps `auth_admin` to the `sudo` group), and genuinely installed `cowsay` via `apt-get install -y --no-install-recommends cowsay`. Confirmed independently afterward: `dpkg -l cowsay` shows it installed, and running `cowsay` produces real output.
+- **Rejection path, for real:** `pkexec /usr/bin/nitrux-pkexec-install-package install-package apt 'evil;rm -rf /tmp/should-not-exist'` was correctly rejected by the helper script's own `validate_package_name` (`disallowed characters`) *after* authentication succeeded but *before* any `exec` — proving the defense-in-depth design works as intended: even an authenticated, authorized caller cannot smuggle a malicious argument past the script's own validation.
+- **`upgrade_all_packages` end-to-end, for real:** `pkexec /usr/bin/nitrux-pkexec-upgrade-all upgrade-all` triggered a real auth prompt and ran `apt-get update && apt-get upgrade -y` as root (0 packages needed upgrading — the VM was already current — but the full privileged command chain executed and exited 0).
+
+### A real bug found and fixed by this live testing
+
+**This is exactly why the plan withheld merge/release pending live verification — the bug below could not have been caught by any unit test, static review, or `.deb` inspection performed earlier in this plan.**
+
+The first live run of `install_package` showed the correct auth prompt (`org.heiphaistos.nitrux.install-package`), but the first live run of `upgrade_all_packages` incorrectly displayed `org.heiphaistos.nitrux.install-package` in the auth dialog instead of `org.heiphaistos.nitrux.upgrade-all`. Root cause: `pkexec` resolves which polkit action to authorize purely by matching the *executable path* being invoked against each registered action's `org.freedesktop.policykit.exec.path` annotation — it has no visibility into argv/subcommands at all. Both actions pointed at the same shared path (`/usr/bin/nitrux-pkexec-helper`), which is ambiguous to pkexec's resolver; it silently picked one of the two candidates. The actual command that ran (the intended one, correct argv) was unaffected — this was purely an authorization-check/consent-message mismatch, not a privilege bypass, because both actions carried identical `auth_admin` policy. But it broke polkit's informed-consent model and would become a real risk if the two actions' policies ever diverged.
+
+**Fix (commit `a0cc352`):** the same helper script is now installed under two distinct names, `/usr/bin/nitrux-pkexec-install-package` and `/usr/bin/nitrux-pkexec-upgrade-all`, each referenced by exactly one policy action's `exec.path`. `install.rs`'s two Tauri commands now invoke their own dedicated path. Re-verified live immediately after the fix: `upgrade_all_packages` now correctly shows `org.heiphaistos.nitrux.upgrade-all` in the auth prompt (confirmed above, in the "What was proven for real" section, which reflects the *post-fix* behavior).
+
+### Updated release status
+
+All items in the "What was NOT proven" section above from the earlier (pre-VM) verification pass are now resolved: the full `pkexec` chain has run for real, the polkit dialog has been triggered and observed (via `pkttyagent`'s text-mode equivalent), a real package install and a real system upgrade attempt have both occurred, and `pkaction --verbose` has confirmed both actions register correctly — now under their corrected, disambiguated exec paths.
+
+**Still not exercised:** the GUI polkit agent specifically (KDE's `polkit-kde-agent-1`) was not driven interactively — verification used `pkttyagent`'s text-mode agent instead, which authorizes through the identical polkit authority backend and therefore exercises the same authorization logic, but does not prove the GUI dialog itself renders correctly. This is a cosmetic/UX gap, not a functional or security one, and is reasonable to leave for manual spot-check whenever the app is first run interactively on a real desktop.
+
+This plan is now considered functionally verified end-to-end. Merge-readiness (branch `phase-2-part2` → `master`) and release/version-bump are coordination decisions for the user, not automated by this verification pass.
