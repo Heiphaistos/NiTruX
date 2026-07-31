@@ -1,0 +1,74 @@
+#!/bin/sh
+# src-tauri/packaging/nitrux-pkexec-helper
+#
+# The ONLY program pkexec is ever invoked against for NiTruX's package
+# write operations (see org.heiphaistos.nitrux.packages.policy). This
+# script is installed setuid-safe via pkexec (runs as root once polkit
+# authorizes it) and is the last line of defense against malformed or
+# malicious arguments — Rust-side validation happens too, but this script
+# NEVER trusts that and re-validates everything itself.
+#
+# Usage:
+#   nitrux-pkexec-helper install-package <manager> <package>
+#   nitrux-pkexec-helper upgrade-all
+set -eu
+
+die() {
+  echo "nitrux-pkexec-helper: $1" >&2
+  exit 1
+}
+
+# Package names: conservative allowlist covering every real package name
+# character used by apt/dnf/pacman/zypper (alphanumeric, dot, dash, plus,
+# colon for epoch/arch qualifiers like "pkg:amd64"). Rejects anything with
+# shell metacharacters, spaces, or path separators outright.
+validate_package_name() {
+  case "$1" in
+    '') die "empty package name" ;;
+    *[!a-zA-Z0-9.+:_-]*) die "package name contains disallowed characters: $1" ;;
+  esac
+}
+
+validate_manager() {
+  case "$1" in
+    apt|dnf|pacman|zypper) : ;;
+    *) die "unknown package manager: $1" ;;
+  esac
+}
+
+cmd="${1:-}"
+case "$cmd" in
+  install-package)
+    manager="${2:-}"
+    package="${3:-}"
+    validate_manager "$manager"
+    validate_package_name "$package"
+    case "$manager" in
+      apt)    exec apt-get install -y --no-install-recommends "$package" ;;
+      dnf)    exec dnf install -y "$package" ;;
+      pacman) exec pacman -S --noconfirm "$package" ;;
+      zypper) exec zypper --non-interactive install "$package" ;;
+    esac
+    ;;
+  upgrade-all)
+    # Runs whichever managers are actually present; a manager not
+    # installed on this host is silently skipped, not an error — same
+    # philosophy as packages::detect_package_managers() on the read side.
+    if command -v apt-get >/dev/null 2>&1; then
+      apt-get update -y
+      apt-get upgrade -y
+    fi
+    if command -v dnf >/dev/null 2>&1; then
+      dnf upgrade -y
+    fi
+    if command -v pacman >/dev/null 2>&1; then
+      pacman -Syu --noconfirm
+    fi
+    if command -v zypper >/dev/null 2>&1; then
+      zypper --non-interactive update
+    fi
+    ;;
+  *)
+    die "unknown subcommand: $cmd (expected install-package or upgrade-all)"
+    ;;
+esac
