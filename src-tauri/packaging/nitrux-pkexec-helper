@@ -9,11 +9,13 @@
 # Rust-side validation happens too, but this script NEVER trusts that and
 # re-validates everything itself.
 #
-# This same script is installed under 8 distinct names (one per polkit
+# This same script is installed under 11 distinct names (one per polkit
 # action): nitrux-pkexec-install-package, nitrux-pkexec-upgrade-all,
 # nitrux-pkexec-write-hosts, nitrux-pkexec-set-dns,
 # nitrux-pkexec-firewall-rule, nitrux-pkexec-troubleshoot,
-# nitrux-pkexec-create-snapshot, nitrux-pkexec-quarantine-file. pkexec
+# nitrux-pkexec-create-snapshot, nitrux-pkexec-quarantine-file,
+# nitrux-pkexec-format-partition, nitrux-pkexec-extend-partition,
+# nitrux-pkexec-clone-disk. pkexec
 # resolves which action to authorize by matching the *executable path*
 # against each action's exec.path annotation -- it cannot see argv, so a
 # single shared path across multiple actions is ambiguous to it (confirmed
@@ -32,6 +34,9 @@
 #   nitrux-pkexec-troubleshoot troubleshoot <clean-cache|fix-broken|restart-network|vacuum-logs>
 #   nitrux-pkexec-create-snapshot create-snapshot
 #   nitrux-pkexec-quarantine-file quarantine-file <absolute-path>
+#   nitrux-pkexec-format-partition format-partition <device> <ext4|btrfs|xfs|vfat>
+#   nitrux-pkexec-extend-partition extend-partition <partition-device> <disk-device> <partnum>
+#   nitrux-pkexec-clone-disk clone-disk <disk-device> <dest-image-path>
 set -eu
 
 die() {
@@ -91,6 +96,84 @@ validate_quarantine_path() {
     *..*) die "quarantine path must not contain '..': $1" ;;
     *'*'*|*'?'*|*'$'*|*'`'*|*';'*|*'|'*|*'&'*|*'<'*|*'>'*|*'\n'*)
       die "quarantine path contains disallowed characters: $1" ;;
+  esac
+}
+
+# A partition device path must look like "<disk><number>" or an NVMe
+# "<nvme-disk>p<number>" -- this is what distinguishes a PARTITION from a
+# WHOLE DISK. Formatting a whole disk (e.g. /dev/sda) destroys the
+# partition table, not just one filesystem's data -- almost never what is
+# intended, and far more destructive than formatting one partition.
+#
+# NOTE on the case pattern below: `[0-9]*` matches one digit followed by
+# ANY trailing characters -- it is NOT anchored to the end of the string,
+# so e.g. "/dev/sda1;rm -rf /" technically matches this case arm (verified
+# empirically). This is safe in practice ONLY because of two other layers,
+# not because the pattern itself is a strict allowlist:
+#   1. The `-b` check below requires a REAL, EXISTING block device node at
+#      that exact literal path. An attacker cannot make one exist at an
+#      arbitrary path of their choosing without already having the root
+#      privileges this script exists to gate.
+#   2. Every call site below passes $device through `exec cmd "$device"`
+#      with quoted argv -- never through a shell (`sh -c`, `eval`, etc.) --
+#      so even a real device node with shell metacharacters in its path
+#      could never have those characters reinterpreted as shell syntax.
+# Do not remove or weaken either of those two layers on the assumption
+# that this case pattern alone is sufficient input validation.
+validate_partition_device() {
+  case "$1" in
+    /dev/sd[a-z][0-9]*|/dev/vd[a-z][0-9]*|/dev/nvme[0-9]*n[0-9]*p[0-9]*|/dev/mmcblk[0-9]*p[0-9]*|/dev/loop[0-9]*p[0-9]*) : ;;
+    *) die "not a recognized partition device path (expected e.g. /dev/sda1, /dev/nvme0n1p1): $1" ;;
+  esac
+  if [ ! -b "$1" ]; then
+    die "not a block device: $1"
+  fi
+}
+
+# Refuses to touch a device that is currently mounted, OR that is (or
+# backs) the currently-booted root filesystem -- checked independently of
+# the mount check as defense in depth. This operation is irreversible, so
+# the extra check costs nothing and only helps.
+validate_partition_not_in_use() {
+  if findmnt -n -S "$1" >/dev/null 2>&1; then
+    die "device is currently mounted, refusing: $1"
+  fi
+  root_device=$(findmnt -n -o SOURCE / 2>/dev/null || echo "")
+  if [ -n "$root_device" ] && [ "$1" = "$root_device" ]; then
+    die "refusing to touch the currently-booted root device: $1"
+  fi
+}
+
+validate_disk_device() {
+  case "$1" in
+    /dev/sd[a-z]|/dev/vd[a-z]|/dev/nvme[0-9]*n[0-9]*|/dev/mmcblk[0-9]*|/dev/loop[0-9]*) : ;;
+    *) die "not a recognized whole-disk device path: $1" ;;
+  esac
+  if [ ! -b "$1" ]; then
+    die "not a block device: $1"
+  fi
+}
+
+validate_fstype() {
+  case "$1" in
+    ext4|btrfs|xfs|vfat) : ;;
+    *) die "unsupported filesystem type (expected ext4, btrfs, xfs, or vfat): $1" ;;
+  esac
+}
+
+# Destination image path for clone-disk: absolute, no traversal, no shell
+# metacharacters -- same style as validate_quarantine_path in the security
+# actions, since this also runs as root and writes wherever it's told.
+validate_image_dest_path() {
+  case "$1" in
+    '') die "empty destination path" ;;
+    /*) : ;;
+    *) die "destination path must be absolute: $1" ;;
+  esac
+  case "$1" in
+    *..*) die "destination path must not contain '..': $1" ;;
+    *'*'*|*'?'*|*'$'*|*'`'*|*';'*|*'|'*|*'&'*|*'<'*|*'>'*|*'\n'*)
+      die "destination path contains disallowed characters: $1" ;;
   esac
 }
 
@@ -204,6 +287,39 @@ case "$cmd" in
     mv "$path" "$dest"
     chmod 000 "$dest"
     echo "quarantined: $dest"
+    ;;
+  format-partition)
+    device="${2:-}"
+    fstype="${3:-}"
+    validate_partition_device "$device"
+    validate_partition_not_in_use "$device"
+    validate_fstype "$fstype"
+    case "$fstype" in
+      ext4)  exec mkfs.ext4 -F "$device" ;;
+      btrfs) exec mkfs.btrfs -f "$device" ;;
+      xfs)   exec mkfs.xfs -f "$device" ;;
+      vfat)  exec mkfs.vfat -F 32 "$device" ;;
+    esac
+    ;;
+  extend-partition)
+    device="${2:-}"
+    disk="${3:-}"
+    partnum="${4:-}"
+    validate_partition_device "$device"
+    validate_partition_not_in_use "$device"
+    validate_disk_device "$disk"
+    case "$partnum" in
+      ''|*[!0-9]*) die "partition number must be numeric: $partnum" ;;
+    esac
+    parted --script "$disk" resizepart "$partnum" 100%
+    exec resize2fs "$device"
+    ;;
+  clone-disk)
+    source_disk="${2:-}"
+    dest_path="${3:-}"
+    validate_disk_device "$source_disk"
+    validate_image_dest_path "$dest_path"
+    exec dd if="$source_disk" of="$dest_path" bs=4M status=progress conv=fsync
     ;;
   *)
     die "unknown subcommand: $cmd"
