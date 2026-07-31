@@ -2,6 +2,7 @@ use std::sync::Mutex;
 
 use sysinfo::System;
 
+mod disks;
 mod drivers;
 mod hardware;
 mod logs;
@@ -39,7 +40,9 @@ pub fn run() {
             hardware::get_pci_devices,
             drivers::get_driver_snapshot,
             logs::get_recent_logs,
-            list_updates
+            list_updates,
+            disks::list_disks,
+            disks::list_disk_usage
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
