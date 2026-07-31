@@ -8,9 +8,20 @@
 # malicious arguments — Rust-side validation happens too, but this script
 # NEVER trusts that and re-validates everything itself.
 #
+# This same script is installed under 2 distinct names (one per polkit
+# action): nitrux-pkexec-install-package, nitrux-pkexec-upgrade-all.
+# pkexec resolves which action to authorize by matching the *executable
+# path* against each action's exec.path annotation -- it cannot see
+# argv, so a single shared path across multiple actions is ambiguous to
+# it (confirmed live: pkexec authorized under the wrong action when both
+# actions shared one path). Giving each action its own on-disk copy
+# under its own name removes the ambiguity. The dispatch logic below is
+# unchanged -- it still reads the subcommand from argv[1], regardless of
+# which name it was invoked under.
+#
 # Usage:
-#   nitrux-pkexec-helper install-package <manager> <package>
-#   nitrux-pkexec-helper upgrade-all
+#   nitrux-pkexec-install-package install-package <manager> <package>
+#   nitrux-pkexec-upgrade-all upgrade-all
 set -eu
 
 die() {
