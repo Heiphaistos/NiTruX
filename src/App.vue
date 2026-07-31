@@ -9,6 +9,7 @@ import LogsPage from "@/pages/LogsPage.vue";
 import ThemeEditorPage from "@/pages/ThemeEditorPage.vue";
 import PackagesPage from "@/pages/PackagesPage.vue";
 import DisksPage from "@/pages/DisksPage.vue";
+import NetworkPage from "@/pages/NetworkPage.vue";
 
 const themeStore = useThemeStore();
 onMounted(() => themeStore.setTheme(themeStore.active));
@@ -20,7 +21,8 @@ type PageId =
   | "logs"
   | "theme-editor"
   | "packages"
-  | "disks";
+  | "disks"
+  | "network";
 const currentPage = ref<PageId>("dashboard");
 const pages: Record<PageId, Component> = {
   dashboard: DashboardPage,
@@ -30,6 +32,7 @@ const pages: Record<PageId, Component> = {
   "theme-editor": ThemeEditorPage,
   packages: PackagesPage,
   disks: DisksPage,
+  network: NetworkPage,
 };
 </script>
 
@@ -78,6 +81,12 @@ const pages: Record<PageId, Component> = {
           @click="currentPage = 'disks'"
         >
           Disques
+        </button>
+        <button
+          :class="{ active: currentPage === 'network' }"
+          @click="currentPage = 'network'"
+        >
+          Réseau
         </button>
       </nav>
     </template>

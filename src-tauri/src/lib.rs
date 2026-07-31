@@ -3,13 +3,16 @@ use std::sync::Mutex;
 use sysinfo::System;
 
 mod disks;
+mod docker;
 mod drivers;
 mod duplicates;
 mod hardware;
 mod hashcheck;
 mod largefiles;
 mod logs;
+mod network;
 mod packages;
+mod portscan;
 mod sensors;
 mod smart;
 mod subprocess;
@@ -51,7 +54,10 @@ pub fn run() {
             largefiles::find_large_files_cmd,
             hashcheck::compute_file_hash,
             hashcheck::verify_file_hash,
-            smart::get_smart_status
+            smart::get_smart_status,
+            network::get_network_snapshot,
+            portscan::scan_ports_cmd,
+            docker::get_docker_snapshot
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
