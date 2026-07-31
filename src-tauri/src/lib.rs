@@ -9,6 +9,7 @@ mod hardware;
 mod hashcheck;
 mod largefiles;
 mod logs;
+mod network;
 mod packages;
 mod sensors;
 mod smart;
@@ -51,7 +52,8 @@ pub fn run() {
             largefiles::find_large_files_cmd,
             hashcheck::compute_file_hash,
             hashcheck::verify_file_hash,
-            smart::get_smart_status
+            smart::get_smart_status,
+            network::get_network_snapshot
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
