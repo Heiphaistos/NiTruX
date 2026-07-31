@@ -24,6 +24,11 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "publisher": "Heiphaistos",
+    "homepage": "https://github.com/Heiphaistos/NiTruX",
+    "shortDescription": "Couteau suisse de maintenance et diagnostic pour Linux",
+    "longDescription": "NiTruX est un outil tout-en-un de maintenance, diagnostic et administration système pour Linux : informations matérielles en temps réel, gestion des paquets multi-distro, pilotes et modules noyau, journaux système, et un moteur de thèmes/dispositions personnalisable.",
+    "category": "Utility",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
