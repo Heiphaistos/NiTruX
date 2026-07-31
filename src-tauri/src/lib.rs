@@ -2,6 +2,7 @@ use std::sync::Mutex;
 
 use sysinfo::System;
 
+mod disk_write;
 mod disks;
 mod docker;
 mod drivers;
@@ -74,7 +75,10 @@ pub fn run() {
             network_write::remove_firewall_rule,
             security_write::run_troubleshoot_action,
             security_write::create_snapshot,
-            security_write::quarantine_file
+            security_write::quarantine_file,
+            disk_write::format_partition,
+            disk_write::extend_partition,
+            disk_write::clone_disk
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
