@@ -1,17 +1,20 @@
 # Checkpoint
 
-Dernière étape réussie : **Phase 1 COMPLÈTE et release v0.1.0-phase1 publiée** (https://github.com/Heiphaistos/NiTruX/releases/tag/v0.1.0-phase1, .deb+.rpm).
+Dernière étape réussie : **Phase 1 + Phase 2 Part 1 COMPLÈTES**, mergées sur master, releases publiées :
+- v0.1.0-phase1 : moteur thème/layout + Système & diagnostic
+- v0.2.0-phase2part1 : détection paquets multi-distro + listing lecture seule
 
-Prochaine action : exécuter `docs/superpowers/plans/2026-07-31-nitrux-phase2-part1.md` (8 tâches, PackageManager trait + apt/dnf/pacman/zypper + Flatpak/Snap + PackagesPage.vue, lecture seule uniquement) via subagent-driven-development dans un nouveau worktree `.worktrees/phase-2-part1`.
+Prochaine action : écrire et exécuter le plan Phase 3 (Disques & stockage) — partition manager, visualiseur espace disque, doublons, gros fichiers, hash checker, SMART, backup/clone. Suivre le même pattern que Phase 1/2 (plan écrit avec writing-plans, exécuté en subagent-driven-development dans un nouveau worktree `.worktrees/phase-3-...`).
 
 Contexte pour reprendre à froid :
-- Repo local : `C:\Users\Momo\Desktop\NiTruX`, remote `https://github.com/Heiphaistos/NiTruX.git` (privé), branche principale `master`
-- `master` contient tout Phase 1 (13 tâches) + release v0.1.0-phase1 taguée
-- Convention établie : toute commande shell-out via `subprocess::run_with_timeout` (`src-tauri/src/subprocess.rs`) + `Result<T, String>`, jamais de `Command::new()` brut
+- Repo local : `C:\Users\Momo\Desktop\NiTruX`, remote `https://github.com/Heiphaistos/NiTruX.git` (privé), branche `master`
+- Version actuelle : 0.2.0
+- Convention établie : `subprocess::run_with_timeout` (`src-tauri/src/subprocess.rs`) pour tout shell-out, `Result<T, String>` pour toute commande faillible, pattern `PackageManager`-like trait pour toute abstraction multi-implémentation
 - Environnement : WSL2 Ubuntu pour npm/cargo/tauri, git côté Windows (voir LESSONS.md)
-- Décision de scope importante : Phase 2 Part 1 = détection + listing LECTURE SEULE des paquets uniquement. Install/upgrade (écriture, privilégié, polkit/pkexec) volontairement exclu de l'exécution autonome — nécessite revue humaine avant d'écrire du code qui modifierait des paquets sur la vraie machine de Momo. À proposer comme "Phase 2 Part 2" avec validation explicite.
+- Chaque tâche : implémenteur (subagent) → vérification INDÉPENDANTE (jamais confiance aveugle dans un rapport, toujours re-lancer les tests soi-même) → revue qualité si le risque le justifie → fix si besoin → journal → push
 
-En attente de validation humaine :
-1. Fix npm audit (8 vulnérabilités high, devDependency uniquement — vue-tsc/@vue/test-utils, `npm audit fix --force` bloqué par le classificateur auto-mode car breaking change). Non-bloquant pour les releases (jamais dans le bundle livré).
-2. AppImage manquant — `sudo apt install xdg-utils` requis dans l'environnement WSL2 (mot de passe sudo non disponible en autonomie).
-3. Phase 2 Part 2 (install/upgrade réel de paquets, polkit/pkexec) — nécessite conception + revue avant implémentation, pas à faire en autonomie sans supervision.
+En attente de validation humaine (non-bloquant pour continuer le reste) :
+1. npm audit fix --force (8 vulnérabilités high, devDependency uniquement) — bloqué par le classificateur auto-mode
+2. AppImage — nécessite `sudo apt install xdg-utils` (mot de passe non disponible en autonomie)
+3. Phase 2 Part 2 (install/upgrade réel de paquets, polkit/pkexec) — nécessite conception + revue avant implémentation
+4. Dossiers `.worktrees/phase-1-fondations` et potentiellement d'autres restent verrouillés sur disque (Windows file lock au nettoyage) — gitignorés, sans impact fonctionnel, à nettoyer manuellement si le verrou persiste (`rm -rf .worktrees/*` après avoir fermé tout process y touchant)
