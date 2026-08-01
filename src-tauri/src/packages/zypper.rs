@@ -29,6 +29,28 @@ impl PackageManager for Zypper {
         let output = subprocess::run_with_timeout("zypper", &["list-updates"], Duration::from_secs(15))?;
         Ok(output.lines().filter_map(parse_zypper_line).collect())
     }
+
+    fn list_installed(&self) -> Result<Vec<super::InstalledPackage>, String> {
+        let output = subprocess::run_with_timeout("zypper", &["se", "--installed-only"], Duration::from_secs(15))?;
+        Ok(output.lines().filter_map(parse_zypper_installed_line).collect())
+    }
+}
+
+/// Parses one line of `zypper se --installed-only` output, e.g.:
+/// "i | curl | package | x86_64 | Main Repository"
+/// (Status | Name | Type | Arch | Repository -- note this has 5 fields,
+/// one fewer than `list-updates`'s 6, and no version column at all; zypper
+/// requires a separate `zypper info <pkg>` call per package for version,
+/// which this scan deliberately skips for performance -- version is left
+/// empty for zypper-sourced installed packages, a real, documented
+/// limitation, not a parsing gap, mirroring dnf.rs's existing precedent
+/// for `list_upgradable`'s own current_version limitation.)
+pub fn parse_zypper_installed_line(line: &str) -> Option<super::InstalledPackage> {
+    let fields: Vec<&str> = line.split('|').map(|f| f.trim()).collect();
+    if fields.len() != 5 || fields[0] != "i" {
+        return None;
+    }
+    Some(super::InstalledPackage { name: fields[1].to_string(), version: String::new() })
 }
 
 #[cfg(test)]
@@ -54,5 +76,19 @@ mod tests {
     #[test]
     fn skips_lines_with_wrong_field_count() {
         assert!(parse_zypper_line("v | curl | package").is_none());
+    }
+
+    #[test]
+    fn parses_zypper_installed_line() {
+        let line = "i | curl | package | x86_64 | Main Repository";
+        let pkg = super::parse_zypper_installed_line(line).expect("should parse");
+        assert_eq!(pkg.name, "curl");
+        assert_eq!(pkg.version, "");
+    }
+
+    #[test]
+    fn skips_zypper_installed_header_and_separator_lines() {
+        assert!(super::parse_zypper_installed_line("S | Name | Type | Arch | Repository").is_none());
+        assert!(super::parse_zypper_installed_line("--+------+------+------+------------").is_none());
     }
 }

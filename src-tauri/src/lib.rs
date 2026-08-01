@@ -76,6 +76,7 @@ pub fn run() {
             logs::get_recent_logs,
             list_updates,
             detect_native_manager,
+            packages::list_installed_packages,
             report::generate_system_report,
             benchmark::run_benchmark,
             disks::list_disks,

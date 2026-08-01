@@ -18,9 +18,16 @@ pub struct PackageUpdate {
     pub source: String,
 }
 
+#[derive(Serialize, Clone)]
+pub struct InstalledPackage {
+    pub name: String,
+    pub version: String,
+}
+
 pub trait PackageManager {
     fn id(&self) -> &'static str;
     fn list_upgradable(&self) -> Result<Vec<PackageUpdate>, String>;
+    fn list_installed(&self) -> Result<Vec<InstalledPackage>, String>;
 }
 
 /// True if `binary` is found on PATH (via `which`), false otherwise —
@@ -53,6 +60,24 @@ pub fn detect_package_managers() -> Vec<Box<dyn PackageManager>> {
         managers.push(Box::new(zypper::Zypper));
     }
     managers
+}
+
+/// Aggregates installed packages from the FIRST detected native manager
+/// only (mirrors `detect_native_manager`'s own "just the first one" choice
+/// from Phase R3 -- a host with multiple native managers installed is rare
+/// and install/uninstall already only ever targets one at a time via that
+/// same detected id).
+pub fn list_installed_for_detected_manager() -> Result<Vec<InstalledPackage>, String> {
+    let managers = detect_package_managers();
+    let Some(manager) = managers.first() else {
+        return Err("aucun gestionnaire de paquets détecté".to_string());
+    };
+    manager.list_installed()
+}
+
+#[tauri::command]
+pub fn list_installed_packages() -> Result<Vec<InstalledPackage>, String> {
+    list_installed_for_detected_manager()
 }
 
 #[cfg(test)]
