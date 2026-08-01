@@ -8,6 +8,7 @@ import {
   Trash2, Sparkles, Save, ShieldCheck, PackageSearch,
   Globe, Radio, Bluetooth, FileCode,
   PieChart, Database, Server,
+  Layers,
 } from "lucide-vue-next";
 import { navigationCategories } from "@/navigation/categories";
 
@@ -52,6 +53,7 @@ const iconMap: Record<string, Component> = {
   "pie-chart": PieChart,
   database: Database,
   server: Server,
+  layers: Layers,
 };
 
 function getIcon(name: string): Component {

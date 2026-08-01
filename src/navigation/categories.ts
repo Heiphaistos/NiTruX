@@ -35,6 +35,7 @@ export const navigationCategories: NavCategory[] = [
     pages: [
       { id: "quick-install", label: "Installation rapide", icon: "download" },
       { id: "package-manager", label: "Gestionnaire de paquets", icon: "package" },
+      { id: "install-profiles", label: "Installation par profils", icon: "layers" },
     ],
   },
   {
