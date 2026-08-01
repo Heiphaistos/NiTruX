@@ -9,6 +9,7 @@ import LogsPage from "@/pages/LogsPage.vue";
 import ThemeEditorPage from "@/pages/ThemeEditorPage.vue";
 import PackagesPage from "@/pages/PackagesPage.vue";
 import DisksPage from "@/pages/DisksPage.vue";
+import FileToolsPage from "@/pages/FileToolsPage.vue";
 import NetworkPage from "@/pages/NetworkPage.vue";
 import SecurityPage from "@/pages/SecurityPage.vue";
 
@@ -23,6 +24,7 @@ type PageId =
   | "theme-editor"
   | "packages"
   | "disks"
+  | "file-tools"
   | "network"
   | "security";
 const currentPage = ref<PageId>("dashboard");
@@ -34,6 +36,7 @@ const pages: Record<PageId, Component> = {
   "theme-editor": ThemeEditorPage,
   packages: PackagesPage,
   disks: DisksPage,
+  "file-tools": FileToolsPage,
   network: NetworkPage,
   security: SecurityPage,
 };
@@ -84,6 +87,12 @@ const pages: Record<PageId, Component> = {
           @click="currentPage = 'disks'"
         >
           Disques
+        </button>
+        <button
+          :class="{ active: currentPage === 'file-tools' }"
+          @click="currentPage = 'file-tools'"
+        >
+          Outils fichiers
         </button>
         <button
           :class="{ active: currentPage === 'network' }"
