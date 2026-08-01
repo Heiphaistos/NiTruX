@@ -4,35 +4,13 @@ import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import NxCard from "@/components/ui/NxCard.vue";
 import NxButton from "@/components/ui/NxButton.vue";
-import NxInput from "@/components/ui/NxInput.vue";
 import NxBadge from "@/components/ui/NxBadge.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 
-interface MalwareFinding { path: string; signature: string }
 interface SnapshotInfo { id: string; date: string }
 
-type Tab = "malware" | "snapshots" | "troubleshoot";
-const activeTab = ref<Tab>("malware");
-
-const scanDir = ref("");
-const findings = ref<MalwareFinding[]>([]);
-const scanError = ref<string | null>(null);
-const scanning = ref(false);
-const scanDone = ref(false);
-
-async function runScan() {
-  scanning.value = true;
-  scanError.value = null;
-  scanDone.value = false;
-  try {
-    findings.value = await invoke<MalwareFinding[]>("scan_for_malware", { directory: scanDir.value });
-    scanDone.value = true;
-  } catch (e) {
-    scanError.value = String(e);
-  } finally {
-    scanning.value = false;
-  }
-}
+type Tab = "snapshots" | "troubleshoot";
+const activeTab = ref<Tab>("troubleshoot");
 
 const snapshots = ref<SnapshotInfo[]>([]);
 const snapshotsError = ref<string | null>(null);
@@ -54,10 +32,8 @@ function onTabClick(tab: Tab) {
 }
 
 const TROUBLESHOOT_ACTIONS: { id: string; label: string }[] = [
-  { id: "clean-cache", label: "Vider le cache des paquets" },
   { id: "fix-broken", label: "Réparer les paquets cassés" },
   { id: "restart-network", label: "Redémarrer le réseau" },
-  { id: "vacuum-logs", label: "Purger les anciens journaux" },
 ];
 const troubleshootBusy = ref<string | null>(null);
 const troubleshootResult = ref<string | null>(null);
@@ -91,52 +67,18 @@ async function createSnapshotNow() {
     snapshotCreating.value = false;
   }
 }
-
-const quarantining = ref<string | null>(null);
-const quarantineError = ref<string | null>(null);
-
-async function quarantineFinding(path: string) {
-  quarantining.value = path;
-  quarantineError.value = null;
-  try {
-    await invoke("quarantine_file", { path });
-    findings.value = findings.value.filter((f) => f.path !== path);
-  } catch (e) {
-    quarantineError.value = String(e);
-  } finally {
-    quarantining.value = null;
-  }
-}
 </script>
 
 <template>
   <div class="ts-page">
-    <NxSectionHeader title="Dépannage" description="Analyse antivirus, instantanés système et actions de maintenance." />
+    <NxSectionHeader title="Dépannage" description="Instantanés système et actions de réparation." />
 
     <div class="ts-tabs">
-      <button :class="{ active: activeTab === 'malware' }" @click="onTabClick('malware')">Scan malware</button>
       <button :class="{ active: activeTab === 'snapshots' }" @click="onTabClick('snapshots')">Snapshots</button>
       <button :class="{ active: activeTab === 'troubleshoot' }" @click="onTabClick('troubleshoot')">Dépannage</button>
     </div>
 
-    <NxCard v-if="activeTab === 'malware'">
-      <div class="ts-form-row">
-        <NxInput v-model="scanDir" placeholder="Dossier à scanner..." />
-        <NxButton :disabled="scanning" @click="runScan">{{ scanning ? "Scan en cours..." : "Scanner" }}</NxButton>
-      </div>
-      <NxCard v-if="scanError" danger>{{ scanError }}</NxCard>
-      <div v-else-if="scanDone && findings.length === 0" class="ts-empty">Aucune menace détectée.</div>
-      <NxCard v-if="quarantineError" danger>{{ quarantineError }}</NxCard>
-      <div v-for="f in findings" :key="f.path" class="ts-finding-row">
-        <span>{{ f.path }}</span>
-        <span>{{ f.signature }}</span>
-        <NxButton variant="danger" :disabled="quarantining !== null" @click="quarantineFinding(f.path)">
-          {{ quarantining === f.path ? "Mise en quarantaine..." : "Mettre en quarantaine" }}
-        </NxButton>
-      </div>
-    </NxCard>
-
-    <NxCard v-else-if="activeTab === 'snapshots'">
+    <NxCard v-if="activeTab === 'snapshots'">
       <div class="ts-form-row">
         <NxButton :disabled="snapshotCreating" @click="createSnapshotNow">{{ snapshotCreating ? "Création..." : "Créer un instantané" }}</NxButton>
       </div>
@@ -167,7 +109,6 @@ async function quarantineFinding(path: string) {
 .ts-tabs button { padding: 8px 14px; border-radius: var(--nx-style-radius); border: var(--nx-style-border-width) solid var(--nx-style-border-color); background: var(--nx-style-bg); color: var(--nx-text-secondary); cursor: pointer; font: inherit; }
 .ts-tabs button.active { color: var(--nx-text-primary); font-weight: 600; }
 .ts-form-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
-.ts-empty { color: var(--nx-text-secondary); }
-.ts-finding-row, .ts-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; font-size: 13px; border-bottom: 1px solid var(--nx-style-border-color); }
+.ts-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; font-size: 13px; border-bottom: 1px solid var(--nx-style-border-color); }
 .ts-action-label { flex: 1; }
 </style>
