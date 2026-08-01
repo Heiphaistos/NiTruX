@@ -16,7 +16,7 @@ import FirewallPage from "@/pages/FirewallPage.vue";
 import TroubleshootPage from "@/pages/TroubleshootPage.vue";
 import SettingsPreferencesPage from "@/pages/SettingsPreferencesPage.vue";
 import QuickInstallPage from "@/pages/QuickInstallPage.vue";
-import UpdatesPlaceholder from "@/pages/UpdatesPlaceholder.vue";
+import UpdatesPage from "@/pages/UpdatesPage.vue";
 import ReportGeneratorPlaceholder from "@/pages/ReportGeneratorPlaceholder.vue";
 
 const themeStore = useThemeStore();
@@ -37,7 +37,7 @@ const pages: Record<string, Component> = {
   "package-manager": PackagesPage,
   disks: DisksPage,
   "file-tools": FileToolsPage,
-  updates: UpdatesPlaceholder,
+  updates: UpdatesPage,
   drivers: DriversPage,
   troubleshoot: TroubleshootPage,
   "network-overview": NetworkPage,

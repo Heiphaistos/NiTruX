@@ -45,4 +45,12 @@ describe("App", () => {
     await quickInstallButton.trigger("click");
     expect(wrapper.text()).not.toContain("prévu pour Phase R3");
   });
+
+  it("shows the real UpdatesPage (not a placeholder) for the updates id", async () => {
+    const wrapper = mount(App);
+    const buttons = wrapper.findAll("button");
+    const updatesButton = buttons.find((b) => b.text() === "Mises à jour")!;
+    await updatesButton.trigger("click");
+    expect(wrapper.text()).not.toContain("prévu pour Phase R4");
+  });
 });
