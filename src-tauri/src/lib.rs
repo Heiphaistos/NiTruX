@@ -40,6 +40,21 @@ fn list_updates() -> Result<Vec<packages::PackageUpdate>, String> {
     Ok(all_updates)
 }
 
+/// Returns the id of the first detected native package manager
+/// ("apt"/"dnf"/"pacman"/"zypper"), or `None` if none is present. Thin
+/// wrapper over the already-tested `packages::detect_package_managers()` —
+/// no dedicated test here for the same reason `list_updates` has none:
+/// it's a pure aggregation over an already-verified primitive, and actually
+/// exercising manager detection requires the real host's binaries (already
+/// covered by `detected_manager_id_matches_binary_name` in
+/// `packages/mod.rs`).
+#[tauri::command]
+fn detect_native_manager() -> Option<String> {
+    packages::detect_package_managers()
+        .first()
+        .map(|m| m.id().to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -54,6 +69,7 @@ pub fn run() {
             drivers::get_driver_snapshot,
             logs::get_recent_logs,
             list_updates,
+            detect_native_manager,
             disks::list_disks,
             disks::list_disk_usage,
             duplicates::find_duplicate_files,
