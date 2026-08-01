@@ -53,4 +53,12 @@ describe("App", () => {
     await updatesButton.trigger("click");
     expect(wrapper.text()).not.toContain("prévu pour Phase R4");
   });
+
+  it("shows the real ReportGeneratorPage (not a placeholder) for the report-generator id", async () => {
+    const wrapper = mount(App);
+    const buttons = wrapper.findAll("button");
+    const reportButton = buttons.find((b) => b.text() === "Générateur de rapport")!;
+    await reportButton.trigger("click");
+    expect(wrapper.text()).not.toContain("prévu pour Phase R5");
+  });
 });

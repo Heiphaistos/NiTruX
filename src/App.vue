@@ -17,7 +17,7 @@ import TroubleshootPage from "@/pages/TroubleshootPage.vue";
 import SettingsPreferencesPage from "@/pages/SettingsPreferencesPage.vue";
 import QuickInstallPage from "@/pages/QuickInstallPage.vue";
 import UpdatesPage from "@/pages/UpdatesPage.vue";
-import ReportGeneratorPlaceholder from "@/pages/ReportGeneratorPlaceholder.vue";
+import ReportGeneratorPage from "@/pages/ReportGeneratorPage.vue";
 
 const themeStore = useThemeStore();
 onMounted(() => themeStore.setTheme(themeStore.active));
@@ -42,7 +42,7 @@ const pages: Record<string, Component> = {
   troubleshoot: TroubleshootPage,
   "network-overview": NetworkPage,
   firewall: FirewallPage,
-  "report-generator": ReportGeneratorPlaceholder,
+  "report-generator": ReportGeneratorPage,
   logs: LogsPage,
   "settings-preferences": SettingsPreferencesPage,
   "settings-appearance": ThemeEditorPage,
