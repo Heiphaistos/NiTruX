@@ -4,6 +4,7 @@ use sysinfo::System;
 
 mod benchmark;
 mod cache_size;
+mod dependencies;
 mod disk_write;
 mod disks;
 mod docker;
@@ -103,6 +104,7 @@ pub fn run() {
             disk_write::clone_disk,
             optimizations::get_optimization_snapshot,
             cache_size::get_cache_size_report,
+            dependencies::scan_missing_dependencies,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
