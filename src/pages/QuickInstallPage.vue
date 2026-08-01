@@ -39,13 +39,18 @@ function stateOf(entry: AppCatalogEntry): InstallState {
 }
 
 async function install(entry: AppCatalogEntry) {
-  if (entry.installMethod !== "apt") return;
-  const manager = nativeManager.value ?? (await managerReady);
-  if (!manager) return;
   installState.value[entry.id] = "installing";
   delete installErrors.value[entry.id];
   try {
-    await invoke<string>("install_package", { manager, package: entry.packageId });
+    if (entry.installMethod === "apt") {
+      const manager = nativeManager.value ?? (await managerReady);
+      if (!manager) throw new Error("aucun gestionnaire de paquets natif détecté");
+      await invoke<string>("install_package", { manager, package: entry.packageId });
+    } else if (entry.installMethod === "flatpak") {
+      await invoke<string>("install_flatpak_package", { appId: entry.packageId });
+    } else {
+      await invoke<string>("install_snap_package", { package: entry.packageId });
+    }
     installState.value[entry.id] = "success";
   } catch (e) {
     installState.value[entry.id] = "error";
@@ -83,11 +88,7 @@ async function install(entry: AppCatalogEntry) {
           </div>
         </div>
 
-        <template v-if="entry.installMethod !== 'apt'">
-          <NxBadge status="info">Bientôt disponible ({{ entry.installMethod }})</NxBadge>
-          <NxButton disabled>Installer</NxButton>
-        </template>
-        <template v-else-if="stateOf(entry) === 'success'">
+        <template v-if="stateOf(entry) === 'success'">
           <NxBadge status="success">Installé</NxBadge>
         </template>
         <template v-else>

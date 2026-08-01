@@ -10,6 +10,8 @@ vi.mock("@tauri-apps/api/core", () => ({
       if (args?.package === "fail-me") return Promise.reject("apt: paquet introuvable");
       return Promise.resolve("Installation réussie");
     }
+    if (cmd === "install_flatpak_package") return Promise.resolve("Installation Flatpak réussie");
+    if (cmd === "install_snap_package") return Promise.resolve("Installation Snap réussie");
     return Promise.resolve(null);
   }),
 }));
@@ -35,12 +37,27 @@ describe("QuickInstallPage", () => {
     expect(invoke).toHaveBeenCalledWith("install_package", { manager: "apt", package: "firefox" });
   });
 
-  it("disables the install button and shows a not-yet-available badge for flatpak/snap entries", async () => {
+  it("installs a flatpak-method app via install_flatpak_package", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
     const wrapper = mount(QuickInstallPage);
     await vi.waitFor(() => expect(wrapper.text()).toContain("Discord"));
     const discordCard = wrapper.findAll(".qi-card").find((c) => c.text().includes("Discord"))!;
-    expect(discordCard.find("button[disabled]").exists()).toBe(true);
-    expect(discordCard.text()).toContain("Bientôt disponible");
+    const button = discordCard.find("button")!;
+    expect(button.attributes("disabled")).toBeUndefined();
+    await button.trigger("click");
+    await vi.waitFor(() => expect(discordCard.text()).toContain("Installé"));
+    expect(invoke).toHaveBeenCalledWith("install_flatpak_package", { appId: "com.discordapp.Discord" });
+  });
+
+  it("installs a snap-method app via install_snap_package", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const wrapper = mount(QuickInstallPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Spotify"));
+    const spotifyCard = wrapper.findAll(".qi-card").find((c) => c.text().includes("Spotify"))!;
+    const button = spotifyCard.find("button")!;
+    await button.trigger("click");
+    await vi.waitFor(() => expect(spotifyCard.text()).toContain("Installé"));
+    expect(invoke).toHaveBeenCalledWith("install_snap_package", { package: "spotify" });
   });
 
   it("shows an error message when install_package rejects", async () => {
