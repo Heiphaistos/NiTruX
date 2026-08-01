@@ -3,7 +3,7 @@ import { mount } from "@vue/test-utils";
 import BackupPage from "./BackupPage.vue";
 
 vi.mock("@tauri-apps/api/core", () => ({
-  invoke: vi.fn((cmd: string, args?: Record<string, unknown>) => {
+  invoke: vi.fn((cmd: string) => {
     if (cmd === "create_backup") return Promise.resolve(`/home/dev/nitrux-backup-1735689600.tar.gz`);
     return Promise.resolve(null);
   }),
