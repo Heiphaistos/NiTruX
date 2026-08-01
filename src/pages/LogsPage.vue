@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { invoke } from "@tauri-apps/api/core";
+import NxCard from "@/components/ui/NxCard.vue";
+import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 
 interface LogEntry { priority: number; message: string; unit: string }
 
@@ -25,23 +27,25 @@ onMounted(async () => {
 
 <template>
   <div class="logs-page">
-    <h1>Journaux système</h1>
-    <div class="logs-error" v-if="error">
+    <NxSectionHeader title="Journaux" description="Journaux système récents (journald)." />
+    <NxCard v-if="error" danger>
       Impossible de récupérer les journaux système : {{ error }}
-    </div>
-    <div class="logs-list" v-if="logs.length">
-      <div v-for="(log, i) in logs" :key="i" class="log-entry" :class="priorityClass(log.priority)">
-        <span class="log-unit">{{ log.unit }}</span>
-        <span class="log-message">{{ log.message }}</span>
+    </NxCard>
+    <NxCard v-if="logs.length" class="logs-card">
+      <div class="logs-list">
+        <div v-for="(log, i) in logs" :key="i" class="log-entry" :class="priorityClass(log.priority)">
+          <span class="log-unit">{{ log.unit }}</span>
+          <span class="log-message">{{ log.message }}</span>
+        </div>
       </div>
-    </div>
+    </NxCard>
   </div>
 </template>
 
 <style scoped>
-.logs-page { padding: 24px; color: var(--nx-text-primary); }
-.logs-error { margin-top: 16px; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--nx-border); background: var(--nx-bg-elevated); color: var(--nx-text-secondary); }
-.logs-list { margin-top: 16px; font-family: monospace; font-size: 12px; display: grid; gap: 2px; max-height: 70vh; overflow: auto; }
+.logs-page { padding: 24px; }
+.logs-card { padding: 8px; }
+.logs-list { font-family: monospace; font-size: 12px; display: grid; gap: 2px; max-height: 70vh; overflow: auto; }
 .log-entry { display: flex; gap: 10px; padding: 4px 8px; border-radius: 4px; }
 .log-entry.log-error { background: color-mix(in srgb, var(--nx-accent-danger) 15%, transparent); }
 .log-entry.log-warning { background: color-mix(in srgb, var(--nx-accent-warning) 15%, transparent); }
