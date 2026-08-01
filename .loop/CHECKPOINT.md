@@ -1,4 +1,15 @@
-# Checkpoint — Refonte R1-R5 terminée ✅, second round (R6-R11) en cours, R6+R7+R8+R9 faits, v0.18.0
+# Checkpoint — Refonte R1-R5 terminée ✅, second round (R6-R11) en cours, R6+R7+R8+R9+R10 faits, v0.19.0
+
+## Phase R10 (Logiciels & déploiement) : TERMINÉE, mergée (5ff4745), version 0.19.0 — push+tag+release restent à faire
+
+Spec : `2026-08-02-nitrux-r10-logiciels-deploiement-design.md`. Plan : `2026-08-02-nitrux-r10-logiciels-deploiement.md` (6 tâches). Investigation : comparaison categories.ts vs navigation.ts NiTriTe + audit des modules Rust orphelins. Découverte clé : `appCatalog.ts` avait `InstallMethod="apt"|"flatpak"|"snap"` depuis le début mais seul "apt" était implémenté — 3 entrées affichaient un badge honnête "Bientôt disponible" jamais tenu. Décision utilisateur (AskUserQuestion) : fermer complètement y compris Snap malgré la nouvelle surface pkexec.
+- Task 1 (install_flatpak_package, --user, non-privilégié) : aucun bug.
+- Task 2 (install_snap_package, nouvelle action pkexec `install-snap`) : aucun bug de code, mais **nouvelle surface privilégiée traitée avec la rigueur complète établie** — exec.path dédié, wrapper+policy+tauri.conf.json mis à jour, **testée en direct sur la VM** (snapd installé, cycle pkexec complet avec le paquet `hello`, ligne `AUTHENTICATING FOR org.heiphaistos.nitrux.install-snap` confirmée, installation réelle réussie).
+- Task 3 (QuickInstallPage.vue câblé, retrait badge "Bientôt disponible") : aucun bug.
+- Task 4 (InstallProfilesPage.vue, profils sur catalogue existant) : **bug trouvé dans le plan lui-même en auto-review** — `waitFor` sur "Firefox" (déjà visible dans la liste checkbox permanente) n'attendait pas réellement la fin de la boucle d'install séquentielle ; corrigé avant même d'écrire le code.
+- Task 5 bonus (get_smart_status, orphelin depuis R9, câblé dans DisksPage.vue) : aucun bug.
+- Task 6 (vérification finale) : Flatpak **vérifié en direct sur la VM** (installation réelle de Discord réussie, accès réseau fonctionnel, contrairement à l'hypothèse prudente du plan) — Snap déjà vérifié en Task 2.
+- 198/198 frontend, 188 Rust, vue-tsc clean.
 
 ## Phase R9 (Stockage avancé) : TERMINÉE, mergée (40ad117), version 0.18.0 — push+tag+release restent à faire
 
@@ -53,15 +64,16 @@ Merge master (fast-forward propre) + version bump 0.15.0→0.16.0 + build réel 
 
 ## Prochaine action
 
-Pousser master + créer le tag `v0.18.0` + créer la release GitHub avec les assets `.deb`/`.rpm` (AppImage toujours bloqué). Nettoyer le worktree `r9-stockage-avance`.
+Pousser master + créer le tag `v0.19.0` + créer la release GitHub avec les assets `.deb`/`.rpm` (AppImage toujours bloqué). Nettoyer le worktree `r10-logiciels-deploiement`.
 
-Puis écrire spec+plan pour **Phase R10 (Logiciels & déploiement)**. Continuer le découpage R10→R11 déjà validé.
+Puis écrire spec+plan pour **Phase R11 (Diagnostic & config)** — dernière phase du découpage R6-R11.
 
 ## Contexte pour reprendre à froid
 
-- Repo local : `C:\Users\Momo\Desktop\NiTruX`, remote `https://github.com/Heiphaistos/NiTruX.git`, branche `master`, version `0.18.0`
-- Worktrees mergés à nettoyer si encore présents : `r9-stockage-avance`
-- **Découpage validé R6→R11** — spec `2026-08-01-nitrux-r6-visual-foundation-performance-design.md` §1. R6, R7, R8, R9 faits. Reste R10 (Logiciels & déploiement), R11 (Diagnostic & config).
+- Repo local : `C:\Users\Momo\Desktop\NiTruX`, remote `https://github.com/Heiphaistos/NiTruX.git`, branche `master`, version `0.19.0`
+- Worktrees mergés à nettoyer si encore présents : `r10-logiciels-deploiement`
+- **Découpage validé R6→R11** — spec `2026-08-01-nitrux-r6-visual-foundation-performance-design.md` §1. R6, R7, R8, R9, R10 faits. Reste R11 (Diagnostic & config) — dernière phase.
+- **Snap = 13e action pkexec, nouvelle depuis R10** — mêmes disciplines que toute action privilégiée : exec.path dédié `nitrux-pkexec-install-snap`, re-validation indépendante côté script, testée en live avant tout futur changement touchant install.rs.
 - **Terminal intégré différé de R8, toujours en attente d'une décision dédiée** — nécessite une nouvelle dépendance Cargo (PTY, ex: `portable-pty`) + probablement une dépendance npm (rendu ANSI, ex: `xterm.js`), à traiter séparément avec sa propre revue de conception si l'utilisateur le souhaite un jour.
 - VM Debian : `172.18.32.124`, user `dev`, password `1998`. Scripts SSH : `C:\Users\Momo\AppData\Local\Temp\claude\C--Users-Momo\880690b1-319b-40bd-bb2c-957700dc8af4\scratchpad\ssh_run.py`/`ssh_put.py`/`ssh_interactive.py` (usage `python ssh_run.py <user> <password> "<cmd>"`).
 - **Piège commande VM qui bloque silencieusement (R8)** : certaines commandes système (ex: `bluetoothctl show` quand le service est inactif) ne retournent pas d'erreur immédiate — elles bloquent jusqu'à ce qu'on les tue. Toujours wrapper une commande de vérification VM inconnue avec `timeout N <cmd>` pour éviter un SSH qui pend indéfiniment (confirmé : sans `timeout`, la commande a fait planter la connexion paramiko par timeout de socket).
