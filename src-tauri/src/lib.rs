@@ -2,6 +2,7 @@ use std::sync::Mutex;
 
 use sysinfo::System;
 
+mod backup;
 mod benchmark;
 mod cache_size;
 mod dependencies;
@@ -105,6 +106,7 @@ pub fn run() {
             optimizations::get_optimization_snapshot,
             cache_size::get_cache_size_report,
             dependencies::scan_missing_dependencies,
+            backup::create_backup,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
