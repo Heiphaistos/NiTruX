@@ -27,6 +27,10 @@ import CleanerPage from "@/pages/CleanerPage.vue";
 import DependenciesPage from "@/pages/DependenciesPage.vue";
 import BackupPage from "@/pages/BackupPage.vue";
 import UninstallerPage from "@/pages/UninstallerPage.vue";
+import WiFiAnalyzerPage from "@/pages/WiFiAnalyzerPage.vue";
+import DnsSwitcherPage from "@/pages/DnsSwitcherPage.vue";
+import BluetoothPage from "@/pages/BluetoothPage.vue";
+import ScriptsPage from "@/pages/ScriptsPage.vue";
 
 const themeStore = useThemeStore();
 onMounted(() => themeStore.setTheme(themeStore.active));
@@ -64,6 +68,10 @@ const pages: Record<string, Component> = {
   backup: BackupPage,
   antivirus: AntivirusPage,
   dependencies: DependenciesPage,
+  "wifi-analyzer": WiFiAnalyzerPage,
+  "dns-switcher": DnsSwitcherPage,
+  bluetooth: BluetoothPage,
+  scripts: ScriptsPage,
 };
 </script>
 

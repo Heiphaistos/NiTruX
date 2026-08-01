@@ -64,6 +64,10 @@ export const navigationCategories: NavCategory[] = [
     title: "Réseau",
     pages: [
       { id: "network-overview", label: "Vue d'ensemble", icon: "wifi" },
+      { id: "dns-switcher", label: "DNS Switcher", icon: "globe" },
+      { id: "wifi-analyzer", label: "WiFi Analyzer", icon: "radio" },
+      { id: "bluetooth", label: "Bluetooth", icon: "bluetooth" },
+      { id: "scripts", label: "Scripts & Snippets", icon: "file-code" },
       { id: "firewall", label: "Pare-feu", icon: "shield" },
     ],
   },

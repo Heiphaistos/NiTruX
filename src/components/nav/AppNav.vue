@@ -6,6 +6,7 @@ import {
   RefreshCw, Cpu, Wrench, Wifi, Shield, FileText, ScrollText, Settings,
   Palette, Zap, Thermometer, Gauge, BarChart3, Circle,
   Trash2, Sparkles, Save, ShieldCheck, PackageSearch,
+  Globe, Radio, Bluetooth, FileCode,
 } from "lucide-vue-next";
 import { navigationCategories } from "@/navigation/categories";
 
@@ -41,6 +42,10 @@ const iconMap: Record<string, Component> = {
   save: Save,
   "shield-check": ShieldCheck,
   "package-search": PackageSearch,
+  globe: Globe,
+  radio: Radio,
+  bluetooth: Bluetooth,
+  "file-code": FileCode,
 };
 
 function getIcon(name: string): Component {

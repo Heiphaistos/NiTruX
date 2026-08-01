@@ -41,4 +41,12 @@ describe("navigationCategories", () => {
     expect(allPageIds).toContain("antivirus");
     expect(allPageIds).toContain("dependencies");
   });
+
+  it("includes the 4 new Phase R8 Réseau & Terminal pages by id", () => {
+    const allPageIds = navigationCategories.flatMap((c) => c.pages.map((p) => p.id));
+    expect(allPageIds).toContain("dns-switcher");
+    expect(allPageIds).toContain("wifi-analyzer");
+    expect(allPageIds).toContain("bluetooth");
+    expect(allPageIds).toContain("scripts");
+  });
 });
