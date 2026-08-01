@@ -5,6 +5,7 @@ import {
   LayoutDashboard, Stethoscope, Download, Package, HardDrive, Files,
   RefreshCw, Cpu, Wrench, Wifi, Shield, FileText, ScrollText, Settings,
   Palette, Zap, Thermometer, Gauge, BarChart3, Circle,
+  Trash2, Sparkles, Save, ShieldCheck, PackageSearch,
 } from "lucide-vue-next";
 import { navigationCategories } from "@/navigation/categories";
 
@@ -35,6 +36,11 @@ const iconMap: Record<string, Component> = {
   thermometer: Thermometer,
   gauge: Gauge,
   "bar-chart-3": BarChart3,
+  "trash-2": Trash2,
+  sparkles: Sparkles,
+  save: Save,
+  "shield-check": ShieldCheck,
+  "package-search": PackageSearch,
 };
 
 function getIcon(name: string): Component {

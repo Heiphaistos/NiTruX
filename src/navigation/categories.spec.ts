@@ -32,4 +32,13 @@ describe("navigationCategories", () => {
     expect(allPageIds).toContain("benchmark");
     expect(allPageIds).toContain("perf-history");
   });
+
+  it("includes the 5 new Phase R7 Maintenance avancée pages by id", () => {
+    const allPageIds = navigationCategories.flatMap((c) => c.pages.map((p) => p.id));
+    expect(allPageIds).toContain("uninstaller");
+    expect(allPageIds).toContain("cleaner");
+    expect(allPageIds).toContain("backup");
+    expect(allPageIds).toContain("antivirus");
+    expect(allPageIds).toContain("dependencies");
+  });
 });

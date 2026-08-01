@@ -22,6 +22,11 @@ import TemperaturesPage from "@/pages/TemperaturesPage.vue";
 import BenchmarkPage from "@/pages/BenchmarkPage.vue";
 import PerfHistoryPage from "@/pages/PerfHistoryPage.vue";
 import OptimizationsPage from "@/pages/OptimizationsPage.vue";
+import AntivirusPage from "@/pages/AntivirusPage.vue";
+import CleanerPage from "@/pages/CleanerPage.vue";
+import DependenciesPage from "@/pages/DependenciesPage.vue";
+import BackupPage from "@/pages/BackupPage.vue";
+import UninstallerPage from "@/pages/UninstallerPage.vue";
 
 const themeStore = useThemeStore();
 onMounted(() => themeStore.setTheme(themeStore.active));
@@ -54,6 +59,11 @@ const pages: Record<string, Component> = {
   temperatures: TemperaturesPage,
   benchmark: BenchmarkPage,
   "perf-history": PerfHistoryPage,
+  uninstaller: UninstallerPage,
+  cleaner: CleanerPage,
+  backup: BackupPage,
+  antivirus: AntivirusPage,
+  dependencies: DependenciesPage,
 };
 </script>
 

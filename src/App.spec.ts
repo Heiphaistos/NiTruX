@@ -87,4 +87,20 @@ describe("App", () => {
     await diagnosticTile.trigger("click");
     expect(wrapper.text()).toContain("Composants matériels détectés");
   });
+
+  it("shows the real AntivirusPage for the antivirus id", async () => {
+    const wrapper = mount(App);
+    const buttons = wrapper.findAll("button");
+    const button = buttons.find((b) => b.text() === "Antivirus")!;
+    await button.trigger("click");
+    expect(wrapper.text()).toContain("Analyse un dossier");
+  });
+
+  it("shows the real UninstallerPage for the uninstaller id", async () => {
+    const wrapper = mount(App);
+    const buttons = wrapper.findAll("button");
+    const button = buttons.find((b) => b.text() === "Désinstalleur")!;
+    await button.trigger("click");
+    expect(wrapper.text()).toContain("Détection du gestionnaire");
+  });
 });
