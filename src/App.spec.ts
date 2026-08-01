@@ -38,11 +38,11 @@ describe("App", () => {
     expect(wrapper.text()).toContain("Composants matériels détectés");
   });
 
-  it("shows the ComingSoonPage for the not-yet-implemented quick-install id", async () => {
+  it("shows the real QuickInstallPage (not a placeholder) for the quick-install id", async () => {
     const wrapper = mount(App);
     const buttons = wrapper.findAll("button");
     const quickInstallButton = buttons.find((b) => b.text() === "Installation rapide")!;
     await quickInstallButton.trigger("click");
-    expect(wrapper.text()).toContain("Bientôt disponible");
+    expect(wrapper.text()).not.toContain("prévu pour Phase R3");
   });
 });

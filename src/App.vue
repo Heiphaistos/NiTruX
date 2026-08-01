@@ -15,7 +15,7 @@ import NetworkPage from "@/pages/NetworkPage.vue";
 import FirewallPage from "@/pages/FirewallPage.vue";
 import TroubleshootPage from "@/pages/TroubleshootPage.vue";
 import SettingsPreferencesPage from "@/pages/SettingsPreferencesPage.vue";
-import QuickInstallPlaceholder from "@/pages/QuickInstallPlaceholder.vue";
+import QuickInstallPage from "@/pages/QuickInstallPage.vue";
 import UpdatesPlaceholder from "@/pages/UpdatesPlaceholder.vue";
 import ReportGeneratorPlaceholder from "@/pages/ReportGeneratorPlaceholder.vue";
 
@@ -33,7 +33,7 @@ const currentPage = ref<string>("dashboard");
 const pages: Record<string, Component> = {
   dashboard: DashboardPage,
   diagnostic: DiagnosticPage,
-  "quick-install": QuickInstallPlaceholder,
+  "quick-install": QuickInstallPage,
   "package-manager": PackagesPage,
   disks: DisksPage,
   "file-tools": FileToolsPage,
