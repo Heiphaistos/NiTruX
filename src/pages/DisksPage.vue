@@ -28,6 +28,25 @@ async function loadDisks() {
 }
 onMounted(loadDisks);
 
+interface SmartStatus { device: string; health: string | null }
+
+const smartStatus = ref<Record<string, SmartStatus>>({});
+const smartError = ref<Record<string, string>>({});
+const smartBusy = ref<string | null>(null);
+
+async function checkSmart(diskName: string) {
+  const device = `/dev/${diskName}`;
+  smartBusy.value = diskName;
+  delete smartError.value[diskName];
+  try {
+    smartStatus.value = { ...smartStatus.value, [diskName]: await invoke<SmartStatus>("get_smart_status", { device }) };
+  } catch (e) {
+    smartError.value = { ...smartError.value, [diskName]: String(e) };
+  } finally {
+    smartBusy.value = null;
+  }
+}
+
 const FSTYPE_OPTIONS = [
   { value: "ext4", label: "ext4" },
   { value: "btrfs", label: "btrfs" },
@@ -117,6 +136,15 @@ function bytesToGb(bytes: number): string {
       <ul>
         <li v-for="p in disk.partitions" :key="p.name">{{ p.name }} ({{ p.size }}){{ p.mountpoint ? ` → ${p.mountpoint}` : "" }}</li>
       </ul>
+      <div class="disks-smart-row">
+        <NxButton :disabled="smartBusy === disk.name" @click="checkSmart(disk.name)">
+          {{ smartBusy === disk.name ? "Vérification..." : "Vérifier la santé" }}
+        </NxButton>
+        <NxBadge v-if="smartStatus[disk.name]" :status="smartStatus[disk.name].health === 'PASSED' ? 'success' : 'danger'">
+          {{ smartStatus[disk.name].health ?? "inconnu" }}
+        </NxBadge>
+        <span v-if="smartError[disk.name]" class="disks-smart-error">{{ smartError[disk.name] }}</span>
+      </div>
     </NxCard>
 
     <NxCard>
@@ -179,4 +207,6 @@ function bytesToGb(bytes: number): string {
 .disks-disk-card { font-size: 13px; }
 .disks-usage-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 4px 0; font-size: 13px; }
 .disks-form-row { display: flex; gap: 10px; align-items: center; margin: 10px 0; }
+.disks-smart-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 12px; }
+.disks-smart-error { color: var(--nx-text-secondary); }
 </style>

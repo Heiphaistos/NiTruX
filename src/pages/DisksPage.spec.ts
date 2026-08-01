@@ -30,4 +30,35 @@ describe("DisksPage", () => {
     const formatButton = buttons.find((b) => b.text().includes("Formater"))!;
     expect(formatButton.attributes("disabled")).toBeDefined();
   });
+
+  it("checks SMART health for a disk and shows the result", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) => {
+      if (cmd === "list_disks") return Promise.resolve([{ name: "sda", size: "500G", partitions: [] }]);
+      if (cmd === "list_disk_usage") return Promise.resolve([]);
+      if (cmd === "get_smart_status") return Promise.resolve({ device: "/dev/sda", health: "PASSED" });
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(DisksPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("sda"));
+    const button = wrapper.findAll("button").find((b) => b.text() === "Vérifier la santé")!;
+    await button.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("PASSED"));
+    expect(invoke).toHaveBeenCalledWith("get_smart_status", { device: "/dev/sda" });
+  });
+
+  it("shows a clear message when SMART is unavailable (e.g. no root)", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) => {
+      if (cmd === "list_disks") return Promise.resolve([{ name: "sda", size: "500G", partitions: [] }]);
+      if (cmd === "list_disk_usage") return Promise.resolve([]);
+      if (cmd === "get_smart_status") return Promise.reject("smartctl: Permission denied");
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(DisksPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("sda"));
+    const button = wrapper.findAll("button").find((b) => b.text() === "Vérifier la santé")!;
+    await button.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Permission denied"));
+  });
 });
