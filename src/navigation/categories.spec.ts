@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { navigationCategories } from "./categories";
 
 describe("navigationCategories", () => {
-  it("has exactly 7 categories", () => {
-    expect(navigationCategories).toHaveLength(7);
+  it("has exactly 8 categories", () => {
+    expect(navigationCategories).toHaveLength(8);
   });
 
   it("every page id is unique across all categories", () => {
@@ -23,5 +23,13 @@ describe("navigationCategories", () => {
     expect(allPageIds).toContain("updates");
     expect(allPageIds).toContain("report-generator");
     expect(allPageIds).toContain("settings-preferences");
+  });
+
+  it("includes the 4 new Phase R6 Performance category pages by id", () => {
+    const allPageIds = navigationCategories.flatMap((c) => c.pages.map((p) => p.id));
+    expect(allPageIds).toContain("optimizations");
+    expect(allPageIds).toContain("temperatures");
+    expect(allPageIds).toContain("benchmark");
+    expect(allPageIds).toContain("perf-history");
   });
 });
