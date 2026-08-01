@@ -120,6 +120,14 @@ describe("App", () => {
     expect(wrapper.text()).toContain("aucune élévation");
   });
 
+  it("shows the real InstallProfilesPage for the install-profiles id", async () => {
+    const wrapper = mount(App);
+    const buttons = wrapper.findAll("button");
+    const button = buttons.find((b) => b.text() === "Installation par profils")!;
+    await button.trigger("click");
+    expect(wrapper.text()).toContain("Sélectionnez un profil");
+  });
+
   it("shows the real DataRecoveryPage for the data-recovery id", async () => {
     const wrapper = mount(App);
     const buttons = wrapper.findAll("button");

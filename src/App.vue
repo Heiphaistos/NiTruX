@@ -37,6 +37,7 @@ import DiskVisualizerPage from "@/pages/DiskVisualizerPage.vue";
 import DataRecoveryPage from "@/pages/DataRecoveryPage.vue";
 import BootManagerPage from "@/pages/BootManagerPage.vue";
 import RestorePointsPage from "@/pages/RestorePointsPage.vue";
+import InstallProfilesPage from "@/pages/InstallProfilesPage.vue";
 
 const themeStore = useThemeStore();
 onMounted(() => themeStore.setTheme(themeStore.active));
@@ -101,6 +102,7 @@ const pages: Record<string, Component> = {
   "data-recovery": DataRecoveryPage,
   "boot-manager": BootManagerPage,
   "restore-points": RestorePointsPage,
+  "install-profiles": InstallProfilesPage,
 };
 </script>
 

@@ -57,4 +57,9 @@ describe("navigationCategories", () => {
     expect(allPageIds).toContain("boot-manager");
     expect(allPageIds).toContain("restore-points");
   });
+
+  it("includes the new Phase R10 Logiciels & déploiement page by id", () => {
+    const allPageIds = navigationCategories.flatMap((c) => c.pages.map((p) => p.id));
+    expect(allPageIds).toContain("install-profiles");
+  });
 });
