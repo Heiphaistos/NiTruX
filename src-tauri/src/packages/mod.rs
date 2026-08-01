@@ -2,6 +2,7 @@ use serde::Serialize;
 
 pub mod apt;
 pub mod dnf;
+pub mod flatpak;
 pub mod install;
 pub mod pacman;
 pub mod universal;
