@@ -46,6 +46,26 @@ pub fn install_package(manager: String, package: String) -> Result<String, Strin
     )
 }
 
+/// Installs a Snap package, escalating through polkit. Snapd always
+/// requires root for `snap install` (unlike Flatpak, there is no
+/// unprivileged `--user` equivalent) -- see `install_flatpak_package`'s
+/// doc comment for the contrast. Mirrors `install_package` exactly (same
+/// package-name validation, same generous timeout), but uses its own
+/// dedicated `nitrux-pkexec-install-snap` exec path rather than sharing
+/// `install-package`'s -- pkexec resolves the action purely by exec path,
+/// with no visibility into argv, so a shared path across actions with
+/// different argument shapes (this one has no `manager` argument) would be
+/// ambiguous to it.
+#[tauri::command]
+pub fn install_snap_package(package: String) -> Result<String, String> {
+    validate_package_name(&package)?;
+    subprocess::run_with_timeout(
+        "pkexec",
+        &["/usr/bin/nitrux-pkexec-install-snap", "install-snap", &package],
+        Duration::from_secs(300),
+    )
+}
+
 /// Uninstalls `package` via `manager`, escalating through polkit. Mirrors
 /// `install_package` exactly (same validation, same generous timeout for a
 /// potentially dependency-heavy operation) -- see that function's doc
@@ -128,6 +148,12 @@ mod tests {
     #[test]
     fn uninstall_package_rejects_malicious_package_name_before_ever_shelling_out() {
         let result = uninstall_package("apt".to_string(), "curl; rm -rf /".to_string());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn install_snap_package_rejects_malicious_package_name_before_ever_shelling_out() {
+        let result = install_snap_package("curl; rm -rf /".to_string());
         assert!(result.is_err());
     }
 }

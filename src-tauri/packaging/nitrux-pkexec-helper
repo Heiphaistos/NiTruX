@@ -9,9 +9,10 @@
 # Rust-side validation happens too, but this script NEVER trusts that and
 # re-validates everything itself.
 #
-# This same script is installed under 12 distinct names (one per polkit
+# This same script is installed under 13 distinct names (one per polkit
 # action): nitrux-pkexec-install-package, nitrux-pkexec-uninstall-package,
-# nitrux-pkexec-upgrade-all, nitrux-pkexec-write-hosts,
+# nitrux-pkexec-upgrade-all, nitrux-pkexec-install-snap,
+# nitrux-pkexec-write-hosts,
 # nitrux-pkexec-set-dns, nitrux-pkexec-firewall-rule,
 # nitrux-pkexec-troubleshoot, nitrux-pkexec-create-snapshot,
 # nitrux-pkexec-quarantine-file, nitrux-pkexec-format-partition,
@@ -29,6 +30,7 @@
 #   nitrux-pkexec-install-package install-package <manager> <package>
 #   nitrux-pkexec-uninstall-package uninstall-package <manager> <package>
 #   nitrux-pkexec-upgrade-all upgrade-all
+#   nitrux-pkexec-install-snap install-snap <package>
 #   nitrux-pkexec-write-hosts write-hosts               (base64 content on stdin)
 #   nitrux-pkexec-set-dns set-dns                       (base64 content on stdin)
 #   nitrux-pkexec-firewall-rule firewall-rule <add|remove> <port/proto>
@@ -192,6 +194,11 @@ case "$cmd" in
       pacman) exec pacman -S --noconfirm "$package" ;;
       zypper) exec zypper --non-interactive install "$package" ;;
     esac
+    ;;
+  install-snap)
+    package="${2:-}"
+    validate_package_name "$package"
+    exec snap install "$package"
     ;;
   uninstall-package)
     manager="${2:-}"
