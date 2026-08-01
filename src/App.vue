@@ -13,6 +13,7 @@ import FileToolsPage from "@/pages/FileToolsPage.vue";
 import NetworkPage from "@/pages/NetworkPage.vue";
 import FirewallPage from "@/pages/FirewallPage.vue";
 import TroubleshootPage from "@/pages/TroubleshootPage.vue";
+import SettingsPreferencesPage from "@/pages/SettingsPreferencesPage.vue";
 
 const themeStore = useThemeStore();
 onMounted(() => themeStore.setTheme(themeStore.active));
@@ -28,7 +29,8 @@ type PageId =
   | "file-tools"
   | "network"
   | "security"
-  | "troubleshoot";
+  | "troubleshoot"
+  | "settings-preferences";
 const currentPage = ref<PageId>("dashboard");
 const pages: Record<PageId, Component> = {
   dashboard: DashboardPage,
@@ -42,6 +44,7 @@ const pages: Record<PageId, Component> = {
   network: NetworkPage,
   security: FirewallPage,
   troubleshoot: TroubleshootPage,
+  "settings-preferences": SettingsPreferencesPage,
 };
 </script>
 
@@ -78,6 +81,12 @@ const pages: Record<PageId, Component> = {
           @click="currentPage = 'theme-editor'"
         >
           Apparence
+        </button>
+        <button
+          :class="{ active: currentPage === 'settings-preferences' }"
+          @click="currentPage = 'settings-preferences'"
+        >
+          Préférences
         </button>
         <button
           :class="{ active: currentPage === 'packages' }"
