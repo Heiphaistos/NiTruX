@@ -16,6 +16,7 @@ mod logs;
 mod malwarescan;
 mod network;
 mod network_write;
+mod optimizations;
 mod packages;
 mod portscan;
 mod report;
@@ -98,7 +99,8 @@ pub fn run() {
             security_write::quarantine_file,
             disk_write::format_partition,
             disk_write::extend_partition,
-            disk_write::clone_disk
+            disk_write::clone_disk,
+            optimizations::get_optimization_snapshot,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
