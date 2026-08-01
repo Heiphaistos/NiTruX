@@ -120,6 +120,22 @@ describe("App", () => {
     expect(wrapper.text()).toContain("aucune élévation");
   });
 
+  it("shows the real DataRecoveryPage for the data-recovery id", async () => {
+    const wrapper = mount(App);
+    const buttons = wrapper.findAll("button");
+    const button = buttons.find((b) => b.text() === "Récupération de données")!;
+    await button.trigger("click");
+    expect(wrapper.text()).toContain("Corbeille");
+  });
+
+  it("shows the real RestorePointsPage for the restore-points id", async () => {
+    const wrapper = mount(App);
+    const buttons = wrapper.findAll("button");
+    const button = buttons.find((b) => b.text() === "Restauration")!;
+    await button.trigger("click");
+    expect(wrapper.text()).toContain("Instantanés système");
+  });
+
   it("passes the compact icons variant to AppNav for the floating-dock layout", () => {
     localStorage.setItem("nitrux-layout", "floating-dock");
     const wrapper = mount(App);

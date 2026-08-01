@@ -49,4 +49,12 @@ describe("navigationCategories", () => {
     expect(allPageIds).toContain("bluetooth");
     expect(allPageIds).toContain("scripts");
   });
+
+  it("includes the 4 new Phase R9 Stockage avancé pages by id", () => {
+    const allPageIds = navigationCategories.flatMap((c) => c.pages.map((p) => p.id));
+    expect(allPageIds).toContain("disk-visualizer");
+    expect(allPageIds).toContain("data-recovery");
+    expect(allPageIds).toContain("boot-manager");
+    expect(allPageIds).toContain("restore-points");
+  });
 });
