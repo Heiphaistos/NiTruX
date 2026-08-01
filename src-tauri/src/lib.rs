@@ -31,6 +31,7 @@ mod smart;
 mod snapshots;
 mod subprocess;
 mod system;
+mod trash;
 
 #[tauri::command]
 fn list_updates() -> Result<Vec<packages::PackageUpdate>, String> {
@@ -113,6 +114,9 @@ pub fn run() {
             backup::create_backup,
             bluetooth::get_bluetooth_status,
             scripts::run_script,
+            trash::list_trash,
+            trash::restore_trash_item,
+            trash::delete_trash_item_permanently,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
