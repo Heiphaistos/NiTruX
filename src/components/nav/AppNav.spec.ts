@@ -49,4 +49,37 @@ describe("AppNav", () => {
     const wrapper = mount(AppNav, { props: { modelValue: "dashboard" } });
     expect(wrapper.exists()).toBe(true);
   });
+
+  it("defaults to the list variant, rendering category titles and labels", () => {
+    const wrapper = mount(AppNav, { props: { modelValue: "dashboard" } });
+    expect(wrapper.classes()).toContain("nx-app-nav--list");
+    expect(wrapper.text()).toContain("Système");
+  });
+
+  it("in the icons variant, hides category titles and page labels but keeps icons", () => {
+    const wrapper = mount(AppNav, { props: { modelValue: "dashboard", variant: "icons" } });
+    expect(wrapper.classes()).toContain("nx-app-nav--icons");
+    expect(wrapper.text()).not.toContain("Système");
+    expect(wrapper.text()).not.toContain("Tableau de bord");
+    const items = wrapper.findAll(".nx-app-nav__item");
+    expect(items.length).toBeGreaterThan(0);
+    for (const item of items) {
+      expect(item.find("svg").exists()).toBe(true);
+      expect(item.find("span").exists()).toBe(false);
+    }
+  });
+
+  it("in the icons variant, exposes each page's label as a title attribute for accessibility", () => {
+    const wrapper = mount(AppNav, { props: { modelValue: "dashboard", variant: "icons" } });
+    const buttons = wrapper.findAll("button");
+    const dashboardButton = buttons.find((b) => b.attributes("title") === "Tableau de bord");
+    expect(dashboardButton).toBeTruthy();
+  });
+
+  it("in the horizontal variant, hides category titles but keeps page labels", () => {
+    const wrapper = mount(AppNav, { props: { modelValue: "dashboard", variant: "horizontal" } });
+    expect(wrapper.classes()).toContain("nx-app-nav--horizontal");
+    expect(wrapper.text()).not.toContain("Système");
+    expect(wrapper.text()).toContain("Tableau de bord");
+  });
 });

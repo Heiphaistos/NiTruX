@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { onMounted, ref, type Component } from "vue";
+import { computed, onMounted, ref, type Component } from "vue";
 import { useThemeStore } from "@/stores/themeStore";
+import { useLayoutStore } from "@/stores/layoutStore";
+import type { LayoutId } from "@/types/layout";
 import LayoutShell from "@/layouts/LayoutShell.vue";
 import AppNav from "@/components/nav/AppNav.vue";
 import DashboardPage from "@/pages/DashboardPage.vue";
@@ -34,6 +36,25 @@ import ScriptsPage from "@/pages/ScriptsPage.vue";
 
 const themeStore = useThemeStore();
 onMounted(() => themeStore.setTheme(themeStore.active));
+
+const layoutStore = useLayoutStore();
+
+// The categorized vertical list AppNav renders by default only fits
+// layouts with a tall, wide nav area (a real sidebar). Layouts with a
+// short header, a floating dock, or a compact command bar need a
+// flattened single-row nav instead, or the full list overflows their
+// container -- see AppNav's `variant` prop.
+const NAV_VARIANT_BY_LAYOUT: Record<LayoutId, "list" | "horizontal" | "icons"> = {
+  "sidebar-classic": "list",
+  "widgets-grid": "horizontal",
+  "command-first": "horizontal",
+  "compact-sidebar": "list",
+  "top-nav": "horizontal",
+  "master-detail": "list",
+  bento: "horizontal",
+  "floating-dock": "icons",
+};
+const navVariant = computed(() => NAV_VARIANT_BY_LAYOUT[layoutStore.current]);
 
 const currentPage = ref<string>("dashboard");
 
@@ -78,7 +99,7 @@ const pages: Record<string, Component> = {
 <template>
   <LayoutShell>
     <template #nav>
-      <AppNav v-model="currentPage" />
+      <AppNav v-model="currentPage" :variant="navVariant" />
     </template>
     <component :is="pages[currentPage] ?? pages.dashboard" @navigate="currentPage = $event" />
   </LayoutShell>
