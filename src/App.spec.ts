@@ -103,4 +103,20 @@ describe("App", () => {
     await button.trigger("click");
     expect(wrapper.text()).toContain("Détection du gestionnaire");
   });
+
+  it("shows the real BluetoothPage for the bluetooth id", async () => {
+    const wrapper = mount(App);
+    const buttons = wrapper.findAll("button");
+    const button = buttons.find((b) => b.text() === "Bluetooth")!;
+    await button.trigger("click");
+    expect(wrapper.text()).toContain("Statut de l'adaptateur");
+  });
+
+  it("shows the real ScriptsPage for the scripts id", async () => {
+    const wrapper = mount(App);
+    const buttons = wrapper.findAll("button");
+    const button = buttons.find((b) => b.text() === "Scripts & Snippets")!;
+    await button.trigger("click");
+    expect(wrapper.text()).toContain("aucune élévation");
+  });
 });
