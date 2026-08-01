@@ -62,4 +62,29 @@ describe("App", () => {
     await reportButton.trigger("click");
     expect(wrapper.text()).not.toContain("prévu pour Phase R5");
   });
+
+  it("shows the real TemperaturesPage for the temperatures id", async () => {
+    const wrapper = mount(App);
+    const buttons = wrapper.findAll("button");
+    const tempButton = buttons.find((b) => b.text() === "Températures")!;
+    await tempButton.trigger("click");
+    expect(wrapper.text()).toContain("Relevés des capteurs thermiques");
+  });
+
+  it("shows the real BenchmarkPage for the benchmark id", async () => {
+    const wrapper = mount(App);
+    const buttons = wrapper.findAll("button");
+    const benchButton = buttons.find((b) => b.text() === "Benchmark")!;
+    await benchButton.trigger("click");
+    expect(wrapper.text()).toContain("Lancer le benchmark");
+  });
+
+  it("navigates to DiagnosticPage when the dashboard's Diagnostic quick-action tile is clicked", async () => {
+    const wrapper = mount(App);
+    await vi.waitFor(() => expect(wrapper.findAll(".nx-quick-action").length).toBeGreaterThan(0));
+    const tiles = wrapper.findAll(".nx-quick-action");
+    const diagnosticTile = tiles.find((t) => t.text().includes("Diagnostic"))!;
+    await diagnosticTile.trigger("click");
+    expect(wrapper.text()).toContain("Composants matériels détectés");
+  });
 });
