@@ -17,6 +17,7 @@ mod network;
 mod network_write;
 mod packages;
 mod portscan;
+mod report;
 mod security_write;
 mod sensors;
 mod smart;
@@ -70,6 +71,7 @@ pub fn run() {
             logs::get_recent_logs,
             list_updates,
             detect_native_manager,
+            report::generate_system_report,
             disks::list_disks,
             disks::list_disk_usage,
             duplicates::find_duplicate_files,
