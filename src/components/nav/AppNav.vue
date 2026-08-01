@@ -10,7 +10,9 @@ import {
 } from "lucide-vue-next";
 import { navigationCategories } from "@/navigation/categories";
 
-defineProps<{ modelValue: string }>();
+withDefaults(defineProps<{ modelValue: string; variant?: "list" | "horizontal" | "icons" }>(), {
+  variant: "list",
+});
 defineEmits<{ "update:modelValue": [string] }>();
 
 // Maps every icon name used in `categories.ts` to its lucide component.
@@ -54,18 +56,19 @@ function getIcon(name: string): Component {
 </script>
 
 <template>
-  <nav class="nx-app-nav">
+  <nav class="nx-app-nav" :class="`nx-app-nav--${variant}`">
     <div v-for="category in navigationCategories" :key="category.id" class="nx-app-nav__category">
-      <div class="nx-app-nav__title">{{ category.title }}</div>
+      <div v-if="variant === 'list'" class="nx-app-nav__title">{{ category.title }}</div>
       <button
         v-for="page in category.pages"
         :key="page.id"
         class="nx-app-nav__item"
         :class="{ active: modelValue === page.id }"
+        :title="variant === 'icons' ? page.label : undefined"
         @click="$emit('update:modelValue', page.id)"
       >
         <component :is="getIcon(page.icon)" :size="16" class="nx-app-nav__icon" />
-        <span>{{ page.label }}</span>
+        <span v-if="variant !== 'icons'">{{ page.label }}</span>
       </button>
     </div>
   </nav>
@@ -102,4 +105,30 @@ function getIcon(name: string): Component {
 .nx-app-nav__item:hover { background: var(--nx-style-bg); color: var(--nx-text-primary); }
 .nx-app-nav__item.active { background: var(--nx-style-bg); color: var(--nx-text-primary); font-weight: 600; }
 .nx-app-nav__item.active .nx-app-nav__icon { opacity: 1; }
+
+/* horizontal/icons: flattened single-row nav for headers, docks, and
+   command bars -- the categorized vertical list (.nx-app-nav__title +
+   stacked items) doesn't fit those contexts, so category grouping
+   collapses and everything scrolls horizontally instead of overflowing
+   the container's fixed height. */
+.nx-app-nav--horizontal,
+.nx-app-nav--icons {
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap;
+}
+.nx-app-nav--horizontal .nx-app-nav__category,
+.nx-app-nav--icons .nx-app-nav__category {
+  display: contents;
+}
+.nx-app-nav--horizontal .nx-app-nav__item,
+.nx-app-nav--icons .nx-app-nav__item {
+  width: auto;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 </style>

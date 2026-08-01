@@ -119,4 +119,19 @@ describe("App", () => {
     await button.trigger("click");
     expect(wrapper.text()).toContain("aucune élévation");
   });
+
+  it("passes the compact icons variant to AppNav for the floating-dock layout", () => {
+    localStorage.setItem("nitrux-layout", "floating-dock");
+    const wrapper = mount(App);
+    expect(wrapper.text()).not.toContain("Tableau de bord");
+    const items = wrapper.findAll(".nx-app-nav__item");
+    expect(items.length).toBeGreaterThan(0);
+  });
+
+  it("keeps the full list variant (category titles + labels) for the sidebar-classic layout", () => {
+    localStorage.setItem("nitrux-layout", "sidebar-classic");
+    const wrapper = mount(App);
+    expect(wrapper.text()).toContain("Système");
+    expect(wrapper.text()).toContain("Tableau de bord");
+  });
 });
