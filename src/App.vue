@@ -33,6 +33,10 @@ import WiFiAnalyzerPage from "@/pages/WiFiAnalyzerPage.vue";
 import DnsSwitcherPage from "@/pages/DnsSwitcherPage.vue";
 import BluetoothPage from "@/pages/BluetoothPage.vue";
 import ScriptsPage from "@/pages/ScriptsPage.vue";
+import DiskVisualizerPage from "@/pages/DiskVisualizerPage.vue";
+import DataRecoveryPage from "@/pages/DataRecoveryPage.vue";
+import BootManagerPage from "@/pages/BootManagerPage.vue";
+import RestorePointsPage from "@/pages/RestorePointsPage.vue";
 
 const themeStore = useThemeStore();
 onMounted(() => themeStore.setTheme(themeStore.active));
@@ -93,6 +97,10 @@ const pages: Record<string, Component> = {
   "dns-switcher": DnsSwitcherPage,
   bluetooth: BluetoothPage,
   scripts: ScriptsPage,
+  "disk-visualizer": DiskVisualizerPage,
+  "data-recovery": DataRecoveryPage,
+  "boot-manager": BootManagerPage,
+  "restore-points": RestorePointsPage,
 };
 </script>
 

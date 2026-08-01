@@ -43,6 +43,10 @@ export const navigationCategories: NavCategory[] = [
     pages: [
       { id: "disks", label: "Disques & partitions", icon: "hard-drive" },
       { id: "file-tools", label: "Doublons / Gros fichiers / Hash", icon: "files" },
+      { id: "disk-visualizer", label: "Visualiseur de disque", icon: "pie-chart" },
+      { id: "data-recovery", label: "Récupération de données", icon: "database" },
+      { id: "boot-manager", label: "Boot Manager", icon: "server" },
+      { id: "restore-points", label: "Restauration", icon: "shield-check" },
     ],
   },
   {

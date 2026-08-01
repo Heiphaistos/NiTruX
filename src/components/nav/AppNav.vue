@@ -7,6 +7,7 @@ import {
   Palette, Zap, Thermometer, Gauge, BarChart3, Circle,
   Trash2, Sparkles, Save, ShieldCheck, PackageSearch,
   Globe, Radio, Bluetooth, FileCode,
+  PieChart, Database, Server,
 } from "lucide-vue-next";
 import { navigationCategories } from "@/navigation/categories";
 
@@ -48,6 +49,9 @@ const iconMap: Record<string, Component> = {
   radio: Radio,
   bluetooth: Bluetooth,
   "file-code": FileCode,
+  "pie-chart": PieChart,
+  database: Database,
+  server: Server,
 };
 
 function getIcon(name: string): Component {
