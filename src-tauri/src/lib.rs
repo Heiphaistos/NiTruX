@@ -2,6 +2,7 @@ use std::sync::Mutex;
 
 use sysinfo::System;
 
+mod benchmark;
 mod disk_write;
 mod disks;
 mod docker;
@@ -72,6 +73,7 @@ pub fn run() {
             list_updates,
             detect_native_manager,
             report::generate_system_report,
+            benchmark::run_benchmark,
             disks::list_disks,
             disks::list_disk_usage,
             duplicates::find_duplicate_files,
