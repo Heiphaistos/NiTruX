@@ -4,6 +4,7 @@ use sysinfo::System;
 
 mod backup;
 mod benchmark;
+mod bluetooth;
 mod cache_size;
 mod dependencies;
 mod disk_write;
@@ -109,6 +110,7 @@ pub fn run() {
             cache_size::get_cache_size_report,
             dependencies::scan_missing_dependencies,
             backup::create_backup,
+            bluetooth::get_bluetooth_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
