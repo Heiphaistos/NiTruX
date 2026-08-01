@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
 import { invoke } from "@tauri-apps/api/core";
+import {
+  Stethoscope, Download, RefreshCw, Wrench, FileText,
+} from "lucide-vue-next";
+import NxCard from "@/components/ui/NxCard.vue";
+import NxStatTile from "@/components/ui/NxStatTile.vue";
+import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
+import NxQuickActionTile from "@/components/ui/NxQuickActionTile.vue";
 
 interface CpuInfo { name: string; usage_percent: number; usage_display: string }
 interface SystemSnapshot {
@@ -14,6 +21,8 @@ interface SensorSnapshot {
   battery_charging: boolean | null;
   temperatures: { label: string; celsius: number }[];
 }
+
+const emit = defineEmits<{ navigate: [string] }>();
 
 const snapshot = ref<SystemSnapshot | null>(null);
 const error = ref<string | null>(null);
@@ -55,47 +64,56 @@ onUnmounted(() => {
 function bytesToGb(bytes: number): string {
   return (bytes / 1024 / 1024 / 1024).toFixed(1);
 }
+
+const QUICK_ACTIONS = [
+  { label: "Diagnostic", icon: Stethoscope, gradient: "linear-gradient(135deg,#f97316,#fb923c)", target: "diagnostic" },
+  { label: "Installation rapide", icon: Download, gradient: "linear-gradient(135deg,#3b82f6,#2563eb)", target: "quick-install" },
+  { label: "Mises à jour", icon: RefreshCw, gradient: "linear-gradient(135deg,#22c55e,#16a34a)", target: "updates" },
+  { label: "Dépannage", icon: Wrench, gradient: "linear-gradient(135deg,#ef4444,#dc2626)", target: "troubleshoot" },
+  { label: "Générateur de rapport", icon: FileText, gradient: "linear-gradient(135deg,#8b5cf6,#7c3aed)", target: "report-generator" },
+];
 </script>
 
 <template>
   <div class="dash-page">
-    <h1>Vue d'ensemble</h1>
-    <div class="dash-error" v-if="error">
-      Impossible de récupérer les informations système : {{ error }}
+    <NxSectionHeader title="Vue d'ensemble" />
+
+    <div class="dash-actions">
+      <NxQuickActionTile
+        v-for="action in QUICK_ACTIONS"
+        :key="action.target"
+        :icon="action.icon"
+        :label="action.label"
+        :gradient="action.gradient"
+        @click="emit('navigate', action.target)"
+      />
     </div>
-    <div class="dash-error" v-if="sensorsError">
-      Impossible de récupérer les capteurs : {{ sensorsError }}
-    </div>
+
+    <NxCard v-if="error" danger>Impossible de récupérer les informations système : {{ error }}</NxCard>
+    <NxCard v-if="sensorsError" danger>Impossible de récupérer les capteurs : {{ sensorsError }}</NxCard>
+
     <div class="dash-grid" v-if="snapshot">
-      <div class="dash-card" v-for="(cpu, i) in snapshot.cpus" :key="i">
-        <div class="dash-label">{{ cpu.name || `CPU ${i}` }}</div>
-        <div class="dash-value">{{ cpu.usage_display }}</div>
-      </div>
-      <div class="dash-card">
-        <div class="dash-label">Mémoire</div>
-        <div class="dash-value">{{ bytesToGb(snapshot.memory_used_bytes) }} / {{ bytesToGb(snapshot.memory_total_bytes) }} GB</div>
-      </div>
-      <div class="dash-card">
-        <div class="dash-label">Processus</div>
-        <div class="dash-value">{{ snapshot.process_count }}</div>
-      </div>
-      <div class="dash-card" v-if="sensors?.battery_percent !== null && sensors?.battery_percent !== undefined">
-        <div class="dash-label">Batterie</div>
-        <div class="dash-value">{{ sensors!.battery_percent }}%{{ sensors!.battery_charging ? " ⚡" : "" }}</div>
-      </div>
-      <div class="dash-card" v-for="(t, i) in sensors?.temperatures ?? []" :key="`${t.label}-${i}`">
-        <div class="dash-label">{{ t.label }}</div>
-        <div class="dash-value">{{ t.celsius.toFixed(0) }}°C</div>
-      </div>
+      <NxCard v-for="(cpu, i) in snapshot.cpus" :key="i">
+        <NxStatTile :label="cpu.name || `CPU ${i}`" :value="cpu.usage_display" />
+      </NxCard>
+      <NxCard>
+        <NxStatTile label="Mémoire" :value="`${bytesToGb(snapshot.memory_used_bytes)} / ${bytesToGb(snapshot.memory_total_bytes)} GB`" />
+      </NxCard>
+      <NxCard>
+        <NxStatTile label="Processus" :value="String(snapshot.process_count)" />
+      </NxCard>
+      <NxCard v-if="sensors?.battery_percent !== null && sensors?.battery_percent !== undefined">
+        <NxStatTile label="Batterie" :value="`${sensors!.battery_percent}%${sensors!.battery_charging ? ' ⚡' : ''}`" />
+      </NxCard>
+      <NxCard v-for="(t, i) in sensors?.temperatures ?? []" :key="`${t.label}-${i}`">
+        <NxStatTile :label="t.label" :value="`${t.celsius.toFixed(0)}°C`" />
+      </NxCard>
     </div>
   </div>
 </template>
 
 <style scoped>
-.dash-page { padding: 24px; color: var(--nx-text-primary); }
-.dash-error { margin-top: 16px; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--nx-border); background: var(--nx-bg-elevated); color: var(--nx-text-secondary); }
-.dash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin-top: 16px; }
-.dash-card { background: var(--nx-bg-elevated); border: 1px solid var(--nx-border); border-radius: 10px; padding: 14px; }
-.dash-label { font-size: 12px; color: var(--nx-text-secondary); }
-.dash-value { font-size: 22px; font-weight: 700; margin-top: 6px; }
+.dash-page { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+.dash-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.dash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
 </style>
