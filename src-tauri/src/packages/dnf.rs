@@ -52,6 +52,25 @@ impl PackageManager for Dnf {
             Err(e) => Err(e),
         }
     }
+
+    fn list_installed(&self) -> Result<Vec<super::InstalledPackage>, String> {
+        let output = subprocess::run_with_timeout("rpm", &["-qa", "--queryformat", "%{NAME} %{VERSION}-%{RELEASE}\n"], Duration::from_secs(15))?;
+        Ok(output.lines().filter_map(parse_rpm_qa_line).collect())
+    }
+}
+
+/// Parses one line of `rpm -qa --queryformat '%{NAME} %{VERSION}-%{RELEASE}\n'`
+/// output, e.g. "curl 7.76.1-14.fc35" -- deliberately requesting this exact
+/// format from rpm rather than parsing its default human-readable listing,
+/// which has no fixed field separator.
+pub fn parse_rpm_qa_line(line: &str) -> Option<super::InstalledPackage> {
+    let mut parts = line.split_whitespace();
+    let name = parts.next()?.to_string();
+    let version = parts.next()?.to_string();
+    if name.is_empty() || version.is_empty() {
+        return None;
+    }
+    Some(super::InstalledPackage { name, version })
 }
 
 #[cfg(test)]
@@ -75,5 +94,18 @@ mod tests {
     #[test]
     fn skips_lines_with_too_few_fields() {
         assert!(parse_dnf_line("justonefield").is_none());
+    }
+
+    #[test]
+    fn parses_rpm_qa_line() {
+        let line = "curl 7.76.1-14.fc35";
+        let pkg = super::parse_rpm_qa_line(line).expect("should parse");
+        assert_eq!(pkg.name, "curl");
+        assert_eq!(pkg.version, "7.76.1-14.fc35");
+    }
+
+    #[test]
+    fn skips_blank_rpm_qa_lines() {
+        assert!(super::parse_rpm_qa_line("").is_none());
     }
 }
