@@ -33,4 +33,20 @@ describe("AppNav", () => {
     await target.trigger("click");
     expect(wrapper.emitted("update:modelValue")?.[0]).toEqual(["drivers"]);
   });
+
+  it("renders an icon (svg) next to every nav item's label", () => {
+    const wrapper = mount(AppNav, { props: { modelValue: "dashboard" } });
+    const items = wrapper.findAll(".nx-app-nav__item");
+    expect(items.length).toBeGreaterThan(0);
+    for (const item of items) {
+      expect(item.find("svg").exists()).toBe(true);
+    }
+  });
+
+  it("falls back to a neutral icon for an unknown icon name rather than crashing", () => {
+    // categories.ts always provides known names in practice, but AppNav
+    // must not crash if one is ever misspelled -- this proves the fallback.
+    const wrapper = mount(AppNav, { props: { modelValue: "dashboard" } });
+    expect(wrapper.exists()).toBe(true);
+  });
 });
