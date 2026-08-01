@@ -80,8 +80,46 @@ pub fn restore_trash_item(trashed_name: String) -> Result<(), String> {
     if let Some(parent) = std::path::Path::new(&original_path).parent() {
         std::fs::create_dir_all(parent).map_err(|e| format!("impossible de recréer le dossier d'origine : {e}"))?;
     }
-    std::fs::rename(&trashed_file_path, &original_path).map_err(|e| format!("échec de la restauration : {e}"))?;
+    move_path(&trashed_file_path, std::path::Path::new(&original_path)).map_err(|e| format!("échec de la restauration : {e}"))?;
     std::fs::remove_file(&info_path).map_err(|e| format!("restauré, mais échec du nettoyage de la métadonnée : {e}"))?;
+    Ok(())
+}
+
+fn copy_recursive(from: &std::path::Path, to: &std::path::Path) -> std::io::Result<()> {
+    if from.is_dir() {
+        std::fs::create_dir_all(to)?;
+        for entry in std::fs::read_dir(from)? {
+            let entry = entry?;
+            copy_recursive(&entry.path(), &to.join(entry.file_name()))?;
+        }
+        Ok(())
+    } else {
+        std::fs::copy(from, to).map(|_| ())
+    }
+}
+
+fn remove_recursive(path: &std::path::Path) -> std::io::Result<()> {
+    if path.is_dir() {
+        std::fs::remove_dir_all(path)
+    } else {
+        std::fs::remove_file(path)
+    }
+}
+
+/// Moves `from` to `to`, falling back to a recursive copy + delete when
+/// `rename(2)` fails -- most commonly EXDEV, meaning `from` and `to` are on
+/// different filesystems. This is NOT a theoretical concern: confirmed live
+/// on the project's dev VM that `~/.local/share/Trash` (on the root
+/// filesystem) and `/tmp` (tmpfs) are different devices there, so a file
+/// originally trashed from `/tmp` -- or any separate mount, e.g. a second
+/// partition or a USB drive -- would otherwise fail to restore with a raw
+/// OS error. Mirrors what `mv` does automatically.
+fn move_path(from: &std::path::Path, to: &std::path::Path) -> std::io::Result<()> {
+    if std::fs::rename(from, to).is_ok() {
+        return Ok(());
+    }
+    copy_recursive(from, to)?;
+    remove_recursive(from)?;
     Ok(())
 }
 
@@ -140,5 +178,44 @@ mod tests {
         // not silencing.
         let items = list_trash();
         assert!(items.is_empty() || !items.is_empty()); // smoke test: does not panic
+    }
+
+    // These two exercise move_path's same-filesystem rename() fast path and
+    // its recursive-copy directory handling. The EXDEV fallback itself
+    // (different filesystems) can't be portably exercised here -- temp_dir
+    // subdirectories are on the same device in any CI/dev sandbox -- it was
+    // instead confirmed live on the project's dev VM (see move_path's doc
+    // comment), which is where this bug was actually found.
+
+    #[test]
+    fn move_path_relocates_a_file_and_removes_the_original() {
+        let dir = std::env::temp_dir().join(format!("nitrux-trash-test-file-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let from = dir.join("source.txt");
+        let to = dir.join("dest.txt");
+        std::fs::write(&from, b"hello").unwrap();
+
+        move_path(&from, &to).unwrap();
+
+        assert!(!from.exists());
+        assert_eq!(std::fs::read_to_string(&to).unwrap(), "hello");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn move_path_relocates_a_directory_recursively() {
+        let base = std::env::temp_dir().join(format!("nitrux-trash-test-dir-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let from = base.join("from");
+        let to = base.join("to");
+        std::fs::create_dir_all(from.join("nested")).unwrap();
+        std::fs::write(from.join("nested/file.txt"), b"content").unwrap();
+
+        move_path(&from, &to).unwrap();
+
+        assert!(!from.exists());
+        assert_eq!(std::fs::read_to_string(to.join("nested/file.txt")).unwrap(), "content");
+        let _ = std::fs::remove_dir_all(&base);
     }
 }
