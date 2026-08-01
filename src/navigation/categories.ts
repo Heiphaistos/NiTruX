@@ -52,6 +52,11 @@ export const navigationCategories: NavCategory[] = [
       { id: "updates", label: "Mises à jour", icon: "refresh-cw" },
       { id: "drivers", label: "Pilotes", icon: "cpu" },
       { id: "troubleshoot", label: "Dépannage", icon: "wrench" },
+      { id: "uninstaller", label: "Désinstalleur", icon: "trash-2" },
+      { id: "cleaner", label: "Nettoyeur", icon: "sparkles" },
+      { id: "backup", label: "Sauvegarde", icon: "save" },
+      { id: "antivirus", label: "Antivirus", icon: "shield-check" },
+      { id: "dependencies", label: "Dépendances", icon: "package-search" },
     ],
   },
   {
