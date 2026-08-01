@@ -1,9 +1,45 @@
 <!-- src/components/nav/AppNav.vue -->
 <script setup lang="ts">
+import { type Component } from "vue";
+import {
+  LayoutDashboard, Stethoscope, Download, Package, HardDrive, Files,
+  RefreshCw, Cpu, Wrench, Wifi, Shield, FileText, ScrollText, Settings,
+  Palette, Zap, Thermometer, Gauge, BarChart3, Circle,
+} from "lucide-vue-next";
 import { navigationCategories } from "@/navigation/categories";
 
 defineProps<{ modelValue: string }>();
 defineEmits<{ "update:modelValue": [string] }>();
+
+// Maps every icon name used in `categories.ts` to its lucide component.
+// An id with no entry here falls back to `Circle` (Step 2's second test) --
+// this can only happen if a future `categories.ts` entry's icon name is
+// misspelled or not yet added to this map, never a crash.
+const iconMap: Record<string, Component> = {
+  "layout-dashboard": LayoutDashboard,
+  stethoscope: Stethoscope,
+  download: Download,
+  package: Package,
+  "hard-drive": HardDrive,
+  files: Files,
+  "refresh-cw": RefreshCw,
+  cpu: Cpu,
+  wrench: Wrench,
+  wifi: Wifi,
+  shield: Shield,
+  "file-text": FileText,
+  "scroll-text": ScrollText,
+  settings: Settings,
+  palette: Palette,
+  zap: Zap,
+  thermometer: Thermometer,
+  gauge: Gauge,
+  "bar-chart-3": BarChart3,
+};
+
+function getIcon(name: string): Component {
+  return iconMap[name] ?? Circle;
+}
 </script>
 
 <template>
@@ -17,7 +53,8 @@ defineEmits<{ "update:modelValue": [string] }>();
         :class="{ active: modelValue === page.id }"
         @click="$emit('update:modelValue', page.id)"
       >
-        {{ page.label }}
+        <component :is="getIcon(page.icon)" :size="16" class="nx-app-nav__icon" />
+        <span>{{ page.label }}</span>
       </button>
     </div>
   </nav>
@@ -36,7 +73,9 @@ defineEmits<{ "update:modelValue": [string] }>();
   font-weight: 700;
 }
 .nx-app-nav__item {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: 100%;
   text-align: left;
   padding: 7px 10px;
@@ -48,6 +87,8 @@ defineEmits<{ "update:modelValue": [string] }>();
   font: inherit;
   font-size: 13px;
 }
+.nx-app-nav__icon { flex-shrink: 0; opacity: 0.8; }
 .nx-app-nav__item:hover { background: var(--nx-style-bg); color: var(--nx-text-primary); }
 .nx-app-nav__item.active { background: var(--nx-style-bg); color: var(--nx-text-primary); font-weight: 600; }
+.nx-app-nav__item.active .nx-app-nav__icon { opacity: 1; }
 </style>
