@@ -20,6 +20,16 @@ export const navigationCategories: NavCategory[] = [
     ],
   },
   {
+    id: "performance",
+    title: "Performance",
+    pages: [
+      { id: "optimizations", label: "Optimisations", icon: "zap" },
+      { id: "temperatures", label: "Températures", icon: "thermometer" },
+      { id: "benchmark", label: "Benchmark", icon: "gauge" },
+      { id: "perf-history", label: "Historique perf.", icon: "bar-chart-3" },
+    ],
+  },
+  {
     id: "applications",
     title: "Applications",
     pages: [
