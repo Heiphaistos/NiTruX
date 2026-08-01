@@ -100,6 +100,7 @@ pub fn run() {
             packages::install::install_package,
             packages::install::uninstall_package,
             packages::install::upgrade_all_packages,
+            packages::install::install_snap_package,
             network_write::write_hosts_file,
             network_write::set_dns_servers,
             network_write::add_firewall_rule,
