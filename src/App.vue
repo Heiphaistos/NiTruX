@@ -11,7 +11,8 @@ import PackagesPage from "@/pages/PackagesPage.vue";
 import DisksPage from "@/pages/DisksPage.vue";
 import FileToolsPage from "@/pages/FileToolsPage.vue";
 import NetworkPage from "@/pages/NetworkPage.vue";
-import SecurityPage from "@/pages/SecurityPage.vue";
+import FirewallPage from "@/pages/FirewallPage.vue";
+import TroubleshootPage from "@/pages/TroubleshootPage.vue";
 
 const themeStore = useThemeStore();
 onMounted(() => themeStore.setTheme(themeStore.active));
@@ -26,7 +27,8 @@ type PageId =
   | "disks"
   | "file-tools"
   | "network"
-  | "security";
+  | "security"
+  | "troubleshoot";
 const currentPage = ref<PageId>("dashboard");
 const pages: Record<PageId, Component> = {
   dashboard: DashboardPage,
@@ -38,7 +40,8 @@ const pages: Record<PageId, Component> = {
   disks: DisksPage,
   "file-tools": FileToolsPage,
   network: NetworkPage,
-  security: SecurityPage,
+  security: FirewallPage,
+  troubleshoot: TroubleshootPage,
 };
 </script>
 
@@ -104,7 +107,13 @@ const pages: Record<PageId, Component> = {
           :class="{ active: currentPage === 'security' }"
           @click="currentPage = 'security'"
         >
-          Sécurité
+          Pare-feu
+        </button>
+        <button
+          :class="{ active: currentPage === 'troubleshoot' }"
+          @click="currentPage = 'troubleshoot'"
+        >
+          Dépannage
         </button>
       </nav>
     </template>
