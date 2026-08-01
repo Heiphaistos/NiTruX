@@ -18,6 +18,10 @@ import SettingsPreferencesPage from "@/pages/SettingsPreferencesPage.vue";
 import QuickInstallPage from "@/pages/QuickInstallPage.vue";
 import UpdatesPage from "@/pages/UpdatesPage.vue";
 import ReportGeneratorPage from "@/pages/ReportGeneratorPage.vue";
+import TemperaturesPage from "@/pages/TemperaturesPage.vue";
+import BenchmarkPage from "@/pages/BenchmarkPage.vue";
+import PerfHistoryPage from "@/pages/PerfHistoryPage.vue";
+import OptimizationsPage from "@/pages/OptimizationsPage.vue";
 
 const themeStore = useThemeStore();
 onMounted(() => themeStore.setTheme(themeStore.active));
@@ -46,6 +50,10 @@ const pages: Record<string, Component> = {
   logs: LogsPage,
   "settings-preferences": SettingsPreferencesPage,
   "settings-appearance": ThemeEditorPage,
+  optimizations: OptimizationsPage,
+  temperatures: TemperaturesPage,
+  benchmark: BenchmarkPage,
+  "perf-history": PerfHistoryPage,
 };
 </script>
 
@@ -54,7 +62,7 @@ const pages: Record<string, Component> = {
     <template #nav>
       <AppNav v-model="currentPage" />
     </template>
-    <component :is="pages[currentPage] ?? pages.dashboard" />
+    <component :is="pages[currentPage] ?? pages.dashboard" @navigate="currentPage = $event" />
   </LayoutShell>
 </template>
 
