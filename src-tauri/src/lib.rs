@@ -24,6 +24,7 @@ mod optimizations;
 mod packages;
 mod portscan;
 mod report;
+mod scripts;
 mod security_write;
 mod sensors;
 mod smart;
@@ -111,6 +112,7 @@ pub fn run() {
             dependencies::scan_missing_dependencies,
             backup::create_backup,
             bluetooth::get_bluetooth_status,
+            scripts::run_script,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
