@@ -2,6 +2,7 @@
 import { onMounted, ref, type Component } from "vue";
 import { useThemeStore } from "@/stores/themeStore";
 import LayoutShell from "@/layouts/LayoutShell.vue";
+import AppNav from "@/components/nav/AppNav.vue";
 import DashboardPage from "@/pages/DashboardPage.vue";
 import DiagnosticPage from "@/pages/DiagnosticPage.vue";
 import DriversPage from "@/pages/DriversPage.vue";
@@ -14,149 +15,48 @@ import NetworkPage from "@/pages/NetworkPage.vue";
 import FirewallPage from "@/pages/FirewallPage.vue";
 import TroubleshootPage from "@/pages/TroubleshootPage.vue";
 import SettingsPreferencesPage from "@/pages/SettingsPreferencesPage.vue";
+import QuickInstallPlaceholder from "@/pages/QuickInstallPlaceholder.vue";
+import UpdatesPlaceholder from "@/pages/UpdatesPlaceholder.vue";
+import ReportGeneratorPlaceholder from "@/pages/ReportGeneratorPlaceholder.vue";
 
 const themeStore = useThemeStore();
 onMounted(() => themeStore.setTheme(themeStore.active));
 
-type PageId =
-  | "dashboard"
-  | "hardware"
-  | "drivers"
-  | "logs"
-  | "theme-editor"
-  | "packages"
-  | "disks"
-  | "file-tools"
-  | "network"
-  | "security"
-  | "troubleshoot"
-  | "settings-preferences";
-const currentPage = ref<PageId>("dashboard");
-const pages: Record<PageId, Component> = {
+const currentPage = ref<string>("dashboard");
+
+// Every id here must match a `NavPage.id` in `src/navigation/categories.ts`
+// exactly -- AppNav renders nav items purely from that data file, so a
+// mismatch here means a nav item that silently does nothing when clicked
+// (falls back to the dashboard per the `?? pages.dashboard` guard below,
+// not a crash, but still a real bug if it ever happens for an id that
+// should have a real page).
+const pages: Record<string, Component> = {
   dashboard: DashboardPage,
-  hardware: DiagnosticPage,
-  drivers: DriversPage,
-  logs: LogsPage,
-  "theme-editor": ThemeEditorPage,
-  packages: PackagesPage,
+  diagnostic: DiagnosticPage,
+  "quick-install": QuickInstallPlaceholder,
+  "package-manager": PackagesPage,
   disks: DisksPage,
   "file-tools": FileToolsPage,
-  network: NetworkPage,
-  security: FirewallPage,
+  updates: UpdatesPlaceholder,
+  drivers: DriversPage,
   troubleshoot: TroubleshootPage,
+  "network-overview": NetworkPage,
+  firewall: FirewallPage,
+  "report-generator": ReportGeneratorPlaceholder,
+  logs: LogsPage,
   "settings-preferences": SettingsPreferencesPage,
+  "settings-appearance": ThemeEditorPage,
 };
 </script>
 
 <template>
   <LayoutShell>
     <template #nav>
-      <nav class="app-nav">
-        <button
-          :class="{ active: currentPage === 'dashboard' }"
-          @click="currentPage = 'dashboard'"
-        >
-          Dashboard
-        </button>
-        <button
-          :class="{ active: currentPage === 'hardware' }"
-          @click="currentPage = 'hardware'"
-        >
-          Matériel
-        </button>
-        <button
-          :class="{ active: currentPage === 'drivers' }"
-          @click="currentPage = 'drivers'"
-        >
-          Pilotes
-        </button>
-        <button
-          :class="{ active: currentPage === 'logs' }"
-          @click="currentPage = 'logs'"
-        >
-          Journaux
-        </button>
-        <button
-          :class="{ active: currentPage === 'theme-editor' }"
-          @click="currentPage = 'theme-editor'"
-        >
-          Apparence
-        </button>
-        <button
-          :class="{ active: currentPage === 'settings-preferences' }"
-          @click="currentPage = 'settings-preferences'"
-        >
-          Préférences
-        </button>
-        <button
-          :class="{ active: currentPage === 'packages' }"
-          @click="currentPage = 'packages'"
-        >
-          Paquets
-        </button>
-        <button
-          :class="{ active: currentPage === 'disks' }"
-          @click="currentPage = 'disks'"
-        >
-          Disques
-        </button>
-        <button
-          :class="{ active: currentPage === 'file-tools' }"
-          @click="currentPage = 'file-tools'"
-        >
-          Outils fichiers
-        </button>
-        <button
-          :class="{ active: currentPage === 'network' }"
-          @click="currentPage = 'network'"
-        >
-          Réseau
-        </button>
-        <button
-          :class="{ active: currentPage === 'security' }"
-          @click="currentPage = 'security'"
-        >
-          Pare-feu
-        </button>
-        <button
-          :class="{ active: currentPage === 'troubleshoot' }"
-          @click="currentPage = 'troubleshoot'"
-        >
-          Dépannage
-        </button>
-      </nav>
+      <AppNav v-model="currentPage" />
     </template>
-    <component :is="pages[currentPage]" />
+    <component :is="pages[currentPage] ?? pages.dashboard" />
   </LayoutShell>
 </template>
-
-<style scoped>
-.app-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px 8px;
-}
-.app-nav button {
-  text-align: left;
-  padding: 8px 10px;
-  border: none;
-  background: transparent;
-  color: var(--nx-text-secondary);
-  border-radius: 6px;
-  cursor: pointer;
-  font: inherit;
-}
-.app-nav button:hover {
-  background: var(--nx-bg-elevated);
-  color: var(--nx-text-primary);
-}
-.app-nav button.active {
-  background: var(--nx-bg-elevated);
-  color: var(--nx-text-primary);
-  font-weight: 600;
-}
-</style>
 
 <style>
 :root {
