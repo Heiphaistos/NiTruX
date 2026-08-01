@@ -46,6 +46,22 @@ pub fn install_package(manager: String, package: String) -> Result<String, Strin
     )
 }
 
+/// Uninstalls `package` via `manager`, escalating through polkit. Mirrors
+/// `install_package` exactly (same validation, same generous timeout for a
+/// potentially dependency-heavy operation) -- see that function's doc
+/// comment for why this uses its own dedicated `nitrux-pkexec-uninstall-package`
+/// exec path rather than sharing `install-package`'s.
+#[tauri::command]
+pub fn uninstall_package(manager: String, package: String) -> Result<String, String> {
+    validate_manager_id(&manager)?;
+    validate_package_name(&package)?;
+    subprocess::run_with_timeout(
+        "pkexec",
+        &["/usr/bin/nitrux-pkexec-uninstall-package", "uninstall-package", &manager, &package],
+        Duration::from_secs(300),
+    )
+}
+
 /// Upgrades every detected package source. Same generous timeout
 /// rationale as `install_package`, extended further since a full system
 /// upgrade can be substantially slower than a single package install.
@@ -101,5 +117,17 @@ mod tests {
         assert!(validate_manager_id("bogus").is_err());
         assert!(validate_manager_id("").is_err());
         assert!(validate_manager_id("apt; rm -rf /").is_err());
+    }
+
+    #[test]
+    fn uninstall_package_rejects_unknown_manager_before_ever_shelling_out() {
+        let result = uninstall_package("bogus-manager".to_string(), "curl".to_string());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn uninstall_package_rejects_malicious_package_name_before_ever_shelling_out() {
+        let result = uninstall_package("apt".to_string(), "curl; rm -rf /".to_string());
+        assert!(result.is_err());
     }
 }

@@ -9,13 +9,13 @@
 # Rust-side validation happens too, but this script NEVER trusts that and
 # re-validates everything itself.
 #
-# This same script is installed under 11 distinct names (one per polkit
-# action): nitrux-pkexec-install-package, nitrux-pkexec-upgrade-all,
-# nitrux-pkexec-write-hosts, nitrux-pkexec-set-dns,
-# nitrux-pkexec-firewall-rule, nitrux-pkexec-troubleshoot,
-# nitrux-pkexec-create-snapshot, nitrux-pkexec-quarantine-file,
-# nitrux-pkexec-format-partition, nitrux-pkexec-extend-partition,
-# nitrux-pkexec-clone-disk. pkexec
+# This same script is installed under 12 distinct names (one per polkit
+# action): nitrux-pkexec-install-package, nitrux-pkexec-uninstall-package,
+# nitrux-pkexec-upgrade-all, nitrux-pkexec-write-hosts,
+# nitrux-pkexec-set-dns, nitrux-pkexec-firewall-rule,
+# nitrux-pkexec-troubleshoot, nitrux-pkexec-create-snapshot,
+# nitrux-pkexec-quarantine-file, nitrux-pkexec-format-partition,
+# nitrux-pkexec-extend-partition, nitrux-pkexec-clone-disk. pkexec
 # resolves which action to authorize by matching the *executable path*
 # against each action's exec.path annotation -- it cannot see argv, so a
 # single shared path across multiple actions is ambiguous to it (confirmed
@@ -27,6 +27,7 @@
 #
 # Usage:
 #   nitrux-pkexec-install-package install-package <manager> <package>
+#   nitrux-pkexec-uninstall-package uninstall-package <manager> <package>
 #   nitrux-pkexec-upgrade-all upgrade-all
 #   nitrux-pkexec-write-hosts write-hosts               (base64 content on stdin)
 #   nitrux-pkexec-set-dns set-dns                       (base64 content on stdin)
@@ -190,6 +191,18 @@ case "$cmd" in
       dnf)    exec dnf install -y "$package" ;;
       pacman) exec pacman -S --noconfirm "$package" ;;
       zypper) exec zypper --non-interactive install "$package" ;;
+    esac
+    ;;
+  uninstall-package)
+    manager="${2:-}"
+    package="${3:-}"
+    validate_manager "$manager"
+    validate_package_name "$package"
+    case "$manager" in
+      apt)    exec apt-get remove -y "$package" ;;
+      dnf)    exec dnf remove -y "$package" ;;
+      pacman) exec pacman -R --noconfirm "$package" ;;
+      zypper) exec zypper --non-interactive remove "$package" ;;
     esac
     ;;
   upgrade-all)

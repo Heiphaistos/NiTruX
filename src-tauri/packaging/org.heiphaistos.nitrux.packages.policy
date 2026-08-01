@@ -16,6 +16,17 @@
     <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/nitrux-pkexec-install-package</annotate>
   </action>
 
+  <action id="org.heiphaistos.nitrux.uninstall-package">
+    <description>Désinstaller un paquet système</description>
+    <message>NiTruX veut désinstaller un paquet système</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/nitrux-pkexec-uninstall-package</annotate>
+  </action>
+
   <action id="org.heiphaistos.nitrux.upgrade-all">
     <description>Mettre à jour tous les paquets système</description>
     <message>NiTruX veut mettre à jour les paquets système</message>

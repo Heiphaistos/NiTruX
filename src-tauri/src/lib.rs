@@ -93,6 +93,7 @@ pub fn run() {
             malwarescan::scan_for_malware,
             snapshots::list_snapshots,
             packages::install::install_package,
+            packages::install::uninstall_package,
             packages::install::upgrade_all_packages,
             network_write::write_hosts_file,
             network_write::set_dns_servers,
