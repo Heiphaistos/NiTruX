@@ -14,9 +14,10 @@ describe("App", () => {
     localStorage.clear();
   });
 
-  it("renders AppNav with all 7 category titles", () => {
+  it("renders AppNav with all 8 category titles", () => {
     const wrapper = mount(App);
     expect(wrapper.text()).toContain("Système");
+    expect(wrapper.text()).toContain("Performance");
     expect(wrapper.text()).toContain("Applications");
     expect(wrapper.text()).toContain("Stockage");
     expect(wrapper.text()).toContain("Maintenance");
