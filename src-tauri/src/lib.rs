@@ -5,6 +5,7 @@ use sysinfo::System;
 mod backup;
 mod benchmark;
 mod bluetooth;
+mod boot_manager;
 mod cache_size;
 mod dependencies;
 mod disk_write;
@@ -113,6 +114,7 @@ pub fn run() {
             dependencies::scan_missing_dependencies,
             backup::create_backup,
             bluetooth::get_bluetooth_status,
+            boot_manager::get_boot_manager_snapshot,
             scripts::run_script,
             trash::list_trash,
             trash::restore_trash_item,
