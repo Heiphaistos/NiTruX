@@ -11,7 +11,7 @@ describe("LayoutShell", () => {
     localStorage.clear();
   });
 
-  it("renders default slot content under sidebar-classic", () => {
+  it("renders default slot content under the default layout", () => {
     const wrapper = mount(LayoutShell, {
       slots: { default: "<div class=\"probe\">content</div>", nav: "<div class=\"nav-probe\" />" },
     });

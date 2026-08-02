@@ -106,6 +106,7 @@ function getIcon(name: string): Component {
   align-items: center;
   gap: 10px;
   width: 100%;
+  min-width: 0;
   text-align: left;
   padding: 7px 10px;
   border: none;
@@ -117,6 +118,11 @@ function getIcon(name: string): Component {
   font-size: 13px;
 }
 .nx-app-nav__icon { flex-shrink: 0; opacity: 0.8; }
+.nx-app-nav--list .nx-app-nav__item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .nx-app-nav__item:hover { background: var(--nx-style-bg); color: var(--nx-text-primary); }
 .nx-app-nav__item.active { background: var(--nx-style-bg); color: var(--nx-text-primary); font-weight: 600; }
 .nx-app-nav__item.active .nx-app-nav__icon { opacity: 1; }
