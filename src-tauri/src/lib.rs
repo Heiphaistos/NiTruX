@@ -37,6 +37,7 @@ mod snapshots;
 mod subprocess;
 mod system;
 mod trash;
+mod update_history;
 
 #[tauri::command]
 fn list_updates() -> Result<Vec<packages::PackageUpdate>, String> {
@@ -145,6 +146,7 @@ pub fn run() {
             trash::list_trash,
             trash::restore_trash_item,
             trash::delete_trash_item_permanently,
+            update_history::get_update_history,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
