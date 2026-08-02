@@ -26,6 +26,7 @@ mod optimizations;
 mod packages;
 mod peripherals;
 mod portscan;
+mod processes;
 mod report;
 mod scripts;
 mod security_write;
@@ -100,6 +101,10 @@ pub fn run() {
             smart::get_smart_status,
             network::get_network_snapshot,
             portscan::scan_ports_cmd,
+            processes::get_processes,
+            processes::get_systemd_services,
+            processes::get_autostart_entries,
+            processes::get_scheduled_tasks,
             docker::get_docker_snapshot,
             firewall::get_firewall_status,
             malwarescan::scan_for_malware,
