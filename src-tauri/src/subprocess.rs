@@ -60,6 +60,62 @@ pub fn run_with_timeout(program: &str, args: &[&str], timeout: Duration) -> Resu
     }
 }
 
+/// Like `run_with_timeout`, but sets additional environment variables on
+/// the child process before spawning it. Needed for commands whose output
+/// format is locale-dependent (confirmed during R11's research: `lscpu`
+/// genuinely emits translated field labels like "Nom de modèle :" on a
+/// French-locale system, which would silently break a parser written
+/// against the stable English keys) -- `LC_ALL=C` pins the output to a
+/// locale-independent format without affecting any other running process.
+pub fn run_with_timeout_env(
+    program: &str,
+    args: &[&str],
+    envs: &[(&str, &str)],
+    timeout: Duration,
+) -> Result<String, String> {
+    let mut command = Command::new(program);
+    command.args(args).stdout(Stdio::piped()).stderr(Stdio::piped());
+    for (key, value) in envs {
+        command.env(key, value);
+    }
+    let child = command
+        .spawn()
+        .map_err(|e| format!("{program} introuvable ou impossible à lancer : {e}"))?;
+
+    let pid = child.id();
+    let (tx, rx) = mpsc::channel();
+
+    std::thread::spawn(move || {
+        let _ = tx.send(child.wait_with_output());
+    });
+
+    match rx.recv_timeout(timeout) {
+        Ok(Ok(output)) => {
+            if output.status.success() {
+                Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+            } else {
+                let code = output
+                    .status
+                    .code()
+                    .map(|c| c.to_string())
+                    .unwrap_or_else(|| "inconnu".to_string());
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                Err(format!("{program} a échoué (code {code}) : {}", stderr.trim()))
+            }
+        }
+        Ok(Err(e)) => Err(format!("erreur en lisant la sortie de {program} : {e}")),
+        Err(mpsc::RecvTimeoutError::Timeout) => {
+            let _ = Command::new("kill").arg("-9").arg(pid.to_string()).status();
+            Err(format!(
+                "{program} a dépassé le délai de {timeout:?} et a été arrêté"
+            ))
+        }
+        Err(mpsc::RecvTimeoutError::Disconnected) => Err(format!(
+            "le processus {program} s'est terminé de façon inattendue"
+        )),
+    }
+}
+
 /// Like `run_with_timeout`, but returns stdout regardless of exit code
 /// alongside the exit code itself, for callers whose subprocess has a
 /// convention where specific non-zero exit codes are meaningful data states
@@ -148,6 +204,13 @@ mod tests {
             start.elapsed() < Duration::from_secs(2),
             "should return promptly after killing the child, not wait for it to finish"
         );
+    }
+
+    #[test]
+    fn run_with_timeout_env_makes_the_env_var_visible_to_the_child() {
+        let out = run_with_timeout_env("sh", &["-c", "echo $NITRUX_TEST_VAR"], &[("NITRUX_TEST_VAR", "hello")], Duration::from_secs(2))
+            .expect("should succeed");
+        assert_eq!(out.trim(), "hello");
     }
 
     #[test]
