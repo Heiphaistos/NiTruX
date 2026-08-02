@@ -1,6 +1,22 @@
-# Checkpoint — Refonte R1-R5 + R6-R11 **COMPLET**, R12+R13 faits, v0.23.0
+# Checkpoint — Refonte R1-R5 + R6-R11 **COMPLET**, R12+R13+R14 faits, v0.24.0
 
-## Phase R13 (Terminal intégré) : TERMINÉE, mergée (dbc60d8→master ff), version 0.23.0 — push+tag+release restent à faire
+## Phase R14 (Défauts thème/layout + scrollbar + responsive + catalogues x30) : TERMINÉE, mergée (3c6981c→master ff), version 0.24.0, publiée
+
+Demande explicite utilisateur : enrichir chaque catégorie au maximum, Applications et Commandes rapides à 500+ minimum chacun, thème/disposition par défaut selon ce que l'utilisateur avait en tête (aucun profil réellement sauvegardé trouvé sur la VM — clarifié via AskUserQuestion : thème noir/texte blanc + disposition master-detail + scrollbar sur menu latéral + tout responsive).
+
+- **Nouveau thème "OLED Noir"** (bg #000000/#0a0a0a, texte blanc) ajouté à `builtin.ts` (12→13 thèmes) et défini comme défaut dans `themeStore.ts`. **Bug préexistant corrigé au passage** : le thème actif n'était JAMAIS persisté en localStorage (contrairement au layout) — réinitialisé à chaque rechargement. Ajouté la persistance (miroir exact du pattern déjà utilisé par `layoutStore.ts`).
+- **Disposition par défaut changée** : `sidebar-classic` → `master-detail` dans `layoutStore.ts`.
+- **2 vrais bugs de scrollbar trouvés et corrigés** : `SidebarClassicLayout.vue` n'avait AUCUN `overflow` sur `.nx-nav` (liste de nav désormais bien plus longue que R1 → débordement sans scroll possible) ; `CompactSidebarLayout.vue` gardait `overflow:hidden` même à l'état étendu au survol (items au-delà de la hauteur visible totalement inaccessibles). Scrollbar `::-webkit-scrollbar` stylée au thème ajoutée aux 3 layouts à menu latéral (WebKitGTK supporte les pseudo-éléments webkit).
+- **Passe responsive** : `box-sizing:border-box` global (largeurs fixes + padding dépassaient silencieusement leur largeur déclarée), `min-width:0` sur `.nx-content` de chaque layout (fix classique pour qu'un enfant flex avec `overflow:auto` puisse réellement rétrécir au lieu de faire déborder toute la fenêtre horizontalement), le seul vrai `<table>` de l'app (PackagesPage) enveloppé dans son propre conteneur `overflow-x:auto`.
+- **`appCatalog.ts` : 16 → 506 entrées** (apt/Flatpak/Snap, ~30 catégories). Chaque nom de paquet apt vérifié EN LOT (`apt-cache show`, pas un par un manuellement) contre le vrai dépôt Debian de la VM ; chaque ID Flatpak vérifié en lot contre flathub (`flatpak remote-info`). 19 ratés trouvés et corrigés par cette vérification (pas de la vérification cosmétique) : certains genuinely absents du dépôt (midori, eclipse, netbeans, webmin, vice, nim, avidemux-qt, celestia-gtk, wondershaper, indicator-multiload, materia-gtk-theme, phatch — retirés), un remplacé par son vrai nom de paquet actuel (neofetch abandonné en amont → fastfetch), plusieurs mieux servis en Flatpak sur cette distro (anki, lutris, telegram-desktop), jetbrains-toolbox absent de flathub → remplacé par le vrai PyCharm Community, lite-xl et stacer absents de flathub → retirés.
+- **`systemToolsCatalog.ts` : 58 → 506 entrées**. 4 nouvelles catégories (Développement, Fichiers, Utilisateurs, Date & heure) + approfondissement des 5 catégories non-privilégiées existantes. Catégorie "privilegie" volontairement laissée à ses 7 actions fixes existantes (l'étendre exige du vrai code Rust + vérification live par action, coût radicalement différent des entrées data-only). **Chaque commande exécutée pour de vrai** (pas juste relue) contre la VM via un script batch avec timeout par commande — 2 vrais bugs trouvés : `ping-gateway` pouvait prendre 13+s si la passerelle ne répond pas au ping (VM et beaucoup de routeurs réels bloquent l'ICMP) → corrigé avec `-W 2` ; une entrée `bluetoothctl show` brute réintroduisait exactement le piège de hang documenté en R8 (bloque silencieusement si le service Bluetooth est inactif, aucun garde-fou de timeout en dehors du backend dédié Bluetooth) → retirée, redondante avec la page Bluetooth dédiée déjà correctement protégée. Les ~110 "commande introuvable" restantes sont des outils Linux standards réels juste absents de CETTE VM minimale (docker, node, npm, curl, outils LVM...) — même pattern de dégradation déjà accepté pour `sensors`/`mtr` dans le catalogue original.
+- **Vrai bug d'édition auto-introduit, trouvé et corrigé avant merge** : une insertion a accidentellement fermé le tableau TS en plein milieu, laissant les 7 entrées privilégiées existantes orphelines hors de la déclaration `const` (n'aurait pas compilé) — détecté immédiatement par le double-check systématique (comptage + `vue-tsc`) avant tout commit.
+- **Vrai bug de test-infra trouvé (pas applicatif) pendant la vérification finale** : un run complet a échoué à démarrer 7 workers vitest ("Timeout waiting for worker to respond") par contention CPU (beaucoup de travail parallèle WSL/VM en cours à ce moment précis) — confirmé transitoire par un second run propre juste après (64/64, 233/233, fiable).
+- 233/233 frontend, 213 Rust, vue-tsc clean.
+- **Vérification live VM** : v0.24.0 installée par-dessus v0.23.0, lancée, comptage d'éléments accessibles AT-SPI avant/après navigation vers Installation rapide (61→592 éléments nommés) et Commandes rapides (592→574, stable) — confirme que les deux catalogues de 500+ entrées se rendent réellement sans crash, process resté stable tout du long.
+- Release publiée : `v0.24.0` (.deb + .rpm).
+
+## Phase R13 (Terminal intégré) : TERMINÉE, mergée (dbc60d8→master ff), version 0.23.0, publiée
 
 Demande explicite utilisateur mi-tâche (« et integre un terminal bash dans l app »), résout la décision de scope différée depuis R8 (§ ci-dessous "Terminal intégré différé"). Spec : `2026-08-02-nitrux-r13-terminal-integre-design.md`.
 
@@ -114,30 +130,29 @@ Merge master (fast-forward propre) + version bump 0.15.0→0.16.0 + build réel 
 
 ## Prochaine action
 
-Pousser master + créer le tag `v0.23.0` + créer la release GitHub avec les assets `.deb`/`.rpm` (AppImage toujours bloqué). Aucun worktree ouvert.
+Aucune action de release en attente — R14 entièrement publiée (push+tag+release faits). Aucun worktree ouvert.
 
-**Demande utilisateur ouverte et dominante, encore très largement en cours** : parité complète NiTriTe Windows côté Linux + enrichissement "x10 minimum" de chaque catégorie existante — voir note dédiée juste en dessous.
+**Demande utilisateur "x10/500+" majoritairement traitée par R14** (thème/layout/scrollbar/responsive + 2 catalogues à 500+). Reste ouvert : voir "Chantier ouvert" ci-dessous.
 
-Pistes ponctuelles restantes si l'utilisateur le souhaite : (1) débloquer l'AppImage (nécessite `! wsl.exe -e sudo cp /tmp/xdg-utils-extract/usr/bin/xdg-open /usr/bin/xdg-open`), (2) Gestion Docker complète (bloqué : Docker absent de la VM dev), (3) étoffer encore le catalogue Outils système.
+Pistes ponctuelles restantes si l'utilisateur le souhaite : (1) débloquer l'AppImage (nécessite `! wsl.exe -e sudo cp /tmp/xdg-utils-extract/usr/bin/xdg-open /usr/bin/xdg-open`), (2) Gestion Docker complète (bloqué : Docker absent de la VM dev), (3) étendre le catalogue privilégié `system-tools` (7 actions fixes) avec de nouvelles commandes root — coûte du vrai code Rust + vérif live par action, pas juste de la data.
 
-## Chantier ouvert : parité NiTriTe "x10" + terminal (terminal livré, reste le x10)
+## Chantier ouvert : parité NiTriTe "x10" (terminal ✅ R13, thème/layout/scrollbar/responsive ✅ R14, catalogues 500+ ✅ R14)
 
-Demande verbatim : parité intégrale NiTriTe (traduite en vrais équivalents Linux, pas copiée aveuglément), enrichir "toutes les catégories x10 minimum", + terminal bash intégré (✅ livré en R13 ci-dessus).
+Demande verbatim : parité intégrale NiTriTe (traduite en vrais équivalents Linux, pas copiée aveuglément), enrichir "toutes les catégories x10 minimum". La majeure partie du chantier concret est livrée (R13+R14). Reste :
 
-Pistes déjà identifiées, pas encore construites :
 - **ProfilesPage-équivalent** (sauvegarde/chargement/export/import de profils de config nommés) — repéré comme un vrai écart, pas encore spécifié ni codé.
 - **StatsReportsPage** NiTriTe — semble faire doublon avec `ReportGeneratorPage`/`PerfHistoryPage` existants, mais vérification rapide seulement, à recroiser plus sérieusement avant d'exclure définitivement.
-- **Catalogues à approfondir** : `appCatalog.ts` (16 entrées), `installProfiles.ts` (4 profils), `systemToolsCatalog.ts` (58, déjà étendu en sweep post-R12) — marge d'extension réelle sur les 3.
-- Aucune des 10 catégories nav existantes n'a encore reçu de passe d'enrichissement "x10" dédiée au-delà de l'extension ponctuelle du catalogue Outils système.
+- **`installProfiles.ts`** (4 profils) — pas encore approfondi, seul catalogue des 3 identifiés en R12/R13 qui reste petit (appCatalog et systemToolsCatalog sont maintenant à 506 chacun).
+- Les 10 catégories nav n'ont PAS toutes reçu une passe "x10" dédiée pages-par-pages (au-delà des 2 catalogues) — Diagnostic/Performance/Stockage/Maintenance/Réseau/Rapports/Paramètres pourraient chacun gagner en profondeur de contenu (pas juste en nombre de boutons), à évaluer au cas par cas si l'utilisateur le redemande.
 
 ## Contexte pour reprendre à froid
 
-- Repo local : `C:\Users\Momo\Desktop\NiTruX`, remote `https://github.com/Heiphaistos/NiTruX.git`, branche `master`, version `0.23.0`
+- Repo local : `C:\Users\Momo\Desktop\NiTruX`, remote `https://github.com/Heiphaistos/NiTruX.git`, branche `master`, version `0.24.0`
 - Aucun worktree ouvert actuellement.
-- **Découpage R6→R11 : COMPLET** (R6 v0.14.0, R7 v0.15.0, R8 v0.16.0, R9 v0.18.0, R10 v0.19.0, R11 v0.20.0). **Phase R12 (hors découpage) : COMPLET** (v0.21.0). **Phase R13 (terminal, hors découpage, demande directe utilisateur) : COMPLET** (v0.23.0).
-- **Snap = 13e action pkexec (R10), system-tools = 14e (R12)** — R13 n'a ajouté aucune surface pkexec (terminal = droits hérités, pas de nouvelle action polkit).
+- **Découpage R6→R11 : COMPLET** (R6 v0.14.0, R7 v0.15.0, R8 v0.16.0, R9 v0.18.0, R10 v0.19.0, R11 v0.20.0). **Phase R12 (hors découpage) : COMPLET** (v0.21.0). **Phase R13 (terminal) : COMPLET** (v0.23.0). **Phase R14 (défauts+scrollbar+responsive+catalogues 500+) : COMPLET** (v0.24.0).
+- **Snap = 13e action pkexec (R10), system-tools = 14e (R12)** — R13 et R14 n'ont ajouté aucune surface pkexec.
 - **`nitrux-pkexec-helper` a toujours 14 noms installés** — toujours mettre à jour le compte dans le commentaire d'en-tête du script à chaque ajout.
-- **Test-runner : `vitest.config.ts` épinglé en single-thread depuis R13** (voir note R13 ci-dessus) — si un futur ajout de composant réintroduit un vrai module lourd non-mocké dans un test global comme `App.spec.ts`, revérifier que cette contention CPU inter-workers ne réapparaît pas sous une autre forme.
+- **Test-runner : `vitest.config.ts` revenu à sa config par défaut (parallélisme normal) depuis R14** — le pin single-thread de R13 a été remplacé par un correctif plus ciblé (mock `@xterm/xterm` dans `App.spec.ts`, exactement comme `TerminalPage.spec.ts` le fait déjà) après avoir découvert que le pin coûtait 10-15 min par run (vs ~3 min) et que le pool par défaut de Vitest 4 est `forks` (process OS complet par worker), pas `threads`. Si un futur composant réintroduit un vrai module lourd non-mocké dans un test global, mocker-le à la source plutôt que de re-sérialiser toute la suite.
 - VM Debian : `172.18.32.124`, user `dev`, password `1998`. Scripts SSH : `C:\Users\Momo\AppData\Local\Temp\claude\C--Users-Momo\880690b1-319b-40bd-bb2c-957700dc8af4\scratchpad\ssh_run.py`/`ssh_put.py`/`ssh_interactive.py` (usage `python ssh_run.py <user> <password> "<cmd>"`).
 - **Piège commande VM qui bloque silencieusement (R8)** : certaines commandes système (ex: `bluetoothctl show` quand le service est inactif) ne retournent pas d'erreur immédiate — elles bloquent jusqu'à ce qu'on les tue. Toujours wrapper une commande de vérification VM inconnue avec `timeout N <cmd>` pour éviter un SSH qui pend indéfiniment (confirmé : sans `timeout`, la commande a fait planter la connexion paramiko par timeout de socket).
 - **Pattern de vérification VM pour une nouvelle action pkexec** (établi en R7, à réutiliser pour toute future action privilégiée) : `pkttyagent --process $$ & sleep 1; pkexec /usr/bin/nitrux-pkexec-<action> <sous-commande> <args>` via `ssh_interactive.py` — la ligne `==== AUTHENTICATING FOR org.heiphaistos.nitrux.<action> ====` confirme que polkit a résolu la bonne action distincte.
