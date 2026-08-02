@@ -1,6 +1,21 @@
-# Checkpoint — Refonte R1-R5 terminée ✅, second round (R6-R11) en cours, R6+R7+R8+R9+R10 faits, v0.19.0
+# Checkpoint — Refonte R1-R5 terminée ✅, second round R6-R11 **COMPLET**, v0.20.0
 
-## Phase R10 (Logiciels & déploiement) : TERMINÉE, mergée (5ff4745), version 0.19.0 — push+tag+release restent à faire
+## Phase R11 (Diagnostic & config) : TERMINÉE, mergée (ba71ef6), version 0.20.0 — push+tag+release restent à faire — **DERNIÈRE PHASE DU DÉCOUPAGE R6→R11**
+
+Retour utilisateur explicite : catégorie "Diagnostic" jugée quasi-vide (une seule page PCI, pas même sa propre catégorie) et "ultra importante", demande de reprendre "exactement" ce qu'a NiTriTe Windows dans l'équivalent (493 lignes, ~30 onglets). Spec : `2026-08-02-nitrux-r11-diagnostic-config-design.md`. Plan : `2026-08-02-nitrux-r11-diagnostic-config.md` (8 tâches). Investigation : **chaque commande candidate testée sans root sur la VM dev avant d'écrire le spec** (lscpu, /sys/class/dmi/id/*, /proc/meminfo, lsusb, pactl, xrandr, lpstat, systemctl list-units/list-timers, crontab -l, dpkg -l, /var/log/apt/history.log). Décision de périmètre : nouvelle catégorie dédiée "Diagnostic" (8e→9e), 6 nouvelles pages + page PCI existante déplacée dedans (pas dupliquée) ; exclusion explicite de tout ce qui est sans équivalent Linux (Licence/Registre/BSOD/WSL Windows) ou déjà couvert ailleurs dans NiTruX.
+- Task 1 (hardware_details.rs CPU/carte-mère/mémoire, LC_ALL=C car lscpu est localisé — confirmé en français par défaut sur la VM) : aucun bug de code, juste un écart de compte plan-vs-réel bénin (5 tests prédits, 4 écrits).
+- Task 2 (peripherals.rs moniteurs/USB/audio/imprimantes, tout dégrade gracieusement vers liste vide) : aucun bug.
+- Task 3 (processes.rs, réutilise le `Mutex<System>` déjà managé par system.rs plutôt que d'en créer un nouveau) : aucun bug.
+- Task 4 (InstalledSoftwarePage.vue) : **zéro nouveau module backend** — réutilise `list_installed_packages` déjà existant depuis R3/consommé par UninstallerPage, ajoute juste `get_environment_variables` trivial.
+- Task 5 (accounts.rs comptes réels /etc/passwd) : aucun bug.
+- Task 6 (update_history.rs historique APT) : aucun bug.
+- Task 7 (nouvelle catégorie nav) : **vrai bug trouvé en faisant tourner la suite** (pas dans le plan) — un test existant cherchait un bouton nav "Diagnostic" qui n'existait plus après renommage du libellé PCI en "Composants PCI" pour libérer ce nom pour le titre de catégorie ; corrigé.
+- Task 8 (vérification finale) : **tout le backend re-vérifié en direct sur la VM**, y compris re-test de xrandr/lpstat avec le vrai DISPLAY/XAUTHORITY de la session desktop après un premier échec attendu en SSH brut (pas de DISPLAY). App lancée et stable sur la VM.
+- 217/217 frontend, 207 Rust, vue-tsc clean.
+
+**Chantier R6→R11 dans son ensemble : COMPLET.** Toutes les phases planifiées avec l'utilisateur sont livrées et publiées.
+
+## Phase R10 (Logiciels & déploiement) : TERMINÉE, mergée (5ff4745), version 0.19.0
 
 Spec : `2026-08-02-nitrux-r10-logiciels-deploiement-design.md`. Plan : `2026-08-02-nitrux-r10-logiciels-deploiement.md` (6 tâches). Investigation : comparaison categories.ts vs navigation.ts NiTriTe + audit des modules Rust orphelins. Découverte clé : `appCatalog.ts` avait `InstallMethod="apt"|"flatpak"|"snap"` depuis le début mais seul "apt" était implémenté — 3 entrées affichaient un badge honnête "Bientôt disponible" jamais tenu. Décision utilisateur (AskUserQuestion) : fermer complètement y compris Snap malgré la nouvelle surface pkexec.
 - Task 1 (install_flatpak_package, --user, non-privilégié) : aucun bug.
@@ -64,15 +79,15 @@ Merge master (fast-forward propre) + version bump 0.15.0→0.16.0 + build réel 
 
 ## Prochaine action
 
-Pousser master + créer le tag `v0.19.0` + créer la release GitHub avec les assets `.deb`/`.rpm` (AppImage toujours bloqué). Nettoyer le worktree `r10-logiciels-deploiement`.
+Pousser master + créer le tag `v0.20.0` + créer la release GitHub avec les assets `.deb`/`.rpm` (AppImage toujours bloqué). Nettoyer le worktree `r11-diagnostic-config`.
 
-Puis écrire spec+plan pour **Phase R11 (Diagnostic & config)** — dernière phase du découpage R6-R11.
+**Le découpage R6→R11 est intégralement terminé.** Aucune phase planifiée restante. Prochaines pistes possibles si l'utilisateur le souhaite : (1) débloquer l'AppImage (nécessite `! wsl.exe -e sudo cp /tmp/xdg-utils-extract/usr/bin/xdg-open /usr/bin/xdg-open` de la part de l'utilisateur), (2) Terminal intégré (différé depuis R8, nécessite décision dédiée sur une nouvelle dépendance PTY), (3) nouvelle demande utilisateur à définir.
 
 ## Contexte pour reprendre à froid
 
-- Repo local : `C:\Users\Momo\Desktop\NiTruX`, remote `https://github.com/Heiphaistos/NiTruX.git`, branche `master`, version `0.19.0`
-- Worktrees mergés à nettoyer si encore présents : `r10-logiciels-deploiement`
-- **Découpage validé R6→R11** — spec `2026-08-01-nitrux-r6-visual-foundation-performance-design.md` §1. R6, R7, R8, R9, R10 faits. Reste R11 (Diagnostic & config) — dernière phase.
+- Repo local : `C:\Users\Momo\Desktop\NiTruX`, remote `https://github.com/Heiphaistos/NiTruX.git`, branche `master`, version `0.20.0`
+- Worktrees mergés à nettoyer si encore présents : `r11-diagnostic-config`
+- **Découpage R6→R11 : COMPLET.** Tout livré et publié (R6 v0.14.0, R7 v0.15.0, R8 v0.16.0, R9 v0.18.0, R10 v0.19.0, R11 v0.20.0).
 - **Snap = 13e action pkexec, nouvelle depuis R10** — mêmes disciplines que toute action privilégiée : exec.path dédié `nitrux-pkexec-install-snap`, re-validation indépendante côté script, testée en live avant tout futur changement touchant install.rs.
 - **Terminal intégré différé de R8, toujours en attente d'une décision dédiée** — nécessite une nouvelle dépendance Cargo (PTY, ex: `portable-pty`) + probablement une dépendance npm (rendu ANSI, ex: `xterm.js`), à traiter séparément avec sa propre revue de conception si l'utilisateur le souhaite un jour.
 - VM Debian : `172.18.32.124`, user `dev`, password `1998`. Scripts SSH : `C:\Users\Momo\AppData\Local\Temp\claude\C--Users-Momo\880690b1-319b-40bd-bb2c-957700dc8af4\scratchpad\ssh_run.py`/`ssh_put.py`/`ssh_interactive.py` (usage `python ssh_run.py <user> <password> "<cmd>"`).
