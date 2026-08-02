@@ -60,8 +60,9 @@ const memoryRows = computed(() => details.value ? [
         </div>
       </NxCard>
 
-      <NxCard v-if="gpus.length">
+      <NxCard>
         <NxSectionHeader title="GPU" />
+        <div v-if="gpus.length === 0" class="hd-empty">Aucun GPU PCI détecté.</div>
         <div v-for="g in gpus" :key="g.slot" class="hd-row">
           <span>{{ g.description }}</span><span>{{ g.slot }}</span>
         </div>
@@ -73,4 +74,5 @@ const memoryRows = computed(() => details.value ? [
 <style scoped>
 .hd-page { padding: 24px; display: flex; flex-direction: column; gap: 12px; }
 .hd-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; font-size: 13px; border-bottom: 1px solid var(--nx-style-border-color); }
+.hd-empty { color: var(--nx-text-secondary); font-size: 13px; }
 </style>
