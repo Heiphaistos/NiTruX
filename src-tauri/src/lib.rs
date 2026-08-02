@@ -15,6 +15,7 @@ mod drivers;
 mod duplicates;
 mod firewall;
 mod hardware;
+mod hardware_details;
 mod hashcheck;
 mod largefiles;
 mod logs;
@@ -76,6 +77,7 @@ pub fn run() {
             system::get_system_snapshot,
             sensors::get_sensor_snapshot,
             hardware::get_pci_devices,
+            hardware_details::get_hardware_details,
             drivers::get_driver_snapshot,
             logs::get_recent_logs,
             list_updates,
