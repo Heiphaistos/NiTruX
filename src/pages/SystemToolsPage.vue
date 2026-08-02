@@ -16,6 +16,10 @@ const CATEGORY_LABELS: Record<SystemTool["category"], string> = {
   nettoyage: "Nettoyage",
   stockage: "Stockage",
   privilegie: "Privilégié",
+  developpement: "Développement",
+  fichiers: "Fichiers",
+  utilisateurs: "Utilisateurs",
+  temps: "Date & heure",
 };
 
 const activeCategory = ref<string>("all");
