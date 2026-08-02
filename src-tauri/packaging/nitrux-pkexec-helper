@@ -9,14 +9,15 @@
 # Rust-side validation happens too, but this script NEVER trusts that and
 # re-validates everything itself.
 #
-# This same script is installed under 13 distinct names (one per polkit
+# This same script is installed under 14 distinct names (one per polkit
 # action): nitrux-pkexec-install-package, nitrux-pkexec-uninstall-package,
 # nitrux-pkexec-upgrade-all, nitrux-pkexec-install-snap,
 # nitrux-pkexec-write-hosts,
 # nitrux-pkexec-set-dns, nitrux-pkexec-firewall-rule,
 # nitrux-pkexec-troubleshoot, nitrux-pkexec-create-snapshot,
 # nitrux-pkexec-quarantine-file, nitrux-pkexec-format-partition,
-# nitrux-pkexec-extend-partition, nitrux-pkexec-clone-disk. pkexec
+# nitrux-pkexec-extend-partition, nitrux-pkexec-clone-disk,
+# nitrux-pkexec-system-tools. pkexec
 # resolves which action to authorize by matching the *executable path*
 # against each action's exec.path annotation -- it cannot see argv, so a
 # single shared path across multiple actions is ambiguous to it (confirmed
@@ -40,6 +41,7 @@
 #   nitrux-pkexec-format-partition format-partition <device> <ext4|btrfs|xfs|vfat>
 #   nitrux-pkexec-extend-partition extend-partition <partition-device> <disk-device> <partnum>
 #   nitrux-pkexec-clone-disk clone-disk <disk-device> <dest-image-path>
+#   nitrux-pkexec-system-tools system-tool <apt-autoremove|journal-vacuum-size|rebuild-ld-cache|systemd-reload|fstrim-all|rebuild-locate-db|regenerate-grub>
 set -eu
 
 die() {
@@ -199,6 +201,42 @@ case "$cmd" in
     package="${2:-}"
     validate_package_name "$package"
     exec snap install "$package"
+    ;;
+  system-tool)
+    action="${2:-}"
+    case "$action" in
+      apt-autoremove)
+        if command -v apt-get >/dev/null 2>&1; then apt-get autoremove -y; fi
+        if command -v dnf >/dev/null 2>&1; then dnf autoremove -y; fi
+        if command -v zypper >/dev/null 2>&1; then zypper --non-interactive remove --clean-deps; fi
+        ;;
+      journal-vacuum-size)
+        exec journalctl --vacuum-size=200M
+        ;;
+      rebuild-ld-cache)
+        exec ldconfig
+        ;;
+      systemd-reload)
+        exec systemctl daemon-reload
+        ;;
+      fstrim-all)
+        exec fstrim -av
+        ;;
+      rebuild-locate-db)
+        if command -v updatedb >/dev/null 2>&1; then exec updatedb; fi
+        echo "updatedb non installé" >&2
+        exit 1
+        ;;
+      regenerate-grub)
+        if command -v update-grub >/dev/null 2>&1; then exec update-grub; fi
+        if command -v grub2-mkconfig >/dev/null 2>&1; then exec grub2-mkconfig -o /boot/grub2/grub.cfg; fi
+        echo "aucun générateur de configuration GRUB trouvé" >&2
+        exit 1
+        ;;
+      *)
+        die "unknown system-tool action: $action"
+        ;;
+    esac
     ;;
   uninstall-package)
     manager="${2:-}"
