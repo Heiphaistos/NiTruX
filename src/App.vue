@@ -44,6 +44,7 @@ import ProcessesPage from "@/pages/ProcessesPage.vue";
 import InstalledSoftwarePage from "@/pages/InstalledSoftwarePage.vue";
 import UserAccountsPage from "@/pages/UserAccountsPage.vue";
 import UpdateHistoryPage from "@/pages/UpdateHistoryPage.vue";
+import SystemToolsPage from "@/pages/SystemToolsPage.vue";
 
 const themeStore = useThemeStore();
 onMounted(() => themeStore.setTheme(themeStore.active));
@@ -115,6 +116,7 @@ const pages: Record<string, Component> = {
   "installed-software": InstalledSoftwarePage,
   "user-accounts": UserAccountsPage,
   "update-history": UpdateHistoryPage,
+  "system-tools": SystemToolsPage,
 };
 </script>
 
