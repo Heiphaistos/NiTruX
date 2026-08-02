@@ -39,11 +39,13 @@ onMounted(async () => {
         </div>
       </div>
     </NxCard>
+    <NxCard v-else-if="!error" class="logs-empty">Aucun journal récent trouvé.</NxCard>
   </div>
 </template>
 
 <style scoped>
-.logs-page { padding: 24px; }
+.logs-page { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+.logs-empty { color: var(--nx-text-secondary); font-size: 13px; }
 .logs-card { padding: 8px; }
 .logs-list { font-family: monospace; font-size: 12px; display: grid; gap: 2px; max-height: 70vh; overflow: auto; }
 .log-entry { display: flex; gap: 10px; padding: 4px 8px; border-radius: 4px; }

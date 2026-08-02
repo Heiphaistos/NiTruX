@@ -38,6 +38,7 @@ function bytesToMb(bytes: number): string {
     <NxCard>
       <NxSectionHeader title="Processus" />
       <NxInput v-model="processFilter" placeholder="Filtrer par nom..." />
+      <div v-if="filteredProcesses.length === 0" class="proc-empty">Aucun processus trouvé.</div>
       <div v-for="p in filteredProcesses" :key="p.pid" class="proc-row">
         <span>{{ p.name }} ({{ p.pid }})</span>
         <span>{{ p.cpu_percent.toFixed(1) }}% · {{ bytesToMb(p.memory_bytes) }} MB</span>
@@ -46,6 +47,7 @@ function bytesToMb(bytes: number): string {
 
     <NxCard>
       <NxSectionHeader title="Services systemd" />
+      <div v-if="services.length === 0" class="proc-empty">Aucun service systemd trouvé.</div>
       <div v-for="s in services" :key="s" class="proc-row">{{ s }}</div>
     </NxCard>
 
