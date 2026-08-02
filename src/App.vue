@@ -38,6 +38,12 @@ import DataRecoveryPage from "@/pages/DataRecoveryPage.vue";
 import BootManagerPage from "@/pages/BootManagerPage.vue";
 import RestorePointsPage from "@/pages/RestorePointsPage.vue";
 import InstallProfilesPage from "@/pages/InstallProfilesPage.vue";
+import HardwareDetailsPage from "@/pages/HardwareDetailsPage.vue";
+import PeripheralsPage from "@/pages/PeripheralsPage.vue";
+import ProcessesPage from "@/pages/ProcessesPage.vue";
+import InstalledSoftwarePage from "@/pages/InstalledSoftwarePage.vue";
+import UserAccountsPage from "@/pages/UserAccountsPage.vue";
+import UpdateHistoryPage from "@/pages/UpdateHistoryPage.vue";
 
 const themeStore = useThemeStore();
 onMounted(() => themeStore.setTheme(themeStore.active));
@@ -103,6 +109,12 @@ const pages: Record<string, Component> = {
   "boot-manager": BootManagerPage,
   "restore-points": RestorePointsPage,
   "install-profiles": InstallProfilesPage,
+  "hardware-details": HardwareDetailsPage,
+  peripherals: PeripheralsPage,
+  processes: ProcessesPage,
+  "installed-software": InstalledSoftwarePage,
+  "user-accounts": UserAccountsPage,
+  "update-history": UpdateHistoryPage,
 };
 </script>
 

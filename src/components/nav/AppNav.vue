@@ -9,6 +9,7 @@ import {
   Globe, Radio, Bluetooth, FileCode,
   PieChart, Database, Server,
   Layers,
+  Monitor, Activity, List, Users, History,
 } from "lucide-vue-next";
 import { navigationCategories } from "@/navigation/categories";
 
@@ -54,6 +55,11 @@ const iconMap: Record<string, Component> = {
   database: Database,
   server: Server,
   layers: Layers,
+  monitor: Monitor,
+  activity: Activity,
+  list: List,
+  users: Users,
+  history: History,
 };
 
 function getIcon(name: string): Component {

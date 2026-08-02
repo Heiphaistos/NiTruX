@@ -16,7 +16,19 @@ export const navigationCategories: NavCategory[] = [
     title: "Système",
     pages: [
       { id: "dashboard", label: "Tableau de bord", icon: "layout-dashboard" },
-      { id: "diagnostic", label: "Diagnostic", icon: "stethoscope" },
+    ],
+  },
+  {
+    id: "diagnostic-avance",
+    title: "Diagnostic",
+    pages: [
+      { id: "diagnostic", label: "Composants PCI", icon: "stethoscope" },
+      { id: "hardware-details", label: "Matériel détaillé", icon: "cpu" },
+      { id: "peripherals", label: "Périphériques", icon: "monitor" },
+      { id: "processes", label: "Processus & services", icon: "activity" },
+      { id: "installed-software", label: "Logiciels installés", icon: "list" },
+      { id: "user-accounts", label: "Comptes utilisateurs", icon: "users" },
+      { id: "update-history", label: "Historique des mises à jour", icon: "history" },
     ],
   },
   {
