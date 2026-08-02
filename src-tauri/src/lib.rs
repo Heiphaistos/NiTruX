@@ -36,6 +36,7 @@ mod smart;
 mod snapshots;
 mod subprocess;
 mod system;
+mod system_tools;
 mod trash;
 mod update_history;
 
@@ -147,6 +148,7 @@ pub fn run() {
             trash::restore_trash_item,
             trash::delete_trash_item_permanently,
             update_history::get_update_history,
+            system_tools::run_system_tool,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
