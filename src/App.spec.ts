@@ -6,6 +6,26 @@ import App from "./App.vue";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn().mockResolvedValue(null),
+  Channel: vi.fn(function () {
+    return { onmessage: null };
+  }),
+}));
+
+// Real xterm.js touches jsdom APIs it doesn't implement (matchMedia) and is
+// expensive to initialize -- mounting it for every test in this file (via
+// TerminalPage, reached through the shared `pages` map) was slow enough to
+// starve other test files for CPU under parallel workers. Mocked exactly
+// like TerminalPage.spec.ts's own isolated mock.
+vi.mock("@xterm/xterm", () => ({
+  Terminal: vi.fn(function () {
+    return { open: vi.fn(), write: vi.fn(), onData: vi.fn(), loadAddon: vi.fn(), dispose: vi.fn(), rows: 24, cols: 80 };
+  }),
+}));
+
+vi.mock("@xterm/addon-fit", () => ({
+  FitAddon: vi.fn(function () {
+    return { fit: vi.fn() };
+  }),
 }));
 
 describe("App", () => {
