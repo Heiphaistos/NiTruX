@@ -1,6 +1,17 @@
-# Checkpoint — Refonte R1-R5 + R6-R11 **COMPLET**, R12 fait, sweep post-R12 fait, v0.22.0
+# Checkpoint — Refonte R1-R5 + R6-R11 **COMPLET**, R12+R13 faits, v0.23.0
 
-## Sweep post-R12 « implémente un maximum de chose » : TERMINÉ, v0.22.0 — push+tag+release restent à faire
+## Phase R13 (Terminal intégré) : TERMINÉE, mergée (dbc60d8→master ff), version 0.23.0 — push+tag+release restent à faire
+
+Demande explicite utilisateur mi-tâche (« et integre un terminal bash dans l app »), résout la décision de scope différée depuis R8 (§ ci-dessous "Terminal intégré différé"). Spec : `2026-08-02-nitrux-r13-terminal-integre-design.md`.
+
+- Backend `terminal.rs` : `portable-pty` 0.9.0 (nouvelle dépendance Cargo, première depuis le début du chantier PTY), spawn du shell de l'utilisateur invocateur (`$SHELL` ou `/bin/bash`) dans un vrai pseudo-terminal, streaming de sortie vers le frontend via `tauri::ipc::Channel` (**première fonctionnalité de streaming bidirectionnel de toute l'app** — jusqu'ici tout était requête/réponse one-shot). 4 commandes : `spawn_terminal`/`write_to_terminal`/`resize_terminal`/`close_terminal`. Logique factorée en `open_shell_pty()` testable hors `tauri::State`. **Aucune nouvelle frontière de privilège** — même raisonnement que `run_script` (R8) : le shell hérite exactement des droits de l'utilisateur qui lance l'app, pas de pkexec.
+- Frontend `TerminalPage.vue` : `@xterm/xterm` 6.0.0 + `@xterm/addon-fit` 0.11.0 (nouvelles dépendances npm), cycle spawn/write/resize(ResizeObserver)/close complet.
+- Test réel backend (pas mocké) : spawn un vrai bash, écrit `echo PTY_TEST_MARKER...`, lit la sortie via le vrai pty — confirmé 2/2.
+- **Vérification live VM via une nouvelle technique découverte cette session** : capture pixel toujours impossible (cf. limite documentée plus bas), mais AT-SPI (accessibilité GTK/WebKitGTK, `python3-gi`) permet de cliquer un bouton par son nom accessible sans coordonnées ni screenshot — confirmé en cliquant "Terminal" sur l'app réelle en cours d'exécution et en observant un vrai process `bash` apparaître comme enfant du process de l'app (`pstree -p`), puis disparaître proprement en changeant de page. Preuve non-visuelle plus forte qu'un screenshot (prouve le chemin de code backend réellement exécuté). Technique documentée dans la mémoire persistante (`reference_atspi_headless_ui_automation.md`) pour réutilisation future.
+- **Bug d'infra de test trouvé et corrigé pendant la vérification finale, PAS un bug applicatif** : `npm test` (mode par défaut, workers parallèles) échouait de façon reproductible (2/2) sur un test préexistant sans rapport (`TemperaturesPage`), alors que la même suite passe 100% de façon fiable en mono-thread (`--pool=threads --poolOptions.threads.singleThread`, 2/2) et que le fichier isolé passe aussi 100%. Cause : les workers parallèles se disputent le CPU quand `App.spec.ts` initialise le vrai (non-mocké) `@xterm/xterm`, ce qui retarde suffisamment un autre fichier pour faire rater son assertion — pas de faute logique dans l'app (prouvé déterministe et correct en série). Fix : `vitest.config.ts` épinglé en `poolOptions.threads.singleThread: true` (commit `d426c5d`, séparé du bump de version). Accepté comme le bon niveau de correctif (config du test-runner, pas de contournement de l'app) car cible directement la cause (contention CPU inter-workers), pas juste le symptôme.
+- 232/232 frontend (fiable maintenant, mono-thread), 213 Rust, vue-tsc clean.
+
+## Sweep post-R12 « implémente un maximum de chose » : TERMINÉ, v0.22.0
 
 Demande utilisateur ouverte après R12. Audit systématique de toutes les commandes Tauri enregistrées (`lib.rs`) vs consommateurs frontend — un seul orphelin trouvé : `verify_file_hash` existait entièrement testé côté backend depuis toujours (voisin de `compute_file_hash` dans `hashcheck.rs`) mais `FileToolsPage.vue` ne calculait jamais que le hash, sans jamais permettre de le comparer à une valeur attendue (le vrai cas d'usage réel — vérifier un ISO téléchargé). Corrigé : champ "hash attendu" + bouton "Vérifier" ajoutés.
 
@@ -103,18 +114,30 @@ Merge master (fast-forward propre) + version bump 0.15.0→0.16.0 + build réel 
 
 ## Prochaine action
 
-Pousser master + créer le tag `v0.22.0` + créer la release GitHub avec les assets `.deb`/`.rpm` (AppImage toujours bloqué). Aucun worktree ouvert (travaillé directement sur master pour ce sweep, changements non-structurels).
+Pousser master + créer le tag `v0.23.0` + créer la release GitHub avec les assets `.deb`/`.rpm` (AppImage toujours bloqué). Aucun worktree ouvert.
 
-**Aucune phase planifiée restante.** Prochaines pistes possibles si l'utilisateur le souhaite : (1) débloquer l'AppImage (nécessite `! wsl.exe -e sudo cp /tmp/xdg-utils-extract/usr/bin/xdg-open /usr/bin/xdg-open` de la part de l'utilisateur), (2) Terminal intégré (différé depuis R8, nécessite décision dédiée sur une nouvelle dépendance PTY), (3) Gestion Docker complète (bloqué : Docker absent de la VM dev), (4) étoffer encore le catalogue Outils système (facilement extensible pour tout ajout non-privilégié, juste une entrée dans `systemToolsCatalog.ts`), (5) nouvelle demande utilisateur à définir.
+**Demande utilisateur ouverte et dominante, encore très largement en cours** : parité complète NiTriTe Windows côté Linux + enrichissement "x10 minimum" de chaque catégorie existante — voir note dédiée juste en dessous.
+
+Pistes ponctuelles restantes si l'utilisateur le souhaite : (1) débloquer l'AppImage (nécessite `! wsl.exe -e sudo cp /tmp/xdg-utils-extract/usr/bin/xdg-open /usr/bin/xdg-open`), (2) Gestion Docker complète (bloqué : Docker absent de la VM dev), (3) étoffer encore le catalogue Outils système.
+
+## Chantier ouvert : parité NiTriTe "x10" + terminal (terminal livré, reste le x10)
+
+Demande verbatim : parité intégrale NiTriTe (traduite en vrais équivalents Linux, pas copiée aveuglément), enrichir "toutes les catégories x10 minimum", + terminal bash intégré (✅ livré en R13 ci-dessus).
+
+Pistes déjà identifiées, pas encore construites :
+- **ProfilesPage-équivalent** (sauvegarde/chargement/export/import de profils de config nommés) — repéré comme un vrai écart, pas encore spécifié ni codé.
+- **StatsReportsPage** NiTriTe — semble faire doublon avec `ReportGeneratorPage`/`PerfHistoryPage` existants, mais vérification rapide seulement, à recroiser plus sérieusement avant d'exclure définitivement.
+- **Catalogues à approfondir** : `appCatalog.ts` (16 entrées), `installProfiles.ts` (4 profils), `systemToolsCatalog.ts` (58, déjà étendu en sweep post-R12) — marge d'extension réelle sur les 3.
+- Aucune des 10 catégories nav existantes n'a encore reçu de passe d'enrichissement "x10" dédiée au-delà de l'extension ponctuelle du catalogue Outils système.
 
 ## Contexte pour reprendre à froid
 
-- Repo local : `C:\Users\Momo\Desktop\NiTruX`, remote `https://github.com/Heiphaistos/NiTruX.git`, branche `master`, version `0.22.0`
+- Repo local : `C:\Users\Momo\Desktop\NiTruX`, remote `https://github.com/Heiphaistos/NiTruX.git`, branche `master`, version `0.23.0`
 - Aucun worktree ouvert actuellement.
-- **Découpage R6→R11 : COMPLET** (R6 v0.14.0, R7 v0.15.0, R8 v0.16.0, R9 v0.18.0, R10 v0.19.0, R11 v0.20.0). **Phase R12 (hors découpage, demande directe utilisateur) : COMPLET** (v0.21.0).
-- **Snap = 13e action pkexec (R10), system-tools = 14e (R12)** — mêmes disciplines que toute action privilégiée : exec.path dédié, re-validation indépendante côté script, testée en live avant tout futur changement.
-- **`nitrux-pkexec-helper` a maintenant 14 noms installés** — toujours mettre à jour le compte dans le commentaire d'en-tête du script à chaque ajout (source d'erreur silencieuse si oublié, sans impact fonctionnel mais trompeur pour la doc).
-- **Terminal intégré différé de R8, toujours en attente d'une décision dédiée** — nécessite une nouvelle dépendance Cargo (PTY, ex: `portable-pty`) + probablement une dépendance npm (rendu ANSI, ex: `xterm.js`), à traiter séparément avec sa propre revue de conception si l'utilisateur le souhaite un jour.
+- **Découpage R6→R11 : COMPLET** (R6 v0.14.0, R7 v0.15.0, R8 v0.16.0, R9 v0.18.0, R10 v0.19.0, R11 v0.20.0). **Phase R12 (hors découpage) : COMPLET** (v0.21.0). **Phase R13 (terminal, hors découpage, demande directe utilisateur) : COMPLET** (v0.23.0).
+- **Snap = 13e action pkexec (R10), system-tools = 14e (R12)** — R13 n'a ajouté aucune surface pkexec (terminal = droits hérités, pas de nouvelle action polkit).
+- **`nitrux-pkexec-helper` a toujours 14 noms installés** — toujours mettre à jour le compte dans le commentaire d'en-tête du script à chaque ajout.
+- **Test-runner : `vitest.config.ts` épinglé en single-thread depuis R13** (voir note R13 ci-dessus) — si un futur ajout de composant réintroduit un vrai module lourd non-mocké dans un test global comme `App.spec.ts`, revérifier que cette contention CPU inter-workers ne réapparaît pas sous une autre forme.
 - VM Debian : `172.18.32.124`, user `dev`, password `1998`. Scripts SSH : `C:\Users\Momo\AppData\Local\Temp\claude\C--Users-Momo\880690b1-319b-40bd-bb2c-957700dc8af4\scratchpad\ssh_run.py`/`ssh_put.py`/`ssh_interactive.py` (usage `python ssh_run.py <user> <password> "<cmd>"`).
 - **Piège commande VM qui bloque silencieusement (R8)** : certaines commandes système (ex: `bluetoothctl show` quand le service est inactif) ne retournent pas d'erreur immédiate — elles bloquent jusqu'à ce qu'on les tue. Toujours wrapper une commande de vérification VM inconnue avec `timeout N <cmd>` pour éviter un SSH qui pend indéfiniment (confirmé : sans `timeout`, la commande a fait planter la connexion paramiko par timeout de socket).
 - **Pattern de vérification VM pour une nouvelle action pkexec** (établi en R7, à réutiliser pour toute future action privilégiée) : `pkttyagent --process $$ & sleep 1; pkexec /usr/bin/nitrux-pkexec-<action> <sous-commande> <args>` via `ssh_interactive.py` — la ligne `==== AUTHENTICATING FOR org.heiphaistos.nitrux.<action> ====` confirme que polkit a résolu la bonne action distincte.
