@@ -1,6 +1,18 @@
-# Checkpoint — Refonte R1-R5 terminée ✅, second round R6-R11 **COMPLET**, v0.20.0
+# Checkpoint — Refonte R1-R5 + R6-R11 **COMPLET**, Phase R12 (hors découpage initial) faite, v0.21.0
 
-## Phase R11 (Diagnostic & config) : TERMINÉE, mergée (ba71ef6), version 0.20.0 — push+tag+release restent à faire — **DERNIÈRE PHASE DU DÉCOUPAGE R6→R11**
+## Phase R12 (Outils système — catalogue de commandes en un clic) : TERMINÉE, mergée (520d6f8), version 0.21.0 — push+tag+release restent à faire
+
+Demande utilisateur hors découpage R6-R11 : catégorie de boutons-commandes façon `ToolsPage.vue` NiTriTe, chiffre cité « plus de 500 boutons ». Investigation : la vraie `ToolsPage.vue` NiTriTe n'a que **69 entrées** (le chiffre 500+ venait de l'addition avec des catalogues d'installateurs d'apps sans rapport — 745+145 entrées — déjà couverts différemment côté NiTruX). Décision : construire le catalogue le plus complet et réellement utile possible plutôt que viser un chiffre arbitraire avec du remplissage. Catégorie "Activation" NiTriTe (12 entrées, contournement de licence Windows/Office — massgrave.dev, KMSPico...) exclue définitivement, aucun équivalent Linux pertinent de toute façon.
+
+**Décision de sécurité validée avec l'utilisateur (AskUserQuestion)** : contrairement à la recommandation initiale (catalogue 100% non-privilégié), l'utilisateur a choisi d'inclure aussi des commandes root, en connaissance du coût annoncé (chaque commande privilégiée nécessite sa propre revue de sécurité). Solution retenue : **une seule nouvelle action polkit consolidée** (`org.heiphaistos.nitrux.system-tools`, 14e nom pour `nitrux-pkexec-helper`) avec un switch de 7 sous-commandes fixes codées en dur — jamais un bouton "exécuter n'importe quoi en root", même pattern déjà en production pour `nitrux-pkexec-troubleshoot`.
+
+- Catalogue final : 40 commandes non-privilégiées (réutilisent `run_script` existant depuis R8, aucune nouvelle frontière de privilège) + 7 commandes privilégiées = 47 boutons au total, organisés en 6 catégories (Diagnostics, Réseau, Performance, Nettoyage, Stockage, Privilégié).
+- Task 3 : **bug trouvé en faisant tourner la suite** — le test cherchait un bouton par le nom de l'outil dans son propre texte, mais le nom est dans un `<strong>` frère, pas dans le bouton (toujours juste "Exécuter") ; corrigé en localisant via la carte englobante.
+- **Les 7 actions privilégiées + le chemin de rejet testés EN DIRECT sur la VM avant merge** (discipline non-négociable pour toute nouvelle surface pkexec) : ligne `AUTHENTICATING FOR org.heiphaistos.nitrux.system-tools` confirmée, chaque action vérifiée avec sa vraie sortie (apt-autoremove, journal-vacuum-size avec "Vacuuming done", ldconfig, systemd daemon-reload, fstrim-av avec vraie sortie de réduction, rebuild-locate-db → repli propre "non installé" confirmé car `updatedb` absent sur cette VM, regenerate-grub → a réellement fonctionné malgré `which update-grub` négatif en shell SSH simple — PATH différent sous pkexec/root, comportement réel correct). Rejet d'une action inconnue confirmé (exit 1, aucun effet de bord).
+- Spot-check final de 5 commandes non-privilégiées représentatives également vérifié en direct.
+- 224/224 frontend, 211 Rust, vue-tsc clean.
+
+## Phase R11 (Diagnostic & config) : TERMINÉE, mergée (ba71ef6), version 0.20.0
 
 Retour utilisateur explicite : catégorie "Diagnostic" jugée quasi-vide (une seule page PCI, pas même sa propre catégorie) et "ultra importante", demande de reprendre "exactement" ce qu'a NiTriTe Windows dans l'équivalent (493 lignes, ~30 onglets). Spec : `2026-08-02-nitrux-r11-diagnostic-config-design.md`. Plan : `2026-08-02-nitrux-r11-diagnostic-config.md` (8 tâches). Investigation : **chaque commande candidate testée sans root sur la VM dev avant d'écrire le spec** (lscpu, /sys/class/dmi/id/*, /proc/meminfo, lsusb, pactl, xrandr, lpstat, systemctl list-units/list-timers, crontab -l, dpkg -l, /var/log/apt/history.log). Décision de périmètre : nouvelle catégorie dédiée "Diagnostic" (8e→9e), 6 nouvelles pages + page PCI existante déplacée dedans (pas dupliquée) ; exclusion explicite de tout ce qui est sans équivalent Linux (Licence/Registre/BSOD/WSL Windows) ou déjà couvert ailleurs dans NiTruX.
 - Task 1 (hardware_details.rs CPU/carte-mère/mémoire, LC_ALL=C car lscpu est localisé — confirmé en français par défaut sur la VM) : aucun bug de code, juste un écart de compte plan-vs-réel bénin (5 tests prédits, 4 écrits).
@@ -79,16 +91,17 @@ Merge master (fast-forward propre) + version bump 0.15.0→0.16.0 + build réel 
 
 ## Prochaine action
 
-Pousser master + créer le tag `v0.20.0` + créer la release GitHub avec les assets `.deb`/`.rpm` (AppImage toujours bloqué). Nettoyer le worktree `r11-diagnostic-config`.
+Pousser master + créer le tag `v0.21.0` + créer la release GitHub avec les assets `.deb`/`.rpm` (AppImage toujours bloqué). Nettoyer le worktree `r12-outils-systeme`.
 
-**Le découpage R6→R11 est intégralement terminé.** Aucune phase planifiée restante. Prochaines pistes possibles si l'utilisateur le souhaite : (1) débloquer l'AppImage (nécessite `! wsl.exe -e sudo cp /tmp/xdg-utils-extract/usr/bin/xdg-open /usr/bin/xdg-open` de la part de l'utilisateur), (2) Terminal intégré (différé depuis R8, nécessite décision dédiée sur une nouvelle dépendance PTY), (3) nouvelle demande utilisateur à définir.
+**Aucune phase planifiée restante** (découpage R6→R11 complet + R12 hors-découpage livré). Le catalogue de `SystemToolsPage.vue` (47 commandes) est facilement extensible sans nouvelle revue de sécurité pour tout ajout non-privilégié (juste ajouter une entrée à `systemToolsCatalog.ts` avec un `command` — réutilise `run_script` existant) ; un ajout privilégié nécessite en revanche d'étendre `VALID_ACTIONS`/le switch du wrapper avec la pleine revue de sécurité habituelle. Prochaines pistes possibles si l'utilisateur le souhaite : (1) débloquer l'AppImage (nécessite `! wsl.exe -e sudo cp /tmp/xdg-utils-extract/usr/bin/xdg-open /usr/bin/xdg-open` de la part de l'utilisateur), (2) Terminal intégré (différé depuis R8, nécessite décision dédiée sur une nouvelle dépendance PTY), (3) étoffer encore le catalogue Outils système, (4) nouvelle demande utilisateur à définir.
 
 ## Contexte pour reprendre à froid
 
-- Repo local : `C:\Users\Momo\Desktop\NiTruX`, remote `https://github.com/Heiphaistos/NiTruX.git`, branche `master`, version `0.20.0`
-- Worktrees mergés à nettoyer si encore présents : `r11-diagnostic-config`
-- **Découpage R6→R11 : COMPLET.** Tout livré et publié (R6 v0.14.0, R7 v0.15.0, R8 v0.16.0, R9 v0.18.0, R10 v0.19.0, R11 v0.20.0).
-- **Snap = 13e action pkexec, nouvelle depuis R10** — mêmes disciplines que toute action privilégiée : exec.path dédié `nitrux-pkexec-install-snap`, re-validation indépendante côté script, testée en live avant tout futur changement touchant install.rs.
+- Repo local : `C:\Users\Momo\Desktop\NiTruX`, remote `https://github.com/Heiphaistos/NiTruX.git`, branche `master`, version `0.21.0`
+- Worktrees mergés à nettoyer si encore présents : `r12-outils-systeme`
+- **Découpage R6→R11 : COMPLET** (R6 v0.14.0, R7 v0.15.0, R8 v0.16.0, R9 v0.18.0, R10 v0.19.0, R11 v0.20.0). **Phase R12 (hors découpage, demande directe utilisateur) : COMPLET** (v0.21.0).
+- **Snap = 13e action pkexec (R10), system-tools = 14e (R12)** — mêmes disciplines que toute action privilégiée : exec.path dédié, re-validation indépendante côté script, testée en live avant tout futur changement.
+- **`nitrux-pkexec-helper` a maintenant 14 noms installés** — toujours mettre à jour le compte dans le commentaire d'en-tête du script à chaque ajout (source d'erreur silencieuse si oublié, sans impact fonctionnel mais trompeur pour la doc).
 - **Terminal intégré différé de R8, toujours en attente d'une décision dédiée** — nécessite une nouvelle dépendance Cargo (PTY, ex: `portable-pty`) + probablement une dépendance npm (rendu ANSI, ex: `xterm.js`), à traiter séparément avec sa propre revue de conception si l'utilisateur le souhaite un jour.
 - VM Debian : `172.18.32.124`, user `dev`, password `1998`. Scripts SSH : `C:\Users\Momo\AppData\Local\Temp\claude\C--Users-Momo\880690b1-319b-40bd-bb2c-957700dc8af4\scratchpad\ssh_run.py`/`ssh_put.py`/`ssh_interactive.py` (usage `python ssh_run.py <user> <password> "<cmd>"`).
 - **Piège commande VM qui bloque silencieusement (R8)** : certaines commandes système (ex: `bluetoothctl show` quand le service est inactif) ne retournent pas d'erreur immédiate — elles bloquent jusqu'à ce qu'on les tue. Toujours wrapper une commande de vérification VM inconnue avec `timeout N <cmd>` pour éviter un SSH qui pend indéfiniment (confirmé : sans `timeout`, la commande a fait planter la connexion paramiko par timeout de socket).
