@@ -37,6 +37,7 @@ mod snapshots;
 mod subprocess;
 mod system;
 mod system_tools;
+mod terminal;
 mod trash;
 mod update_history;
 
@@ -87,6 +88,7 @@ pub fn run() {
         // Held for the app's lifetime so CPU usage deltas can be computed
         // across repeated refreshes (see system::build_snapshot doc comment).
         .manage(Mutex::new(System::new_all()))
+        .manage(terminal::TerminalState::default())
         .invoke_handler(tauri::generate_handler![
             system::get_system_snapshot,
             accounts::get_user_accounts,
@@ -149,6 +151,10 @@ pub fn run() {
             trash::delete_trash_item_permanently,
             update_history::get_update_history,
             system_tools::run_system_tool,
+            terminal::spawn_terminal,
+            terminal::write_to_terminal,
+            terminal::resize_terminal,
+            terminal::close_terminal,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
