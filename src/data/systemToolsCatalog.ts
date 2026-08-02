@@ -56,6 +56,9 @@ export const systemToolsCatalog: SystemTool[] = [
   { id: "ps-cpu", name: "Top processus CPU", description: "15 processus consommant le plus de CPU.", category: "performance", command: "ps aux --sort=-%cpu | head -15" },
   { id: "ps-mem", name: "Top processus mémoire", description: "15 processus consommant le plus de mémoire.", category: "performance", command: "ps aux --sort=-%mem | head -15" },
   { id: "top-snapshot", name: "Aperçu instantané", description: "Instantané top (sans rafraîchissement continu).", category: "performance", command: "top -bn1 | head -20" },
+  { id: "loadavg", name: "Charge système", description: "Charge moyenne sur 1, 5 et 15 minutes.", category: "performance", command: "cat /proc/loadavg" },
+  { id: "boot-time", name: "Temps de démarrage", description: "Durée du dernier démarrage (noyau + espace utilisateur).", category: "performance", command: "systemd-analyze" },
+  { id: "boot-blame", name: "Services les plus lents au démarrage", description: "Classement des services par temps de démarrage.", category: "performance", command: "systemd-analyze blame | head -15" },
 
   // Nettoyage (utilisateur, non-privilégié)
   { id: "clean-thumbnails", name: "Vider le cache des miniatures", description: "Supprime les vignettes d'images mises en cache.", category: "nettoyage", command: "rm -rf ~/.cache/thumbnails/*" },
@@ -68,6 +71,7 @@ export const systemToolsCatalog: SystemTool[] = [
   // Stockage
   { id: "lsblk-fs", name: "Systèmes de fichiers", description: "Disques avec type de système de fichiers et point de montage.", category: "stockage", command: "lsblk -f" },
   { id: "biggest-home-dirs", name: "Plus gros dossiers du home", description: "10 plus gros éléments de votre dossier personnel.", category: "stockage", command: "du -sh ~/* 2>/dev/null | sort -rh | head -10" },
+  { id: "varlog-size", name: "Taille des journaux système", description: "Espace disque occupé par /var/log.", category: "stockage", command: "du -sh /var/log 2>/dev/null" },
 
   // Privilégié (root, via l'action polkit consolidée)
   { id: "apt-autoremove", name: "Retirer les paquets orphelins", description: "Supprime les dépendances devenues inutiles.", category: "privilegie", privilegedAction: "apt-autoremove" },
