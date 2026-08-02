@@ -24,6 +24,7 @@ mod network;
 mod network_write;
 mod optimizations;
 mod packages;
+mod peripherals;
 mod portscan;
 mod report;
 mod scripts;
@@ -83,6 +84,10 @@ pub fn run() {
             list_updates,
             detect_native_manager,
             packages::list_installed_packages,
+            peripherals::get_monitors,
+            peripherals::get_usb_devices,
+            peripherals::get_audio_sinks,
+            peripherals::get_printers,
             packages::flatpak::install_flatpak_package,
             report::generate_system_report,
             benchmark::run_benchmark,
