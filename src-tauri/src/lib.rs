@@ -68,6 +68,15 @@ fn detect_native_manager() -> Option<String> {
         .map(|m| m.id().to_string())
 }
 
+/// Environment variables of the app's own process, i.e. exactly what the
+/// invoking user's shell environment looked like when NiTruX was launched
+/// -- a normal, expected diagnostic view of one's own environment, nothing
+/// exposed that the user couldn't already see in their own shell.
+#[tauri::command]
+fn get_environment_variables() -> Vec<(String, String)> {
+    std::env::vars().collect()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -84,6 +93,7 @@ pub fn run() {
             logs::get_recent_logs,
             list_updates,
             detect_native_manager,
+            get_environment_variables,
             packages::list_installed_packages,
             peripherals::get_monitors,
             peripherals::get_usb_devices,
