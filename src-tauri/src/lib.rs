@@ -2,6 +2,7 @@ use std::sync::Mutex;
 
 use sysinfo::System;
 
+mod accounts;
 mod backup;
 mod benchmark;
 mod bluetooth;
@@ -86,6 +87,7 @@ pub fn run() {
         .manage(Mutex::new(System::new_all()))
         .invoke_handler(tauri::generate_handler![
             system::get_system_snapshot,
+            accounts::get_user_accounts,
             sensors::get_sensor_snapshot,
             hardware::get_pci_devices,
             hardware_details::get_hardware_details,
