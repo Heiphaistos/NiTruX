@@ -77,4 +77,9 @@ describe("navigationCategories", () => {
     const allPageIds = navigationCategories.flatMap((c) => c.pages.map((p) => p.id));
     expect(allPageIds).toContain("system-tools");
   });
+
+  it("includes the new Phase R13 Terminal page by id", () => {
+    const allPageIds = navigationCategories.flatMap((c) => c.pages.map((p) => p.id));
+    expect(allPageIds).toContain("terminal");
+  });
 });

@@ -186,6 +186,14 @@ describe("App", () => {
     expect(wrapper.text()).toContain("sans terminal");
   });
 
+  it("shows the real TerminalPage for the terminal id", async () => {
+    const wrapper = mount(App);
+    const buttons = wrapper.findAll("button");
+    const button = buttons.find((b) => b.text() === "Terminal")!;
+    await button.trigger("click");
+    expect(wrapper.text()).toContain("Shell interactif");
+  });
+
   it("shows the real DataRecoveryPage for the data-recovery id", async () => {
     const wrapper = mount(App);
     const buttons = wrapper.findAll("button");
