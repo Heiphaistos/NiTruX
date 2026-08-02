@@ -145,8 +145,13 @@ const pages: Record<string, Component> = {
   -webkit-text-size-adjust: 100%;
 }
 
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
+  overflow-x: hidden;
   background-color: var(--nx-bg-base);
   color: var(--nx-text-primary);
 }

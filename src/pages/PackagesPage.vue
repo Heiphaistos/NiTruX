@@ -110,19 +110,21 @@ async function upgradeAll() {
     </div>
 
     <NxCard v-else>
-      <table class="pkg-table">
-        <thead>
-          <tr><th>Source</th><th>Paquet</th><th>Version actuelle</th><th>Nouvelle version</th></tr>
-        </thead>
-        <tbody>
-          <tr v-for="u in updates" :key="`${u.source}-${u.name}`">
-            <td><NxBadge status="info">{{ u.source }}</NxBadge></td>
-            <td>{{ u.name }}</td>
-            <td>{{ u.current_version || "—" }}</td>
-            <td>{{ u.new_version }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="pkg-table-scroll">
+        <table class="pkg-table">
+          <thead>
+            <tr><th>Source</th><th>Paquet</th><th>Version actuelle</th><th>Nouvelle version</th></tr>
+          </thead>
+          <tbody>
+            <tr v-for="u in updates" :key="`${u.source}-${u.name}`">
+              <td><NxBadge status="info">{{ u.source }}</NxBadge></td>
+              <td>{{ u.name }}</td>
+              <td>{{ u.current_version || "—" }}</td>
+              <td>{{ u.new_version }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </NxCard>
   </div>
 </template>
@@ -133,7 +135,8 @@ async function upgradeAll() {
 .pkg-install-card { display: flex; flex-direction: column; gap: 10px; }
 .pkg-install-row { display: flex; gap: 10px; align-items: center; }
 .pkg-empty { color: var(--nx-text-secondary); }
-.pkg-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.pkg-table-scroll { overflow-x: auto; }
+.pkg-table { width: 100%; min-width: 480px; border-collapse: collapse; font-size: 13px; }
 .pkg-table th { text-align: left; color: var(--nx-text-secondary); border-bottom: 1px solid var(--nx-style-border-color); padding: 8px; }
 .pkg-table td { padding: 8px; border-bottom: 1px solid var(--nx-style-border-color); }
 </style>
