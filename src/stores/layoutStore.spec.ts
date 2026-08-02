@@ -8,9 +8,9 @@ describe("layoutStore", () => {
     localStorage.clear();
   });
 
-  it("defaults to sidebar-classic", () => {
+  it("defaults to master-detail", () => {
     const store = useLayoutStore();
-    expect(store.current).toBe("sidebar-classic");
+    expect(store.current).toBe("master-detail");
   });
 
   it("persists the chosen layout to localStorage", () => {
@@ -19,9 +19,9 @@ describe("layoutStore", () => {
     expect(localStorage.getItem("nitrux-layout")).toBe("bento");
   });
 
-  it("falls back to sidebar-classic when localStorage holds an invalid layout id", () => {
+  it("falls back to master-detail when localStorage holds an invalid layout id", () => {
     localStorage.setItem("nitrux-layout", "not-a-real-layout");
     const store = useLayoutStore();
-    expect(store.current).toBe("sidebar-classic");
+    expect(store.current).toBe("master-detail");
   });
 });

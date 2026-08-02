@@ -33,15 +33,31 @@ function applyToDom(theme: Theme) {
   root.dataset.themeMode = theme.mode;
 }
 
+const STORAGE_KEY = "nitrux-theme";
+const DEFAULT_THEME = builtinThemes.find((t) => t.id === "oled-noir") as Theme;
+
+function readPersistedTheme(): Theme {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (!stored) return DEFAULT_THEME;
+  try {
+    const parsed = JSON.parse(stored) as Theme;
+    if (parsed?.id && hasAllRequiredColors(parsed.colors)) return parsed;
+  } catch {
+    /* fall through to default */
+  }
+  return DEFAULT_THEME;
+}
+
 export const useThemeStore = defineStore("theme", {
   state: () => ({
-    active: builtinThemes[0] as Theme,
+    active: readPersistedTheme(),
     customThemes: [] as Theme[],
   }),
   actions: {
     setTheme(theme: Theme) {
       this.active = theme;
       applyToDom(theme);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(theme));
     },
     updateActiveColor(key: keyof Theme["colors"], value: string) {
       this.active = { ...this.active, colors: { ...this.active.colors, [key]: value } };
