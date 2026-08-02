@@ -22,4 +22,11 @@ describe("DiagnosticPage", () => {
     const wrapper = mount(DiagnosticPage);
     await vi.waitFor(() => expect(wrapper.find(".nx-card").exists()).toBe(true));
   });
+
+  it("shows an explanatory empty state when no PCI devices are found (no error)", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+    const wrapper = mount(DiagnosticPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Aucun composant PCI détecté"));
+  });
 });
