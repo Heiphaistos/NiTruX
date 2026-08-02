@@ -6,6 +6,7 @@ import NxCard from "@/components/ui/NxCard.vue";
 import NxButton from "@/components/ui/NxButton.vue";
 import NxInput from "@/components/ui/NxInput.vue";
 import NxSelect from "@/components/ui/NxSelect.vue";
+import NxBadge from "@/components/ui/NxBadge.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 
 interface DuplicateGroup { hash: string; paths: string[]; size_bytes: number }
@@ -62,12 +63,28 @@ const hashPath = ref("");
 const hashAlgorithm = ref<"sha256" | "sha1" | "md5">("sha256");
 const hashResult = ref<string | null>(null);
 const hashError = ref<string | null>(null);
+const expectedHash = ref("");
+const verifyMatch = ref<boolean | null>(null);
 
 async function computeHash() {
   hashError.value = null;
   hashResult.value = null;
   try {
     hashResult.value = await invoke<string>("compute_file_hash", { path: hashPath.value, algorithm: hashAlgorithm.value });
+  } catch (e) {
+    hashError.value = String(e);
+  }
+}
+
+async function verifyHash() {
+  hashError.value = null;
+  verifyMatch.value = null;
+  try {
+    verifyMatch.value = await invoke<boolean>("verify_file_hash", {
+      path: hashPath.value,
+      algorithm: hashAlgorithm.value,
+      expected: expectedHash.value,
+    });
   } catch (e) {
     hashError.value = String(e);
   }
@@ -119,8 +136,14 @@ function bytesToMb(bytes: number): string {
         <NxSelect v-model="hashAlgorithm" :options="HASH_OPTIONS" />
         <NxButton @click="computeHash">Calculer</NxButton>
       </div>
+      <div class="ft-form-row">
+        <NxInput v-model="expectedHash" placeholder="Hash attendu (ex: publié par l'éditeur)..." />
+        <NxButton @click="verifyHash">Vérifier</NxButton>
+      </div>
       <NxCard v-if="hashError" danger>{{ hashError }}</NxCard>
       <div v-if="hashResult" class="ft-hash-result">{{ hashResult }}</div>
+      <NxBadge v-if="verifyMatch === true" status="success">Le hash correspond</NxBadge>
+      <NxBadge v-else-if="verifyMatch === false" status="danger">Le hash ne correspond pas</NxBadge>
     </NxCard>
   </div>
 </template>
