@@ -50,7 +50,6 @@ export const appCatalog: AppCatalogEntry[] = [
   { id: "signal", name: "Signal", description: "Messagerie chiffrée de bout en bout.", icon: "🔒", category: "Communication", installMethod: "flatpak", packageId: "org.signal.Signal" },
   { id: "telegram", name: "Telegram", description: "Messagerie rapide et sécurisée.", icon: "✈️", category: "Communication", installMethod: "flatpak", packageId: "org.telegram.desktop" },
   { id: "slack", name: "Slack", description: "Messagerie collaborative pour équipes.", icon: "💬", category: "Communication", installMethod: "flatpak", packageId: "com.slack.Slack" },
-  { id: "skype", name: "Skype", description: "Appels vidéo et messagerie.", icon: "📞", category: "Communication", installMethod: "flatpak", packageId: "com.skype.Client" },
   { id: "zoom", name: "Zoom", description: "Visioconférence professionnelle.", icon: "🎥", category: "Communication", installMethod: "flatpak", packageId: "us.zoom.Zoom" },
   { id: "element", name: "Element", description: "Client Matrix pour messagerie décentralisée.", icon: "🧩", category: "Communication", installMethod: "flatpak", packageId: "im.riot.Riot" },
   { id: "teams", name: "Microsoft Teams", description: "Visioconférence et collaboration Microsoft.", icon: "👥", category: "Communication", installMethod: "flatpak", packageId: "com.microsoft.Teams" },
