@@ -34,7 +34,7 @@ describe("QuickInstallPage", () => {
     const firefoxButton = buttons.find((b) => b.text() === "Installer" && b.element.closest(".qi-card")?.textContent?.includes("Firefox"))!;
     await firefoxButton.trigger("click");
     await vi.waitFor(() => expect(wrapper.text()).toContain("Installé"));
-    expect(invoke).toHaveBeenCalledWith("install_package", { manager: "apt", package: "firefox" });
+    expect(invoke).toHaveBeenCalledWith("install_package", { manager: "apt", package: "firefox-esr" });
   });
 
   it("installs a flatpak-method app via install_flatpak_package", async () => {

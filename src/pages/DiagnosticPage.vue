@@ -9,6 +9,7 @@ interface PciDevice { slot: string; class: string; description: string }
 
 const devices = ref<PciDevice[]>([]);
 const error = ref<string | null>(null);
+const loading = ref(true);
 
 onMounted(async () => {
   try {
@@ -16,6 +17,8 @@ onMounted(async () => {
     error.value = null;
   } catch (err) {
     error.value = err instanceof Error ? err.message : String(err);
+  } finally {
+    loading.value = false;
   }
 });
 </script>
@@ -40,11 +43,18 @@ onMounted(async () => {
         </tbody>
       </table>
     </NxCard>
+    <NxCard v-else-if="!loading && !error" class="diag-empty">
+      Aucun composant PCI détecté sur ce système. Sur certaines machines virtuelles
+      (notamment Hyper-V en configuration Génération 2), le matériel est exposé via
+      un bus synthétique (VMBus) plutôt que via un vrai bus PCI, auquel cas cette
+      page reste vide même si `lspci` fonctionne normalement — ce n'est pas une erreur.
+    </NxCard>
   </div>
 </template>
 
 <style scoped>
-.diag-page { padding: 24px; }
+.diag-page { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+.diag-empty { color: var(--nx-text-secondary); font-size: 13px; line-height: 1.5; }
 .diag-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .diag-table th { text-align: left; color: var(--nx-text-secondary); border-bottom: 1px solid var(--nx-style-border-color); padding: 8px; }
 .diag-table td { padding: 8px; border-bottom: 1px solid var(--nx-style-border-color); }

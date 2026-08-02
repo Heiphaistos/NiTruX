@@ -19,7 +19,7 @@ export interface AppCatalogEntry {
 
 export const appCatalog: AppCatalogEntry[] = [
   // --- Existing entries (unchanged ids/packageIds — covered by QuickInstallPage.spec.ts) ---
-  { id: "firefox", name: "Firefox", description: "Navigateur web libre et rapide.", icon: "🦊", category: "Navigateurs", installMethod: "apt", packageId: "firefox" },
+  { id: "firefox", name: "Firefox", description: "Navigateur web libre et rapide.", icon: "🦊", category: "Navigateurs", installMethod: "apt", packageId: "firefox-esr" },
   { id: "chromium", name: "Chromium", description: "Navigateur web open source basé sur le projet Chromium.", icon: "🌐", category: "Navigateurs", installMethod: "apt", packageId: "chromium" },
   { id: "thunderbird", name: "Thunderbird", description: "Client de messagerie complet.", icon: "📧", category: "Communication", installMethod: "apt", packageId: "thunderbird" },
   { id: "discord", name: "Discord", description: "Messagerie vocale et textuelle pour communautés.", icon: "🎮", category: "Communication", installMethod: "flatpak", packageId: "com.discordapp.Discord" },
@@ -79,7 +79,6 @@ export const appCatalog: AppCatalogEntry[] = [
   { id: "ghostwriter", name: "ghostwriter", description: "Éditeur Markdown avec aperçu en direct.", icon: "👻", category: "Bureautique", installMethod: "apt", packageId: "ghostwriter" },
   { id: "texstudio", name: "TeXstudio", description: "Environnement d'édition LaTeX complet.", icon: "📐", category: "Bureautique", installMethod: "apt", packageId: "texstudio" },
   { id: "kate", name: "Kate", description: "Éditeur de texte avancé (KDE).", icon: "📜", category: "Bureautique", installMethod: "apt", packageId: "kate" },
-  { id: "leafpad", name: "Leafpad", description: "Éditeur de texte minimaliste.", icon: "🍂", category: "Bureautique", installMethod: "apt", packageId: "leafpad" },
   { id: "featherpad", name: "FeatherPad", description: "Éditeur de texte léger multi-onglets.", icon: "🪶", category: "Bureautique", installMethod: "apt", packageId: "featherpad" },
   { id: "retext", name: "ReText", description: "Éditeur Markdown/reST simple.", icon: "🖋️", category: "Bureautique", installMethod: "apt", packageId: "retext" },
   { id: "zettlr", name: "Zettlr", description: "Éditeur Markdown pour la rédaction académique.", icon: "🗒️", category: "Bureautique", installMethod: "flatpak", packageId: "com.zettlr.Zettlr" },
@@ -99,9 +98,7 @@ export const appCatalog: AppCatalogEntry[] = [
   { id: "rawtherapee", name: "RawTherapee", description: "Traitement avancé de photos RAW.", icon: "🌄", category: "Graphisme", installMethod: "apt", packageId: "rawtherapee" },
   { id: "shotwell", name: "Shotwell", description: "Organisateur et visionneuse de photos.", icon: "🖼️", category: "Graphisme", installMethod: "apt", packageId: "shotwell" },
   { id: "digikam", name: "digiKam", description: "Gestion de photos professionnelle (KDE).", icon: "📸", category: "Graphisme", installMethod: "apt", packageId: "digikam" },
-  { id: "pinta", name: "Pinta", description: "Édition d'images simple façon Paint.NET.", icon: "🎨", category: "Graphisme", installMethod: "apt", packageId: "pinta" },
   { id: "mypaint", name: "MyPaint", description: "Peinture numérique optimisée tablette graphique.", icon: "🖍️", category: "Graphisme", installMethod: "apt", packageId: "mypaint" },
-  { id: "synfigstudio", name: "Synfig Studio", description: "Animation vectorielle 2D.", icon: "🎞️", category: "Graphisme", installMethod: "apt", packageId: "synfigstudio" },
   { id: "gthumb", name: "gThumb", description: "Visionneuse et organisateur d'images.", icon: "🌅", category: "Graphisme", installMethod: "apt", packageId: "gthumb" },
   { id: "gwenview", name: "Gwenview", description: "Visionneuse d'images KDE.", icon: "🏞️", category: "Graphisme", installMethod: "apt", packageId: "gwenview" },
   { id: "hugin", name: "Hugin", description: "Assemblage de panoramas photo.", icon: "🌆", category: "Graphisme", installMethod: "apt", packageId: "hugin" },
@@ -181,7 +178,6 @@ export const appCatalog: AppCatalogEntry[] = [
   { id: "scummvm", name: "ScummVM", description: "Moteur pour anciens jeux d'aventure point-and-click.", icon: "🕵️", category: "Émulation", installMethod: "apt", packageId: "scummvm" },
   { id: "wine", name: "Wine", description: "Couche de compatibilité pour applications Windows.", icon: "🍷", category: "Émulation", installMethod: "apt", packageId: "wine" },
   { id: "bottles", name: "Bottles", description: "Gestion d'environnements Wine isolés.", icon: "🍾", category: "Émulation", installMethod: "flatpak", packageId: "com.usebottles.bottles" },
-  { id: "playonlinux", name: "PlayOnLinux", description: "Interface de gestion pour Wine.", icon: "🍷", category: "Émulation", installMethod: "apt", packageId: "playonlinux" },
 
   // --- Développement ---
   { id: "vscode", name: "Visual Studio Code", description: "Éditeur de code polyvalent et extensible.", icon: "💻", category: "Développement", installMethod: "flatpak", packageId: "com.visualstudio.code" },
@@ -262,7 +258,7 @@ export const appCatalog: AppCatalogEntry[] = [
   { id: "bleachbit", name: "BleachBit", description: "Nettoyage de fichiers temporaires et cache.", icon: "🧹", category: "Utilitaires", installMethod: "apt", packageId: "bleachbit" },
   { id: "gnome-disk-utility", name: "Disques", description: "Gestion des disques et supports GNOME.", icon: "💾", category: "Utilitaires", installMethod: "apt", packageId: "gnome-disk-utility" },
   { id: "file-roller", name: "Archive Manager", description: "Gestion d'archives compressées.", icon: "🗜️", category: "Utilitaires", installMethod: "apt", packageId: "file-roller" },
-  { id: "unrar", name: "unrar", description: "Extraction d'archives RAR.", icon: "📦", category: "Utilitaires", installMethod: "apt", packageId: "unrar" },
+  { id: "unrar", name: "unrar", description: "Extraction d'archives RAR.", icon: "📦", category: "Utilitaires", installMethod: "apt", packageId: "unrar-free" },
   { id: "p7zip-full", name: "p7zip", description: "Support des archives 7-Zip.", icon: "📦", category: "Utilitaires", installMethod: "apt", packageId: "p7zip-full" },
   { id: "unzip", name: "unzip", description: "Extraction d'archives ZIP.", icon: "📦", category: "Utilitaires", installMethod: "apt", packageId: "unzip" },
   { id: "zip", name: "zip", description: "Création d'archives ZIP.", icon: "📦", category: "Utilitaires", installMethod: "apt", packageId: "zip" },
@@ -314,7 +310,6 @@ export const appCatalog: AppCatalogEntry[] = [
   { id: "gigolo", name: "Gigolo", description: "Interface pour monter des services distants (SFTP, WebDAV...).", icon: "🔗", category: "Cloud & Synchronisation", installMethod: "apt", packageId: "gigolo" },
 
   // --- Virtualisation ---
-  { id: "virtualbox", name: "VirtualBox", description: "Virtualisation de systèmes d'exploitation.", icon: "📦", category: "Virtualisation", installMethod: "apt", packageId: "virtualbox" },
   { id: "qemu-system", name: "QEMU", description: "Émulateur et virtualiseur de machines.", icon: "🖥️", category: "Virtualisation", installMethod: "apt", packageId: "qemu-system" },
   { id: "virt-manager", name: "Virtual Machine Manager", description: "Interface graphique pour KVM/QEMU/libvirt.", icon: "🎛️", category: "Virtualisation", installMethod: "apt", packageId: "virt-manager" },
   { id: "docker", name: "Docker", description: "Plateforme de conteneurisation.", icon: "🐳", category: "Virtualisation", installMethod: "apt", packageId: "docker.io" },
@@ -343,7 +338,7 @@ export const appCatalog: AppCatalogEntry[] = [
   { id: "joplin", name: "Joplin", description: "Prise de notes et gestion de tâches chiffrée.", icon: "📓", category: "Productivité", installMethod: "flatpak", packageId: "net.cozic.joplin_desktop" },
   { id: "obsidian", name: "Obsidian", description: "Prise de notes en graphe de connaissances Markdown.", icon: "🪨", category: "Productivité", installMethod: "flatpak", packageId: "md.obsidian.Obsidian" },
   { id: "standardnotes", name: "Standard Notes", description: "Prise de notes simple et chiffrée.", icon: "🗒️", category: "Productivité", installMethod: "flatpak", packageId: "org.standardnotes.standardnotes" },
-  { id: "gnome-todo", name: "GNOME To Do", description: "Gestionnaire de tâches simple.", icon: "✅", category: "Productivité", installMethod: "apt", packageId: "gnome-todo" },
+  { id: "endeavour", name: "Endeavour", description: "Gestionnaire de tâches simple pour GNOME.", icon: "✅", category: "Productivité", installMethod: "apt", packageId: "endeavour" },
   { id: "taskwarrior", name: "Taskwarrior", description: "Gestionnaire de tâches en ligne de commande.", icon: "☑️", category: "Productivité", installMethod: "apt", packageId: "taskwarrior" },
   { id: "trilium", name: "Trilium Notes", description: "Notes hiérarchiques pour bases de connaissances personnelles.", icon: "🌳", category: "Productivité", installMethod: "flatpak", packageId: "com.github.zadam.trilium" },
   { id: "cherrytree", name: "CherryTree", description: "Prise de notes hiérarchique.", icon: "🍒", category: "Productivité", installMethod: "apt", packageId: "cherrytree" },
@@ -369,7 +364,7 @@ export const appCatalog: AppCatalogEntry[] = [
   { id: "curl", name: "curl", description: "Client de transfert de données en ligne de commande.", icon: "🌐", category: "Ligne de commande", installMethod: "apt", packageId: "curl" },
   { id: "wget", name: "wget", description: "Téléchargement de fichiers en ligne de commande.", icon: "⬇️", category: "Ligne de commande", installMethod: "apt", packageId: "wget" },
   { id: "httpie", name: "HTTPie", description: "Client HTTP convivial en ligne de commande.", icon: "🌐", category: "Ligne de commande", installMethod: "apt", packageId: "httpie" },
-  { id: "tldr", name: "tldr", description: "Pages de manuel simplifiées avec exemples.", icon: "📖", category: "Ligne de commande", installMethod: "apt", packageId: "tldr" },
+  { id: "tldr", name: "tldr", description: "Pages de manuel simplifiées avec exemples.", icon: "📖", category: "Ligne de commande", installMethod: "apt", packageId: "tldr-py" },
   { id: "asciinema", name: "asciinema", description: "Enregistrement de sessions terminal.", icon: "🎬", category: "Ligne de commande", installMethod: "apt", packageId: "asciinema" },
 
   // --- Système ---
@@ -394,7 +389,7 @@ export const appCatalog: AppCatalogEntry[] = [
   { id: "samba", name: "Samba", description: "Partage de fichiers/imprimantes compatible Windows.", icon: "🗂️", category: "Serveurs & Services", installMethod: "apt", packageId: "samba" },
   { id: "nfs-kernel-server", name: "Serveur NFS", description: "Partage de fichiers réseau Unix.", icon: "🗄️", category: "Serveurs & Services", installMethod: "apt", packageId: "nfs-kernel-server" },
   { id: "vsftpd", name: "vsftpd", description: "Serveur FTP sécurisé et léger.", icon: "📁", category: "Serveurs & Services", installMethod: "apt", packageId: "vsftpd" },
-  { id: "proftpd", name: "ProFTPD", description: "Serveur FTP configurable.", icon: "📂", category: "Serveurs & Services", installMethod: "apt", packageId: "proftpd-basic" },
+  { id: "proftpd", name: "ProFTPD", description: "Serveur FTP configurable.", icon: "📂", category: "Serveurs & Services", installMethod: "apt", packageId: "proftpd-core" },
   { id: "bind9", name: "BIND9", description: "Serveur DNS de référence.", icon: "🌐", category: "Serveurs & Services", installMethod: "apt", packageId: "bind9" },
   { id: "isc-dhcp-server", name: "Serveur DHCP", description: "Attribution automatique d'adresses IP.", icon: "🔢", category: "Serveurs & Services", installMethod: "apt", packageId: "isc-dhcp-server" },
   { id: "cockpit", name: "Cockpit", description: "Interface web d'administration système.", icon: "🕸️", category: "Serveurs & Services", installMethod: "apt", packageId: "cockpit" },
@@ -423,14 +418,13 @@ export const appCatalog: AppCatalogEntry[] = [
   { id: "fonts-dejavu", name: "DejaVu Fonts", description: "Polices à large couverture Unicode.", icon: "🔤", category: "Personnalisation", installMethod: "apt", packageId: "fonts-dejavu" },
   { id: "fonts-hack", name: "Hack", description: "Police monospace typographique pour le code source.", icon: "🔤", category: "Personnalisation", installMethod: "apt", packageId: "fonts-hack" },
   { id: "fonts-inconsolata", name: "Inconsolata", description: "Police monospace élégante.", icon: "🔤", category: "Personnalisation", installMethod: "apt", packageId: "fonts-inconsolata" },
-  { id: "fonts-ubuntu", name: "Ubuntu Font Family", description: "Police officielle d'Ubuntu.", icon: "🔤", category: "Personnalisation", installMethod: "apt", packageId: "fonts-ubuntu" },
   { id: "fonts-roboto", name: "Roboto", description: "Police moderne conçue par Google.", icon: "🔤", category: "Personnalisation", installMethod: "apt", packageId: "fonts-roboto" },
   { id: "papirus-icon-theme", name: "Papirus", description: "Thème d'icônes moderne et complet.", icon: "🎨", category: "Personnalisation", installMethod: "apt", packageId: "papirus-icon-theme" },
   { id: "arc-theme", name: "Arc Theme", description: "Thème GTK plat et moderne.", icon: "🌈", category: "Personnalisation", installMethod: "apt", packageId: "arc-theme" },
   { id: "numix-icon-theme", name: "Numix", description: "Thème d'icônes flat design.", icon: "🎨", category: "Personnalisation", installMethod: "apt", packageId: "numix-icon-theme" },
   { id: "breeze-icon-theme", name: "Breeze", description: "Thème d'icônes par défaut de KDE.", icon: "🌬️", category: "Personnalisation", installMethod: "apt", packageId: "breeze-icon-theme" },
   { id: "plank", name: "Plank", description: "Dock d'applications simple et élégant.", icon: "🛟", category: "Personnalisation", installMethod: "apt", packageId: "plank" },
-  { id: "conky", name: "Conky", description: "Widget de bureau affichant des infos système.", icon: "🖥️", category: "Personnalisation", installMethod: "apt", packageId: "conky" },
+  { id: "conky", name: "Conky", description: "Widget de bureau affichant des infos système.", icon: "🖥️", category: "Personnalisation", installMethod: "apt", packageId: "conky-all" },
   { id: "cairo-dock", name: "Cairo-Dock", description: "Dock animé et personnalisable.", icon: "🎡", category: "Personnalisation", installMethod: "apt", packageId: "cairo-dock" },
   { id: "lxappearance", name: "LXAppearance", description: "Configuration du thème et de l'apparence GTK.", icon: "🖌️", category: "Personnalisation", installMethod: "apt", packageId: "lxappearance" },
 
@@ -470,7 +464,6 @@ export const appCatalog: AppCatalogEntry[] = [
   { id: "simple-scan", name: "Numérisation simple", description: "Numérisation de documents et photos.", icon: "🖨️", category: "Impression & Scan", installMethod: "apt", packageId: "simple-scan" },
   { id: "xsane", name: "XSane", description: "Interface de numérisation avancée.", icon: "🖨️", category: "Impression & Scan", installMethod: "apt", packageId: "xsane" },
   { id: "hplip", name: "HPLIP", description: "Pilotes et outils pour imprimantes HP.", icon: "🖨️", category: "Impression & Scan", installMethod: "apt", packageId: "hplip" },
-  { id: "cups-pdf", name: "CUPS-PDF", description: "Impression vers fichier PDF.", icon: "📄", category: "Impression & Scan", installMethod: "apt", packageId: "cups-pdf" },
   { id: "skanlite", name: "Skanlite", description: "Application de numérisation simple KDE.", icon: "🖨️", category: "Impression & Scan", installMethod: "apt", packageId: "skanlite" },
 
   // --- Téléchargement ---
@@ -478,7 +471,6 @@ export const appCatalog: AppCatalogEntry[] = [
   { id: "uget", name: "uGet", description: "Gestionnaire de téléchargements graphique.", icon: "⬇️", category: "Téléchargement", installMethod: "apt", packageId: "uget" },
   { id: "persepolis", name: "Persepolis", description: "Gestionnaire de téléchargements basé sur aria2.", icon: "⬇️", category: "Téléchargement", installMethod: "apt", packageId: "persepolis" },
   { id: "yt-dlp", name: "yt-dlp", description: "Téléchargement de vidéos depuis des sites de streaming.", icon: "📺", category: "Téléchargement", installMethod: "apt", packageId: "yt-dlp" },
-  { id: "youtube-dl", name: "youtube-dl", description: "Téléchargement de vidéos YouTube et autres.", icon: "📹", category: "Téléchargement", installMethod: "apt", packageId: "youtube-dl" },
 
   // --- Impression 3D ---
   { id: "cura", name: "Ultimaker Cura", description: "Découpage (slicing) pour impression 3D.", icon: "🖨️", category: "Impression 3D", installMethod: "flatpak", packageId: "com.ultimaker.cura" },
@@ -529,7 +521,7 @@ export const appCatalog: AppCatalogEntry[] = [
   { id: "iptraf-ng", name: "IPTraf-ng", description: "Surveillance du trafic IP en terminal.", icon: "📊", category: "Réseau", installMethod: "apt", packageId: "iptraf-ng" },
 
   // --- Ligne de commande (approfondissement) ---
-  { id: "exa", name: "exa", description: "Alternative moderne à ls avec couleurs et icônes.", icon: "📂", category: "Ligne de commande", installMethod: "apt", packageId: "exa" },
+  { id: "eza", name: "eza", description: "Alternative moderne à ls avec couleurs et icônes.", icon: "📂", category: "Ligne de commande", installMethod: "apt", packageId: "eza" },
   { id: "duf", name: "duf", description: "Affichage moderne de l'utilisation disque.", icon: "💽", category: "Ligne de commande", installMethod: "apt", packageId: "duf" },
   { id: "glances", name: "Glances", description: "Moniteur système multi-plateformes en terminal.", icon: "👁️", category: "Ligne de commande", installMethod: "apt", packageId: "glances" },
   { id: "iotop", name: "iotop", description: "Surveillance des E/S disque par processus.", icon: "💾", category: "Ligne de commande", installMethod: "apt", packageId: "iotop" },
@@ -542,7 +534,6 @@ export const appCatalog: AppCatalogEntry[] = [
 
   // --- Science & Éducation (approfondissement) ---
   { id: "blockly", name: "TuxPaint", description: "Logiciel de dessin pour enfants.", icon: "🎨", category: "Science & Éducation", installMethod: "apt", packageId: "tuxpaint" },
-  { id: "childsplay", name: "Childsplay", description: "Suite de jeux éducatifs pour jeunes enfants.", icon: "🧸", category: "Science & Éducation", installMethod: "apt", packageId: "childsplay" },
   { id: "kgeography", name: "KGeography", description: "Apprentissage de la géographie (KDE).", icon: "🗺️", category: "Science & Éducation", installMethod: "apt", packageId: "kgeography" },
   { id: "ktouch", name: "KTouch", description: "Apprentissage de la dactylographie.", icon: "⌨️", category: "Science & Éducation", installMethod: "apt", packageId: "ktouch" },
   { id: "klavaro", name: "Klavaro", description: "Cours de dactylographie multiplateforme.", icon: "⌨️", category: "Science & Éducation", installMethod: "apt", packageId: "klavaro" },
@@ -594,11 +585,23 @@ export const appCatalog: AppCatalogEntry[] = [
   // --- Développement (approfondissement 2) ---
   { id: "kotlin", name: "Kotlin", description: "Langage moderne interopérable avec Java.", icon: "🎯", category: "Développement", installMethod: "apt", packageId: "kotlin" },
   { id: "clojure", name: "Clojure", description: "Dialecte Lisp moderne sur la JVM.", icon: "🔷", category: "Développement", installMethod: "apt", packageId: "clojure" },
-  { id: "julia", name: "Julia", description: "Langage pour le calcul scientifique haute performance.", icon: "🔢", category: "Développement", installMethod: "apt", packageId: "julia" },
   { id: "crystal", name: "Crystal", description: "Langage à la syntaxe proche de Ruby, compilé.", icon: "💎", category: "Développement", installMethod: "apt", packageId: "crystal" },
-  { id: "packer", name: "Packer", description: "Création d'images de machines automatisée.", icon: "📦", category: "Développement", installMethod: "apt", packageId: "packer" },
   { id: "etcd-client", name: "etcd", description: "Magasin clé-valeur distribué pour systèmes répartis.", icon: "🗄️", category: "Développement", installMethod: "apt", packageId: "etcd-client" },
   { id: "protobuf-compiler", name: "Protocol Buffers", description: "Compilateur de schémas Protocol Buffers.", icon: "📦", category: "Développement", installMethod: "apt", packageId: "protobuf-compiler" },
   { id: "graphviz", name: "Graphviz", description: "Génération de graphes et diagrammes.", icon: "📊", category: "Développement", installMethod: "apt", packageId: "graphviz" },
   { id: "pandoc", name: "Pandoc", description: "Conversion universelle entre formats de documents.", icon: "🔄", category: "Développement", installMethod: "apt", packageId: "pandoc" },
+
+  // --- Ajouts post-lancement (remplacements de paquets sans candidat installable) ---
+  { id: "mumble", name: "Mumble", description: "Communication vocale basse latence pour groupes.", icon: "🎙️", category: "Communication", installMethod: "apt", packageId: "mumble" },
+  { id: "solaar", name: "Solaar", description: "Gestionnaire de périphériques sans fil Logitech.", icon: "🖱️", category: "Utilitaires", installMethod: "apt", packageId: "solaar" },
+  { id: "gnome-shell-extension-manager", name: "Gestionnaire d'extensions GNOME Shell", description: "Installation et gestion des extensions GNOME Shell.", icon: "🧩", category: "Personnalisation", installMethod: "apt", packageId: "gnome-shell-extension-manager" },
+  { id: "warpinator", name: "Warpinator", description: "Partage de fichiers simple sur le réseau local.", icon: "📡", category: "Réseau", installMethod: "apt", packageId: "warpinator" },
+  { id: "cheese", name: "Cheese", description: "Application de webcam et photomaton GNOME.", icon: "📷", category: "Graphisme", installMethod: "apt", packageId: "cheese" },
+  { id: "kolourpaint", name: "KolourPaint", description: "Éditeur d'images simple façon Paint (KDE).", icon: "🎨", category: "Graphisme", installMethod: "apt", packageId: "kolourpaint" },
+  { id: "ktorrent", name: "KTorrent", description: "Client BitTorrent complet pour KDE.", icon: "🧲", category: "Réseau", installMethod: "apt", packageId: "ktorrent" },
+  { id: "kget", name: "KGet", description: "Gestionnaire de téléchargements KDE.", icon: "⬇️", category: "Téléchargement", installMethod: "apt", packageId: "kget" },
+  { id: "shutter", name: "Shutter", description: "Capture d'écran avancée avec annotations.", icon: "📸", category: "Utilitaires", installMethod: "apt", packageId: "shutter" },
+  { id: "gnome-photos", name: "Photos", description: "Organisateur de photos GNOME.", icon: "🖼️", category: "Graphisme", installMethod: "apt", packageId: "gnome-photos" },
+  { id: "gnome-music", name: "Musique", description: "Lecteur de musique GNOME.", icon: "🎵", category: "Audio", installMethod: "apt", packageId: "gnome-music" },
+  { id: "synapse", name: "Synapse", description: "Lanceur d'applications rapide (semantic launcher).", icon: "🚀", category: "Utilitaires", installMethod: "apt", packageId: "synapse" },
 ];

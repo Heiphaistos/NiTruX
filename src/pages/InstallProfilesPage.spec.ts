@@ -46,7 +46,7 @@ describe("InstallProfilesPage", () => {
     // (the 2nd of 4, which fails per the mock above) has actually landed
     // in `results`, which is a real completion signal.
     await vi.waitFor(() => expect(wrapper.text()).toContain("échec"));
-    expect(invoke).toHaveBeenCalledWith("install_package", { manager: "apt", package: "firefox" });
+    expect(invoke).toHaveBeenCalledWith("install_package", { manager: "apt", package: "firefox-esr" });
     expect(invoke).toHaveBeenCalledWith("install_package", { manager: "apt", package: "libreoffice" });
   });
 });
