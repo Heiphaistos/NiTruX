@@ -32,6 +32,13 @@ export const navigationCategories: NavCategory[] = [
     ],
   },
   {
+    id: "outils-systeme",
+    title: "Outils système",
+    pages: [
+      { id: "system-tools", label: "Commandes rapides", icon: "terminal" },
+    ],
+  },
+  {
     id: "performance",
     title: "Performance",
     pages: [

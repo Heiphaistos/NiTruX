@@ -10,6 +10,7 @@ import {
   PieChart, Database, Server,
   Layers,
   Monitor, Activity, List, Users, History,
+  Terminal,
 } from "lucide-vue-next";
 import { navigationCategories } from "@/navigation/categories";
 
@@ -60,6 +61,7 @@ const iconMap: Record<string, Component> = {
   list: List,
   users: Users,
   history: History,
+  terminal: Terminal,
 };
 
 function getIcon(name: string): Component {

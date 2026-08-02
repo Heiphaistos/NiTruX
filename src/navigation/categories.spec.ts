@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { navigationCategories } from "./categories";
 
 describe("navigationCategories", () => {
-  it("has exactly 9 categories", () => {
-    expect(navigationCategories).toHaveLength(9);
+  it("has exactly 10 categories", () => {
+    expect(navigationCategories).toHaveLength(10);
   });
 
   it("every page id is unique across all categories", () => {
@@ -71,5 +71,10 @@ describe("navigationCategories", () => {
     expect(allPageIds).toContain("installed-software");
     expect(allPageIds).toContain("user-accounts");
     expect(allPageIds).toContain("update-history");
+  });
+
+  it("includes the new Phase R12 Outils système page by id", () => {
+    const allPageIds = navigationCategories.flatMap((c) => c.pages.map((p) => p.id));
+    expect(allPageIds).toContain("system-tools");
   });
 });

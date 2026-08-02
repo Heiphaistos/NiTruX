@@ -14,10 +14,11 @@ describe("App", () => {
     localStorage.clear();
   });
 
-  it("renders AppNav with all 9 category titles", () => {
+  it("renders AppNav with all 10 category titles", () => {
     const wrapper = mount(App);
     expect(wrapper.text()).toContain("Système");
     expect(wrapper.text()).toContain("Diagnostic");
+    expect(wrapper.text()).toContain("Outils système");
     expect(wrapper.text()).toContain("Performance");
     expect(wrapper.text()).toContain("Applications");
     expect(wrapper.text()).toContain("Stockage");
@@ -175,6 +176,14 @@ describe("App", () => {
     const button = buttons.find((b) => b.text() === "Historique des mises à jour")!;
     await button.trigger("click");
     expect(wrapper.text()).toContain("Journal des installations");
+  });
+
+  it("shows the real SystemToolsPage for the system-tools id", async () => {
+    const wrapper = mount(App);
+    const buttons = wrapper.findAll("button");
+    const button = buttons.find((b) => b.text() === "Commandes rapides")!;
+    await button.trigger("click");
+    expect(wrapper.text()).toContain("sans terminal");
   });
 
   it("shows the real DataRecoveryPage for the data-recovery id", async () => {
