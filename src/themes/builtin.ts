@@ -2,6 +2,15 @@ import type { Theme } from "@/types/theme";
 
 export const builtinThemes: Theme[] = [
   {
+    id: "oled-noir", name: "OLED Noir", mode: "dark",
+    colors: {
+      bgBase: "#000000", bgElevated: "#0a0a0a", bgOverlay: "#000000", border: "#2a2a2a",
+      textPrimary: "#ffffff", textSecondary: "#b3b3b3",
+      accentPrimary: "#4da6ff", accentSecondary: "#c586ff",
+      accentSuccess: "#4ade80", accentWarning: "#fbbf24", accentDanger: "#f87171",
+    },
+  },
+  {
     id: "catppuccin-mocha", name: "Catppuccin Mocha", mode: "dark",
     colors: {
       bgBase: "#1e1e2e", bgElevated: "#313244", bgOverlay: "#181825", border: "#45475a",

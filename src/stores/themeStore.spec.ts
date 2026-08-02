@@ -7,11 +7,23 @@ describe("themeStore", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     document.documentElement.removeAttribute("style");
+    localStorage.clear();
   });
 
-  it("defaults to the first builtin theme", () => {
+  it("defaults to the OLED Noir theme", () => {
     const store = useThemeStore();
-    expect(store.active.id).toBe(builtinThemes[0].id);
+    expect(store.active.id).toBe("oled-noir");
+  });
+
+  it("persists the chosen theme to localStorage and restores it on next init", () => {
+    const store = useThemeStore();
+    const dracula = builtinThemes.find((t) => t.id === "dracula")!;
+    store.setTheme(dracula);
+    expect(JSON.parse(localStorage.getItem("nitrux-theme")!).id).toBe("dracula");
+
+    setActivePinia(createPinia());
+    const reloaded = useThemeStore();
+    expect(reloaded.active.id).toBe("dracula");
   });
 
   it("applies theme colors as --nx- CSS custom properties on :root", () => {

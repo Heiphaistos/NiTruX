@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { builtinThemes } from "./builtin";
 
 describe("builtinThemes", () => {
-  it("ships exactly 12 themes", () => {
-    expect(builtinThemes).toHaveLength(12);
+  it("ships exactly 13 themes", () => {
+    expect(builtinThemes).toHaveLength(13);
   });
 
   it("has unique ids", () => {
