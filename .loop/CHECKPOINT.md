@@ -1,4 +1,16 @@
-# Checkpoint — Refonte R1-R5 + R6-R11 **COMPLET**, Phase R12 (hors découpage initial) faite, v0.21.0
+# Checkpoint — Refonte R1-R5 + R6-R11 **COMPLET**, R12 fait, sweep post-R12 fait, v0.22.0
+
+## Sweep post-R12 « implémente un maximum de chose » : TERMINÉ, v0.22.0 — push+tag+release restent à faire
+
+Demande utilisateur ouverte après R12. Audit systématique de toutes les commandes Tauri enregistrées (`lib.rs`) vs consommateurs frontend — un seul orphelin trouvé : `verify_file_hash` existait entièrement testé côté backend depuis toujours (voisin de `compute_file_hash` dans `hashcheck.rs`) mais `FileToolsPage.vue` ne calculait jamais que le hash, sans jamais permettre de le comparer à une valeur attendue (le vrai cas d'usage réel — vérifier un ISO téléchargé). Corrigé : champ "hash attendu" + bouton "Vérifier" ajoutés.
+
+Catalogue `systemToolsCatalog.ts` étendu de 47 → **58 entrées** (11 nouvelles, toutes non-privilégiées, chacune vérifiée en direct sur la VM exactement comme `run_script` les exécute avant ajout) : version de distribution, taille des journaux, état du swap, arborescence des montages, table ARP, config DNS actuelle, nettoyage cache polices, charge système, temps de démarrage + services les plus lents (systemd-analyze), taille de /var/log.
+
+**Pistes investiguées et volontairement NON poursuivies** (décisions explicites, pas des oublis) :
+- **Gestion Docker (start/stop/remove conteneurs)** — NiTriTe a une page dédiée de 531 lignes pour ça, NiTruX n'a que la lecture seule (`docker.rs`, onglet dans NetworkPage). Bloqué : Docker n'est pas installé sur la VM de dev, impossible de vérifier en direct une fonctionnalité d'écriture sans l'installer d'abord (discipline non-négociable du projet). À reprendre si Docker est installé sur la VM un jour.
+- **MonitoringPage / TurboModePage NiTriTe** — Monitoring fait doublon avec Dashboard+PerfHistoryPage déjà existants. TurboMode applique automatiquement des optimisations, ce qui contredirait frontalement la philosophie explicitement établie d'`OptimizationsPage` (« lecture seule — aucune action n'est appliquée automatiquement ») — nécessiterait une décision utilisateur dédiée avant d'être construit, pas une extension silencieuse.
+
+226/226 frontend (224+2 pour la fonctionnalité verify_file_hash), 211 Rust (inchangé, aucun ajout backend dans ce sweep), vue-tsc clean.
 
 ## Phase R12 (Outils système — catalogue de commandes en un clic) : TERMINÉE, mergée (520d6f8), version 0.21.0 — push+tag+release restent à faire
 
@@ -91,14 +103,14 @@ Merge master (fast-forward propre) + version bump 0.15.0→0.16.0 + build réel 
 
 ## Prochaine action
 
-Pousser master + créer le tag `v0.21.0` + créer la release GitHub avec les assets `.deb`/`.rpm` (AppImage toujours bloqué). Nettoyer le worktree `r12-outils-systeme`.
+Pousser master + créer le tag `v0.22.0` + créer la release GitHub avec les assets `.deb`/`.rpm` (AppImage toujours bloqué). Aucun worktree ouvert (travaillé directement sur master pour ce sweep, changements non-structurels).
 
-**Aucune phase planifiée restante** (découpage R6→R11 complet + R12 hors-découpage livré). Le catalogue de `SystemToolsPage.vue` (47 commandes) est facilement extensible sans nouvelle revue de sécurité pour tout ajout non-privilégié (juste ajouter une entrée à `systemToolsCatalog.ts` avec un `command` — réutilise `run_script` existant) ; un ajout privilégié nécessite en revanche d'étendre `VALID_ACTIONS`/le switch du wrapper avec la pleine revue de sécurité habituelle. Prochaines pistes possibles si l'utilisateur le souhaite : (1) débloquer l'AppImage (nécessite `! wsl.exe -e sudo cp /tmp/xdg-utils-extract/usr/bin/xdg-open /usr/bin/xdg-open` de la part de l'utilisateur), (2) Terminal intégré (différé depuis R8, nécessite décision dédiée sur une nouvelle dépendance PTY), (3) étoffer encore le catalogue Outils système, (4) nouvelle demande utilisateur à définir.
+**Aucune phase planifiée restante.** Prochaines pistes possibles si l'utilisateur le souhaite : (1) débloquer l'AppImage (nécessite `! wsl.exe -e sudo cp /tmp/xdg-utils-extract/usr/bin/xdg-open /usr/bin/xdg-open` de la part de l'utilisateur), (2) Terminal intégré (différé depuis R8, nécessite décision dédiée sur une nouvelle dépendance PTY), (3) Gestion Docker complète (bloqué : Docker absent de la VM dev), (4) étoffer encore le catalogue Outils système (facilement extensible pour tout ajout non-privilégié, juste une entrée dans `systemToolsCatalog.ts`), (5) nouvelle demande utilisateur à définir.
 
 ## Contexte pour reprendre à froid
 
-- Repo local : `C:\Users\Momo\Desktop\NiTruX`, remote `https://github.com/Heiphaistos/NiTruX.git`, branche `master`, version `0.21.0`
-- Worktrees mergés à nettoyer si encore présents : `r12-outils-systeme`
+- Repo local : `C:\Users\Momo\Desktop\NiTruX`, remote `https://github.com/Heiphaistos/NiTruX.git`, branche `master`, version `0.22.0`
+- Aucun worktree ouvert actuellement.
 - **Découpage R6→R11 : COMPLET** (R6 v0.14.0, R7 v0.15.0, R8 v0.16.0, R9 v0.18.0, R10 v0.19.0, R11 v0.20.0). **Phase R12 (hors découpage, demande directe utilisateur) : COMPLET** (v0.21.0).
 - **Snap = 13e action pkexec (R10), system-tools = 14e (R12)** — mêmes disciplines que toute action privilégiée : exec.path dédié, re-validation indépendante côté script, testée en live avant tout futur changement.
 - **`nitrux-pkexec-helper` a maintenant 14 noms installés** — toujours mettre à jour le compte dans le commentaire d'en-tête du script à chaque ajout (source d'erreur silencieuse si oublié, sans impact fonctionnel mais trompeur pour la doc).
