@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { navigationCategories } from "./categories";
 
 describe("navigationCategories", () => {
-  it("has exactly 8 categories", () => {
-    expect(navigationCategories).toHaveLength(8);
+  it("has exactly 9 categories", () => {
+    expect(navigationCategories).toHaveLength(9);
   });
 
   it("every page id is unique across all categories", () => {
@@ -61,5 +61,15 @@ describe("navigationCategories", () => {
   it("includes the new Phase R10 Logiciels & déploiement page by id", () => {
     const allPageIds = navigationCategories.flatMap((c) => c.pages.map((p) => p.id));
     expect(allPageIds).toContain("install-profiles");
+  });
+
+  it("includes the 6 new Phase R11 Diagnostic pages by id", () => {
+    const allPageIds = navigationCategories.flatMap((c) => c.pages.map((p) => p.id));
+    expect(allPageIds).toContain("hardware-details");
+    expect(allPageIds).toContain("peripherals");
+    expect(allPageIds).toContain("processes");
+    expect(allPageIds).toContain("installed-software");
+    expect(allPageIds).toContain("user-accounts");
+    expect(allPageIds).toContain("update-history");
   });
 });

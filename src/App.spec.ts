@@ -14,9 +14,10 @@ describe("App", () => {
     localStorage.clear();
   });
 
-  it("renders AppNav with all 8 category titles", () => {
+  it("renders AppNav with all 9 category titles", () => {
     const wrapper = mount(App);
     expect(wrapper.text()).toContain("Système");
+    expect(wrapper.text()).toContain("Diagnostic");
     expect(wrapper.text()).toContain("Performance");
     expect(wrapper.text()).toContain("Applications");
     expect(wrapper.text()).toContain("Stockage");
@@ -34,7 +35,7 @@ describe("App", () => {
   it("switches to DiagnosticPage when its nav item is clicked", async () => {
     const wrapper = mount(App);
     const buttons = wrapper.findAll("button");
-    const diagButton = buttons.find((b) => b.text() === "Diagnostic")!;
+    const diagButton = buttons.find((b) => b.text() === "Composants PCI")!;
     await diagButton.trigger("click");
     expect(wrapper.text()).toContain("Composants matériels détectés");
   });
@@ -126,6 +127,54 @@ describe("App", () => {
     const button = buttons.find((b) => b.text() === "Installation par profils")!;
     await button.trigger("click");
     expect(wrapper.text()).toContain("Sélectionnez un profil");
+  });
+
+  it("shows the real HardwareDetailsPage for the hardware-details id", async () => {
+    const wrapper = mount(App);
+    const buttons = wrapper.findAll("button");
+    const button = buttons.find((b) => b.text() === "Matériel détaillé")!;
+    await button.trigger("click");
+    expect(wrapper.text()).toContain("Processeur");
+  });
+
+  it("shows the real PeripheralsPage for the peripherals id", async () => {
+    const wrapper = mount(App);
+    const buttons = wrapper.findAll("button");
+    const button = buttons.find((b) => b.text() === "Périphériques")!;
+    await button.trigger("click");
+    expect(wrapper.text()).toContain("Moniteurs");
+  });
+
+  it("shows the real ProcessesPage for the processes id", async () => {
+    const wrapper = mount(App);
+    const buttons = wrapper.findAll("button");
+    const button = buttons.find((b) => b.text() === "Processus & services")!;
+    await button.trigger("click");
+    expect(wrapper.text()).toContain("Démarrage automatique");
+  });
+
+  it("shows the real InstalledSoftwarePage for the installed-software id", async () => {
+    const wrapper = mount(App);
+    const buttons = wrapper.findAll("button");
+    const button = buttons.find((b) => b.text() === "Logiciels installés")!;
+    await button.trigger("click");
+    expect(wrapper.text()).toContain("Variables d'environnement");
+  });
+
+  it("shows the real UserAccountsPage for the user-accounts id", async () => {
+    const wrapper = mount(App);
+    const buttons = wrapper.findAll("button");
+    const button = buttons.find((b) => b.text() === "Comptes utilisateurs")!;
+    await button.trigger("click");
+    expect(wrapper.text()).toContain("Comptes réels du système");
+  });
+
+  it("shows the real UpdateHistoryPage for the update-history id", async () => {
+    const wrapper = mount(App);
+    const buttons = wrapper.findAll("button");
+    const button = buttons.find((b) => b.text() === "Historique des mises à jour")!;
+    await button.trigger("click");
+    expect(wrapper.text()).toContain("Journal des installations");
   });
 
   it("shows the real DataRecoveryPage for the data-recovery id", async () => {
