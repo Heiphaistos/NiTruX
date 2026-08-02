@@ -31,6 +31,10 @@ export const systemToolsCatalog: SystemTool[] = [
   { id: "vmstat", name: "Statistiques mémoire/CPU", description: "Aperçu mémoire, swap et CPU sur 2 secondes.", category: "diagnostics", command: "LC_ALL=C vmstat 1 2" },
   { id: "sensors", name: "Capteurs matériels", description: "Températures et tensions (si lm-sensors installé).", category: "diagnostics", command: "sensors" },
   { id: "dmesg", name: "Journal noyau", description: "Messages du noyau (souvent restreint sans root).", category: "diagnostics", command: "dmesg" },
+  { id: "os-release", name: "Version de la distribution", description: "Nom, version et code de la distribution installée.", category: "diagnostics", command: "cat /etc/os-release" },
+  { id: "journal-disk-usage", name: "Taille des journaux", description: "Espace disque occupé par le journal système.", category: "diagnostics", command: "journalctl --disk-usage" },
+  { id: "swap-status", name: "État du swap", description: "Partitions/fichiers de swap actifs et leur utilisation.", category: "diagnostics", command: "/usr/sbin/swapon --show" },
+  { id: "findmnt", name: "Arborescence des montages", description: "Systèmes de fichiers montés, en arborescence.", category: "diagnostics", command: "findmnt" },
 
   // Réseau
   { id: "ip-a", name: "Interfaces réseau", description: "Liste des interfaces et adresses IP.", category: "reseau", command: "ip a" },
@@ -45,6 +49,8 @@ export const systemToolsCatalog: SystemTool[] = [
   { id: "traceroute", name: "Traceroute", description: "Chemin réseau vers 8.8.8.8.", category: "reseau", command: "traceroute -m 15 8.8.8.8" },
   { id: "ss-ports", name: "Ports en écoute", description: "Sockets TCP/UDP en écoute.", category: "reseau", command: "ss -tulpn" },
   { id: "resolvectl", name: "État de la résolution DNS", description: "Résolveurs DNS actifs par interface (si systemd-resolved installé).", category: "reseau", command: "resolvectl status" },
+  { id: "ip-neigh", name: "Table ARP/voisinage", description: "Adresses matérielles des hôtes voisins récemment contactés.", category: "reseau", command: "ip neigh" },
+  { id: "resolv-conf", name: "Configuration DNS actuelle", description: "Contenu du fichier de résolution DNS.", category: "reseau", command: "cat /etc/resolv.conf" },
 
   // Performance
   { id: "ps-cpu", name: "Top processus CPU", description: "15 processus consommant le plus de CPU.", category: "performance", command: "ps aux --sort=-%cpu | head -15" },
@@ -57,6 +63,7 @@ export const systemToolsCatalog: SystemTool[] = [
   { id: "cache-size", name: "Taille du cache", description: "Espace occupé par le dossier de cache utilisateur.", category: "nettoyage", command: "du -sh ~/.cache" },
   { id: "npm-cache-clean", name: "Vider le cache npm", description: "Nettoie le cache npm (si npm installé).", category: "nettoyage", command: "npm cache clean --force" },
   { id: "pip-cache-purge", name: "Vider le cache pip", description: "Nettoie le cache pip (si pip installé).", category: "nettoyage", command: "pip cache purge" },
+  { id: "clean-fontcache", name: "Vider le cache des polices", description: "Supprime le cache de polices utilisateur (régénéré automatiquement).", category: "nettoyage", command: "rm -rf ~/.cache/fontconfig/*" },
 
   // Stockage
   { id: "lsblk-fs", name: "Systèmes de fichiers", description: "Disques avec type de système de fichiers et point de montage.", category: "stockage", command: "lsblk -f" },
