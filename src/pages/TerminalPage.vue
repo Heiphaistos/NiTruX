@@ -4,11 +4,13 @@ import { ref, onMounted, onUnmounted } from "vue";
 import { invoke, Channel } from "@tauri-apps/api/core";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
+import NxCard from "@/components/ui/NxCard.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 import "@xterm/xterm/css/xterm.css";
 
 const containerEl = ref<HTMLDivElement | null>(null);
 const id = crypto.randomUUID();
+const spawnError = ref<string | null>(null);
 
 let term: Terminal | null = null;
 let fitAddon: FitAddon | null = null;
@@ -36,7 +38,16 @@ onMounted(async () => {
   onData.onmessage = (data: string) => {
     term?.write(data);
   };
-  await invoke("spawn_terminal", { id, onData });
+  // Unlike every other page's invoke() call, spawn_terminal failing here
+  // (pty open error, $SHELL missing/invalid) previously had no try/catch
+  // and no visible error: the user would just see a permanently empty
+  // black box with no indication anything went wrong.
+  try {
+    await invoke("spawn_terminal", { id, onData });
+  } catch (e) {
+    spawnError.value = String(e);
+    return;
+  }
 
   await resizeAndNotify();
   // ResizeObserver is a standard Web API present in the real Tauri webview
@@ -59,7 +70,8 @@ onUnmounted(() => {
 <template>
   <div class="term-page">
     <NxSectionHeader title="Terminal" description="Shell interactif, mêmes droits que votre session." />
-    <div ref="containerEl" class="term-container"></div>
+    <NxCard v-if="spawnError" danger>{{ spawnError }}</NxCard>
+    <div v-show="!spawnError" ref="containerEl" class="term-container"></div>
   </div>
 </template>
 
