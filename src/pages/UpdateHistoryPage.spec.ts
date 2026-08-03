@@ -21,6 +21,16 @@ describe("UpdateHistoryPage", () => {
     expect(wrapper.text()).toContain("flatpak");
   });
 
+  it("shows an empty-state message instead of a blank page when the history is empty", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) => {
+      if (cmd === "get_update_history") return Promise.resolve([]);
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(UpdateHistoryPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Aucune mise à jour dans l'historique."));
+  });
+
   it("shows a clear message when history is unavailable for this package manager", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) => {
