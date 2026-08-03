@@ -92,4 +92,37 @@ mod tests {
         let dir = std::env::temp_dir().join("nitrux-test-cache-size-does-not-exist");
         assert_eq!(directory_size_bytes(&dir), 0);
     }
+
+    // Investigated a suspected cycle-risk bug: `directory_size_bytes` has no
+    // explicit `is_symlink()` guard, unlike `duplicates::find_duplicates`
+    // and `largefiles::find_large_files` in this same codebase, which both
+    // skip symlinks specifically "to avoid cycles". Verified with a real
+    // symlink (not assumed): `DirEntry::metadata()` on Unix does NOT follow
+    // symlinks (lstat semantics, unlike `fs::metadata(path)`), so a
+    // symlinked directory's entry never reports `is_dir() == true` here and
+    // this function never recurses into it -- no cycle risk exists despite
+    // the missing guard. The only observable effect is `metadata.len()` on
+    // the symlink itself, which is the byte length of the stored target
+    // path string, counted as if it were file content -- a few dozen bytes
+    // of noise per symlink, not a real inaccuracy at the KB/MB/GB scale
+    // this report is used at. This test pins that behavior down as a
+    // regression guard: if a future change switches to `fs::metadata`
+    // (which DOES follow symlinks) without also adding an `is_symlink()`
+    // check, this would start recursing into symlinked directories again --
+    // real cycle risk this time -- and the assertion below would fail.
+    #[test]
+    fn does_not_recurse_into_symlinked_directories() {
+        let dir = std::env::temp_dir().join(format!("nitrux-cache-symlink-test-{}", std::process::id()));
+        fs::create_dir_all(dir.join("real")).unwrap();
+        fs::write(dir.join("real").join("file.txt"), b"12345").unwrap(); // 5 bytes
+        std::os::unix::fs::symlink(dir.join("real"), dir.join("link_to_real")).unwrap();
+
+        let total = directory_size_bytes(&dir);
+        fs::remove_dir_all(&dir).ok();
+
+        // 5 (real/file.txt) + the symlink's own small metadata length --
+        // nowhere near what following the symlink into `real/` again would
+        // add, confirming no recursion happened.
+        assert!(total < 100, "expected only the real file's content plus symlink metadata noise, got {total} bytes -- symlink appears to have been followed");
+    }
 }
