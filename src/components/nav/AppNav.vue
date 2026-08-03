@@ -152,4 +152,25 @@ function getIcon(name: string): Component {
   white-space: nowrap;
   flex-shrink: 0;
 }
+/* Themed scrollbar for the horizontal overflow, matching the lateral
+   layouts' ::-webkit-scrollbar treatment (SidebarClassicLayout/
+   CompactSidebarLayout) instead of leaving the browser's unstyled
+   default -- same overflow area, same visual language. */
+.nx-app-nav--horizontal::-webkit-scrollbar,
+.nx-app-nav--icons::-webkit-scrollbar {
+  height: 8px;
+}
+.nx-app-nav--horizontal::-webkit-scrollbar-track,
+.nx-app-nav--icons::-webkit-scrollbar-track {
+  background: transparent;
+}
+.nx-app-nav--horizontal::-webkit-scrollbar-thumb,
+.nx-app-nav--icons::-webkit-scrollbar-thumb {
+  background: var(--nx-border);
+  border-radius: 4px;
+}
+.nx-app-nav--horizontal::-webkit-scrollbar-thumb:hover,
+.nx-app-nav--icons::-webkit-scrollbar-thumb:hover {
+  background: var(--nx-text-secondary);
+}
 </style>
