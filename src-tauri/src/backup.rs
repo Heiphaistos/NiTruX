@@ -30,9 +30,25 @@ pub fn create_backup(source_dir: String) -> Result<String, String> {
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs())
         .unwrap_or(0);
-    let dest_path = format!("{home}/{}", backup_filename(now_epoch_secs));
+    let filename = backup_filename(now_epoch_secs);
+    let dest_path = format!("{home}/{filename}");
 
-    subprocess::run_with_timeout("tar", &["-czf", &dest_path, "-C", &source_dir, "."], Duration::from_secs(300))?;
+    // The archive is always written into $HOME (see the description in
+    // BackupPage.vue), but the source directory can legitimately BE $HOME
+    // (backing up the whole home folder is a natural thing to type). Without
+    // this exclude, tar would try to read the very file it's writing to as
+    // it walks the tree -- reproduced live: GNU tar prints "file changed as
+    // we read it" to stderr (silently discarded by run_with_timeout on
+    // success, so the user never sees it) for that entry. --exclude, not a
+    // post-hoc filter, is the fix: it stops tar from ever opening the file
+    // mid-write, which is more robust than relying on however the archive
+    // happened to come out this time.
+    let exclude_arg = format!("--exclude={filename}");
+    subprocess::run_with_timeout(
+        "tar",
+        &["-czf", &dest_path, &exclude_arg, "-C", &source_dir, "."],
+        Duration::from_secs(300),
+    )?;
 
     Ok(dest_path)
 }
