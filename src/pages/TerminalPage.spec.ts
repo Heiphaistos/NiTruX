@@ -69,6 +69,13 @@ describe("TerminalPage", () => {
     expect(mockTerm.write).toHaveBeenCalledWith("hello from shell");
   });
 
+  it("shows an error instead of a silently blank terminal when spawn_terminal fails", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementationOnce(() => Promise.reject("shell introuvable : /bin/bash"));
+    const wrapper = mount(TerminalPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("shell introuvable"));
+  });
+
   it("closes the session on unmount", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     const wrapper = mount(TerminalPage);
