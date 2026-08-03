@@ -29,4 +29,11 @@ describe("WiFiAnalyzerPage", () => {
     expect(wrapper.find(".nx-badge--danger").exists()).toBe(true);
     expect(wrapper.find(".nx-badge--success").exists()).toBe(true);
   });
+
+  it("shows an empty-state message instead of a blank page when no networks are visible", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockResolvedValueOnce({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "" });
+    const wrapper = mount(WiFiAnalyzerPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Aucun réseau Wi-Fi détecté."));
+  });
 });

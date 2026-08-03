@@ -47,6 +47,7 @@ function securityStatus(security: string): "success" | "warning" | "danger" {
       </div>
       <span class="wifi-signal-label">{{ net.signal_percent }}%</span>
     </NxCard>
+    <NxCard v-if="!error && sortedNetworks.length === 0" class="wifi-empty">Aucun réseau Wi-Fi détecté.</NxCard>
   </div>
 </template>
 
@@ -59,4 +60,5 @@ function securityStatus(security: string): "success" | "warning" | "danger" {
 .wifi-signal-bar { flex: 1; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--nx-accent-primary) 15%, transparent); overflow: hidden; }
 .wifi-signal-fill { height: 100%; background: var(--nx-accent-primary); border-radius: 3px; }
 .wifi-signal-label { font-size: 12px; color: var(--nx-text-secondary); min-width: 36px; text-align: right; }
+.wifi-empty { color: var(--nx-text-secondary); font-size: 13px; }
 </style>
