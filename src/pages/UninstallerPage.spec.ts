@@ -27,6 +27,13 @@ describe("UninstallerPage", () => {
     expect(wrapper.text()).not.toContain("vim");
   });
 
+  it("shows an empty-state message when a search matches no installed package", async () => {
+    const wrapper = mount(UninstallerPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("curl"));
+    await wrapper.find("input[placeholder*='Rechercher']").setValue("zzznotarealpackagezzz");
+    expect(wrapper.text()).toContain("Aucun paquet ne correspond à cette recherche.");
+  });
+
   it("keeps the uninstall button disabled until the exact package name is retyped, then calls uninstall_package", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     const wrapper = mount(UninstallerPage);

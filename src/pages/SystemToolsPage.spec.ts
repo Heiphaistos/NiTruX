@@ -54,4 +54,11 @@ describe("SystemToolsPage", () => {
     expect(wrapper.text()).toContain("Résolution DNS");
     expect(wrapper.text()).not.toContain("Informations noyau");
   });
+
+  it("shows an empty-state message when a search matches no tool", async () => {
+    const wrapper = mount(SystemToolsPage);
+    const search = wrapper.find("input");
+    await search.setValue("zzznotarealtoolzzz");
+    expect(wrapper.text()).toContain("Aucun outil ne correspond à cette recherche.");
+  });
 });

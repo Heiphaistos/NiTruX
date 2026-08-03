@@ -89,6 +89,7 @@ async function runTool(tool: SystemTool) {
         <pre v-if="outputs[tool.id]" class="st-output">{{ outputs[tool.id] }}</pre>
         <NxCard v-if="errors[tool.id]" danger class="st-error">{{ errors[tool.id] }}</NxCard>
       </NxCard>
+      <NxCard v-if="filteredCatalog.length === 0" class="st-empty">Aucun outil ne correspond à cette recherche.</NxCard>
     </div>
   </div>
 </template>
@@ -99,6 +100,7 @@ async function runTool(tool: SystemTool) {
 .st-chip { padding: 6px 14px; border-radius: 99px; border: var(--nx-style-border-width) solid var(--nx-style-border-color); background: var(--nx-style-bg); color: var(--nx-text-secondary); cursor: pointer; font: inherit; font-size: 12px; }
 .st-chip.active { color: var(--nx-text-primary); font-weight: 600; border-color: var(--nx-accent-primary); }
 .st-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.st-empty { color: var(--nx-text-secondary); font-size: 13px; }
 .st-card { display: flex; flex-direction: column; gap: 8px; }
 .st-card-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .st-desc { font-size: 12px; color: var(--nx-text-secondary); margin: 0; }
