@@ -39,12 +39,23 @@ const largeFilesError = ref<string | null>(null);
 const largeFilesLoading = ref(false);
 
 async function scanLargeFiles() {
-  largeFilesLoading.value = true;
   largeFilesError.value = null;
+  // "MB min" is a free-text NxInput (no type="number" guard at the DOM
+  // level), so an empty/non-numeric/negative value must be caught here --
+  // otherwise Number() silently produces NaN and the invoke call fails with
+  // a raw Tauri IPC deserialization error instead of a message the user can
+  // act on. The only other Number() conversion in the app (preferences
+  // refresh interval) is always fed by a fixed <select>, never free text.
+  const minSizeMbValue = Number(minSizeMb.value);
+  if (!Number.isFinite(minSizeMbValue) || minSizeMbValue < 0) {
+    largeFilesError.value = "Veuillez entrer une taille minimale valide (nombre positif, en Mo).";
+    return;
+  }
+  largeFilesLoading.value = true;
   try {
     largeFiles.value = await invoke<LargeFile[]>("find_large_files_cmd", {
       directory: largeFileDir.value,
-      minSizeBytes: Number(minSizeMb.value) * 1024 * 1024,
+      minSizeBytes: minSizeMbValue * 1024 * 1024,
     });
   } catch (e) {
     largeFilesError.value = String(e);

@@ -32,6 +32,33 @@ describe("FileToolsPage", () => {
     expect(invoke).toHaveBeenCalledWith("find_duplicate_files", { directory: "/home/dev" });
   });
 
+  it("rejects a non-numeric min-size value on the large-files tab without calling invoke", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const wrapper = mount(FileToolsPage);
+    const tabs = wrapper.findAll("button");
+    await tabs.find((b) => b.text() === "Gros fichiers")!.trigger("click");
+    const inputs = wrapper.findAll(".nx-input");
+    await inputs[0].setValue("/home/dev");
+    await inputs[1].setValue("not-a-number");
+    const searchButton = wrapper.findAll("button").find((b) => b.text() === "Rechercher")!;
+    await searchButton.trigger("click");
+    expect(invoke).not.toHaveBeenCalledWith("find_large_files_cmd", expect.anything());
+    expect(wrapper.text()).toContain("taille minimale valide");
+  });
+
+  it("accepts a valid min-size value on the large-files tab and calls invoke in bytes", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const wrapper = mount(FileToolsPage);
+    const tabs = wrapper.findAll("button");
+    await tabs.find((b) => b.text() === "Gros fichiers")!.trigger("click");
+    const inputs = wrapper.findAll(".nx-input");
+    await inputs[0].setValue("/home/dev");
+    await inputs[1].setValue("100");
+    const searchButton = wrapper.findAll("button").find((b) => b.text() === "Rechercher")!;
+    await searchButton.trigger("click");
+    expect(invoke).toHaveBeenCalledWith("find_large_files_cmd", { directory: "/home/dev", minSizeBytes: 100 * 1024 * 1024 });
+  });
+
   it("verifies a file hash against an expected value and shows a match badge", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     const wrapper = mount(FileToolsPage);
