@@ -29,17 +29,47 @@ pub struct NetworkSnapshot {
     pub hosts_file: String,
 }
 
+/// Splits one line of `nmcli -t` output on `:`, honoring nmcli's terse-mode
+/// escaping (on by default -- see `nmcli(1)`'s `--escape` option): a literal
+/// `:` or `\` inside a field's own value is backslash-escaped (`\:`, `\\`),
+/// so a naive `str::split(':')` would incorrectly fragment a field whose
+/// value contains a colon -- a real-world SSID like "Office:Guest" would
+/// silently drop that network from the list instead of just having a colon
+/// in its name.
+fn split_nmcli_terse_fields(line: &str) -> Vec<String> {
+    let mut fields = Vec::new();
+    let mut current = String::new();
+    let mut chars = line.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c == '\\' {
+            match chars.peek() {
+                Some(':') | Some('\\') => {
+                    current.push(chars.next().unwrap());
+                    continue;
+                }
+                _ => current.push(c),
+            }
+        } else if c == ':' {
+            fields.push(std::mem::take(&mut current));
+        } else {
+            current.push(c);
+        }
+    }
+    fields.push(current);
+    fields
+}
+
 /// Parses one line of `nmcli -t -f IN-USE,SSID,SECURITY,SIGNAL dev wifi`
 /// output, e.g. "*:MyHomeWifi:WPA2:78" (connected) or ":OtherNetwork:WPA2:45".
 pub fn parse_nmcli_wifi_line(line: &str) -> Option<WifiNetwork> {
-    let fields: Vec<&str> = line.split(':').collect();
+    let fields = split_nmcli_terse_fields(line);
     if fields.len() != 4 {
         return None;
     }
     Some(WifiNetwork {
         connected: fields[0] == "*",
-        ssid: fields[1].to_string(),
-        security: fields[2].to_string(),
+        ssid: fields[1].clone(),
+        security: fields[2].clone(),
         signal_percent: fields[3].parse().ok()?,
     })
 }
@@ -144,6 +174,26 @@ mod tests {
     #[test]
     fn skips_malformed_nmcli_line() {
         assert!(parse_nmcli_wifi_line("not:enough").is_none());
+    }
+
+    #[test]
+    fn parses_an_ssid_containing_a_colon_escaped_by_nmcli_terse_mode() {
+        // nmcli -t escapes a literal ':' in a field's own value as '\:' by
+        // default (--escape defaults to yes) -- a real SSID like
+        // "Office:Guest" appears on the wire as "Office\:Guest", not
+        // "Office:Guest" unescaped.
+        let line = r"*:Office\:Guest:WPA2:60";
+        let net = parse_nmcli_wifi_line(line).expect("should parse an SSID with an escaped colon");
+        assert_eq!(net.ssid, "Office:Guest");
+        assert_eq!(net.security, "WPA2");
+        assert_eq!(net.signal_percent, 60);
+    }
+
+    #[test]
+    fn parses_an_ssid_containing_a_literal_backslash_escaped_by_nmcli_terse_mode() {
+        let line = r"*:Cabin\\Wifi:WPA2:50";
+        let net = parse_nmcli_wifi_line(line).expect("should parse an SSID with an escaped backslash");
+        assert_eq!(net.ssid, r"Cabin\Wifi");
     }
 
     #[test]
