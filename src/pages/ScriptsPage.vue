@@ -61,6 +61,7 @@ async function runScript(name: string, content: string) {
       <NxCard v-if="errors[s.name]" danger>{{ errors[s.name] }}</NxCard>
       <pre v-if="outputs[s.name]" class="scr-output">{{ outputs[s.name] }}</pre>
     </NxCard>
+    <NxCard v-if="store.scripts.length === 0" class="scr-empty">Aucun script enregistré pour le moment.</NxCard>
   </div>
 </template>
 
@@ -73,4 +74,5 @@ async function runScript(name: string, content: string) {
 .scr-item-actions { display: flex; gap: 8px; }
 .scr-content, .scr-output { font-size: 12px; margin: 0; white-space: pre-wrap; word-break: break-word; }
 .scr-output { color: var(--nx-accent-success); }
+.scr-empty { color: var(--nx-text-secondary); font-size: 13px; }
 </style>

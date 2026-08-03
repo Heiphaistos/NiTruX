@@ -13,6 +13,11 @@ describe("ScriptsPage", () => {
     localStorage.clear();
   });
 
+  it("shows an empty-state message before any script is saved", () => {
+    const wrapper = mount(ScriptsPage);
+    expect(wrapper.text()).toContain("Aucun script enregistré pour le moment.");
+  });
+
   it("saves a new script and lists it", async () => {
     const wrapper = mount(ScriptsPage);
     await wrapper.find("input[placeholder*='Nom']").setValue("Test");
