@@ -18,6 +18,15 @@ describe("RestorePointsPage", () => {
     expect(invoke).toHaveBeenCalledWith("list_snapshots");
   });
 
+  it("shows an empty-state message instead of a blank page when there are no snapshots", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementationOnce((cmd: string) =>
+      cmd === "list_snapshots" ? Promise.resolve([]) : Promise.resolve(null),
+    );
+    const wrapper = mount(RestorePointsPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Aucun instantané trouvé."));
+  });
+
   it("creates a new snapshot and refreshes the list", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     const wrapper = mount(RestorePointsPage);

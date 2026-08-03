@@ -54,10 +54,12 @@ async function createSnapshotNow() {
       <span>#{{ s.id }}</span>
       <span>{{ s.date }}</span>
     </NxCard>
+    <NxCard v-if="!snapshotsError && snapshots.length === 0" class="rp-empty">Aucun instantané trouvé.</NxCard>
   </div>
 </template>
 
 <style scoped>
 .rp-page { padding: 24px; display: flex; flex-direction: column; gap: 12px; }
 .rp-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; }
+.rp-empty { color: var(--nx-text-secondary); font-size: 13px; }
 </style>
