@@ -28,6 +28,7 @@ onMounted(async () => {
       <div class="uh-cmd">{{ e.commandline }}</div>
       <div class="uh-summary">{{ e.summary }}</div>
     </NxCard>
+    <NxCard v-if="!error && entries?.length === 0" class="uh-empty">Aucune mise à jour dans l'historique.</NxCard>
   </div>
 </template>
 
@@ -37,4 +38,5 @@ onMounted(async () => {
 .uh-date { color: var(--nx-text-secondary); font-size: 11px; }
 .uh-cmd { font-weight: 600; }
 .uh-summary { color: var(--nx-text-secondary); font-size: 12px; }
+.uh-empty { color: var(--nx-text-secondary); font-size: 13px; }
 </style>
