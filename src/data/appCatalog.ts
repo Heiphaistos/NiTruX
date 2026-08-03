@@ -392,7 +392,6 @@ export const appCatalog: AppCatalogEntry[] = [
   { id: "bind9", name: "BIND9", description: "Serveur DNS de référence.", icon: "🌐", category: "Serveurs & Services", installMethod: "apt", packageId: "bind9" },
   { id: "isc-dhcp-server", name: "Serveur DHCP", description: "Attribution automatique d'adresses IP.", icon: "🔢", category: "Serveurs & Services", installMethod: "apt", packageId: "isc-dhcp-server" },
   { id: "cockpit", name: "Cockpit", description: "Interface web d'administration système.", icon: "🕸️", category: "Serveurs & Services", installMethod: "apt", packageId: "cockpit" },
-  { id: "portainer", name: "Portainer", description: "Interface web de gestion Docker.", icon: "🐳", category: "Serveurs & Services", installMethod: "snap", packageId: "portainer" },
   { id: "minidlna", name: "MiniDLNA", description: "Serveur multimédia DLNA/UPnP léger.", icon: "📺", category: "Serveurs & Services", installMethod: "apt", packageId: "minidlna" },
   { id: "syncthing-server", name: "Syncthing (service)", description: "Synchronisation de fichiers en arrière-plan.", icon: "🔄", category: "Serveurs & Services", installMethod: "apt", packageId: "syncthing" },
   { id: "unbound", name: "Unbound", description: "Résolveur DNS récursif validant et sécurisé.", icon: "🌐", category: "Serveurs & Services", installMethod: "apt", packageId: "unbound" },
