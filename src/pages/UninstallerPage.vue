@@ -86,6 +86,9 @@ async function confirmUninstall(name: string) {
         </NxButton>
       </div>
     </NxCard>
+    <NxCard v-if="!loadError && filteredPackages.length === 0" class="unin-empty">
+      {{ packages.length === 0 ? "Aucun paquet installé trouvé." : "Aucun paquet ne correspond à cette recherche." }}
+    </NxCard>
   </div>
 </template>
 
@@ -95,4 +98,5 @@ async function confirmUninstall(name: string) {
 .unin-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .unin-version { color: var(--nx-text-secondary); font-size: 12px; }
 .unin-confirm-row { display: flex; gap: 10px; align-items: center; }
+.unin-empty { color: var(--nx-text-secondary); font-size: 13px; }
 </style>
