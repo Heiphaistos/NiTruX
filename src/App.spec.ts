@@ -4,8 +4,42 @@ import { mount } from "@vue/test-utils";
 import { setActivePinia, createPinia } from "pinia";
 import App from "./App.vue";
 
+// Backend commands whose real Rust signature always resolves to an array
+// (bare Vec<T> or Result<Vec<T>, String>) -- Tauri IPC never actually
+// serializes these as null, so defaulting the smoke-test mock to null for
+// them (like every other, genuinely-nullable/object-shaped command) crashed
+// page renders on `.length`/`.filter` after the test's own assertions had
+// already passed. List kept in sync with the `-> Vec<T>`/`-> Result<Vec<T>>`
+// commands registered in src-tauri/src/lib.rs's generate_handler! macro.
+const ARRAY_RETURNING_COMMANDS = new Set([
+  "find_duplicate_files",
+  "find_large_files_cmd",
+  "get_audio_sinks",
+  "get_autostart_entries",
+  "get_environment_variables",
+  "get_monitors",
+  "get_pci_devices",
+  "get_printers",
+  "get_processes",
+  "get_recent_logs",
+  "get_scheduled_tasks",
+  "get_systemd_services",
+  "get_update_history",
+  "get_usb_devices",
+  "get_user_accounts",
+  "list_disk_usage",
+  "list_disks",
+  "list_installed_packages",
+  "list_snapshots",
+  "list_trash",
+  "list_updates",
+  "scan_for_malware",
+  "scan_missing_dependencies",
+  "scan_ports_cmd",
+]);
+
 vi.mock("@tauri-apps/api/core", () => ({
-  invoke: vi.fn().mockResolvedValue(null),
+  invoke: vi.fn().mockImplementation((cmd: string) => Promise.resolve(ARRAY_RETURNING_COMMANDS.has(cmd) ? [] : null)),
   Channel: vi.fn(function () {
     return { onmessage: null };
   }),
