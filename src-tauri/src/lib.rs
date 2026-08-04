@@ -133,6 +133,7 @@ pub fn run() {
             peripherals::get_printers,
             packages::flatpak::install_flatpak_package,
             report::generate_system_report,
+            report::generate_pdf_report,
             benchmark::run_benchmark,
             disks::list_disks,
             disks::list_disk_usage,
