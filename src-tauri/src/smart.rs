@@ -18,6 +18,24 @@ pub fn parse_health_line(output: &str) -> Option<String> {
         .map(|s| s.trim().to_string())
 }
 
+/// `smartctl`'s exit status is a BITMASK, not a simple 0/success ==
+/// everything-else/error scheme (confirmed against the smartctl(8) man
+/// page): bit 0 (1) = command line didn't parse, bit 1 (2) = device open
+/// failed, bit 2 (4) = a SMART/ATA command failed, bit 3 (8) = health
+/// check returned "DISK FAILING", bit 4 (16) = prefail attributes at/below
+/// threshold, bit 5 (32) = an attribute was below threshold in the past.
+/// Bits 3-5 report REAL health data through a non-zero exit code -- most
+/// critically, bit 3 is exactly the "the disk is failing" case this
+/// command exists to surface. Only bits 0-2 (device/command genuinely
+/// unreachable) leave no usable health line to parse.
+fn interpret_smartctl_result(output: &str, code: i32) -> Result<Option<String>, String> {
+    const COMMUNICATION_FAILURE_BITS: i32 = 0b111; // bits 0-2
+    if code & COMMUNICATION_FAILURE_BITS != 0 {
+        return Err(format!("smartctl n'a pas pu interroger le périphérique (code {code})"));
+    }
+    Ok(parse_health_line(output))
+}
+
 /// Queries SMART health for `device` (e.g. "/dev/sda"). `smartctl` commonly
 /// requires root to access the raw device — a permission-denied failure is
 /// surfaced as a normal `Err`, not a crash. This is a real, expected
@@ -25,10 +43,10 @@ pub fn parse_health_line(output: &str) -> Option<String> {
 /// having the same root requirement), not something this task works around.
 #[tauri::command]
 pub fn get_smart_status(device: String) -> Result<SmartStatus, String> {
-    let output = subprocess::run_with_timeout("smartctl", &["-H", &device], Duration::from_secs(15))?;
+    let (output, code) = subprocess::run_capturing_exit_code("smartctl", &["-H", &device], Duration::from_secs(15))?;
     Ok(SmartStatus {
         device,
-        health: parse_health_line(&output),
+        health: interpret_smartctl_result(&output, code)?,
     })
 }
 
@@ -52,5 +70,42 @@ mod tests {
     fn handles_failed_health_status() {
         let output = "SMART overall-health self-assessment test result: FAILED!\n";
         assert_eq!(parse_health_line(output), Some("FAILED!".to_string()));
+    }
+
+    #[test]
+    fn a_failing_disk_health_line_is_still_returned_despite_the_nonzero_exit_code() {
+        // Exit code 8 == bit 3 alone == "SMART status check returned DISK
+        // FAILING" per smartctl(8) -- real, critical health data, not a
+        // communication failure. Previously this exact case was discarded
+        // as a hard Err by run_with_timeout (which drops stdout on any
+        // non-zero exit), hiding the single most important result this
+        // command exists to surface.
+        let output = "SMART overall-health self-assessment test result: FAILED!\n";
+        let result = interpret_smartctl_result(output, 8).expect("bit 3 alone should not be an error");
+        assert_eq!(result, Some("FAILED!".to_string()));
+    }
+
+    #[test]
+    fn a_passing_disk_with_a_past_threshold_attribute_is_still_returned() {
+        // Exit code 32 == bit 5 == "DISK OK but some attribute was below
+        // threshold in the past" -- also real health data, not a failure.
+        let output = "SMART overall-health self-assessment test result: PASSED\n";
+        let result = interpret_smartctl_result(output, 32).expect("bit 5 alone should not be an error");
+        assert_eq!(result, Some("PASSED".to_string()));
+    }
+
+    #[test]
+    fn device_open_failure_is_still_a_real_error() {
+        // Exit code 2 == bit 1 == device open failed -- no reliable health
+        // line exists in this case, this must remain an error.
+        let err = interpret_smartctl_result("", 2).expect_err("bit 1 should be a real error");
+        assert!(err.contains('2'), "error should mention the exit code: {err}");
+    }
+
+    #[test]
+    fn clean_exit_parses_normally() {
+        let output = "SMART overall-health self-assessment test result: PASSED\n";
+        let result = interpret_smartctl_result(output, 0).expect("exit 0 should be Ok");
+        assert_eq!(result, Some("PASSED".to_string()));
     }
 }
