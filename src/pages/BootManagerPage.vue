@@ -29,7 +29,7 @@ onMounted(async () => {
       <NxCard v-if="snapshot.grub">
         <NxSectionHeader title="GRUB" />
         <div class="bm-row"><span>Entrée par défaut</span><span>{{ snapshot.grub.default_entry ?? "—" }}</span></div>
-        <div class="bm-row"><span>Délai</span><span>{{ snapshot.grub.timeout_seconds ?? "—" }}s</span></div>
+        <div class="bm-row"><span>Délai</span><span>{{ snapshot.grub.timeout_seconds !== null ? `${snapshot.grub.timeout_seconds}s` : "—" }}</span></div>
         <div class="bm-row"><span>Distributeur</span><span>{{ snapshot.grub.distributor ?? "—" }}</span></div>
         <div class="bm-row"><span>Ligne de commande noyau</span><span>{{ snapshot.grub.cmdline_default ?? "—" }}</span></div>
       </NxCard>
