@@ -1,6 +1,8 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
+import { setActivePinia, createPinia } from "pinia";
 import DashboardPage from "./DashboardPage.vue";
+import { usePreferencesStore } from "@/stores/preferencesStore";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((cmd: string) => {
@@ -20,6 +22,28 @@ vi.mock("@tauri-apps/api/core", () => ({
 }));
 
 describe("DashboardPage", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    localStorage.clear();
+  });
+
+  it("polls at the user's configured dashboardRefreshIntervalMs, not a hardcoded value", async () => {
+    // The preference is literally named "dashboardRefreshIntervalMs" and
+    // its Settings label reads "Intervalle de rafraîchissement du tableau
+    // de bord" (dashboard refresh interval) -- but DashboardPage.vue (the
+    // actual "Vue d'ensemble" dashboard) never read it, hardcoding 2000ms
+    // instead; only PerfHistoryPage.vue (a different page) consumed it.
+    const preferences = usePreferencesStore();
+    preferences.setDashboardRefreshIntervalMs(9000);
+    const setIntervalSpy = vi.spyOn(window, "setInterval");
+
+    const wrapper = mount(DashboardPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Test CPU"));
+
+    expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 9000);
+    setIntervalSpy.mockRestore();
+  });
+
   it("renders system stats inside NxCard and 5 quick-action tiles", async () => {
     const wrapper = mount(DashboardPage);
     await vi.waitFor(() => expect(wrapper.text()).toContain("Test CPU"));

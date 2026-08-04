@@ -8,6 +8,7 @@ import NxCard from "@/components/ui/NxCard.vue";
 import NxStatTile from "@/components/ui/NxStatTile.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 import NxQuickActionTile from "@/components/ui/NxQuickActionTile.vue";
+import { usePreferencesStore } from "@/stores/preferencesStore";
 
 interface CpuInfo { name: string; usage_percent: number; usage_display: string }
 interface SystemSnapshot {
@@ -24,6 +25,7 @@ interface SensorSnapshot {
 
 const emit = defineEmits<{ navigate: [string] }>();
 
+const preferences = usePreferencesStore();
 const snapshot = ref<SystemSnapshot | null>(null);
 const error = ref<string | null>(null);
 const sensors = ref<SensorSnapshot | null>(null);
@@ -54,7 +56,7 @@ onMounted(() => {
   intervalId = window.setInterval(() => {
     refresh();
     refreshSensors();
-  }, 2000);
+  }, preferences.dashboardRefreshIntervalMs);
 });
 
 onUnmounted(() => {
