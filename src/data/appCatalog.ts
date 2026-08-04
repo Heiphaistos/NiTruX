@@ -303,7 +303,6 @@ export const appCatalog: AppCatalogEntry[] = [
   // --- Cloud & Synchronisation ---
   { id: "nextcloud-desktop", name: "Nextcloud Desktop", description: "Client de synchronisation Nextcloud.", icon: "☁️", category: "Cloud & Synchronisation", installMethod: "apt", packageId: "nextcloud-desktop" },
   { id: "dropbox", name: "Dropbox", description: "Synchronisation et stockage cloud.", icon: "📦", category: "Cloud & Synchronisation", installMethod: "flatpak", packageId: "com.dropbox.Client" },
-  { id: "megasync", name: "MEGAsync", description: "Client de synchronisation MEGA.", icon: "☁️", category: "Cloud & Synchronisation", installMethod: "flatpak", packageId: "nz.mega.MEGAsync" },
   { id: "syncthing", name: "Syncthing", description: "Synchronisation de fichiers décentralisée P2P.", icon: "🔄", category: "Cloud & Synchronisation", installMethod: "apt", packageId: "syncthing" },
   { id: "davfs2", name: "davfs2", description: "Montage de stockage WebDAV distant.", icon: "🗂️", category: "Cloud & Synchronisation", installMethod: "apt", packageId: "davfs2" },
   { id: "gigolo", name: "Gigolo", description: "Interface pour monter des services distants (SFTP, WebDAV...).", icon: "🔗", category: "Cloud & Synchronisation", installMethod: "apt", packageId: "gigolo" },
@@ -342,7 +341,7 @@ export const appCatalog: AppCatalogEntry[] = [
   { id: "trilium", name: "Trilium Notes", description: "Notes hiérarchiques pour bases de connaissances personnelles.", icon: "🌳", category: "Productivité", installMethod: "flatpak", packageId: "com.github.zadam.trilium" },
   { id: "cherrytree", name: "CherryTree", description: "Prise de notes hiérarchique.", icon: "🍒", category: "Productivité", installMethod: "apt", packageId: "cherrytree" },
   { id: "zim", name: "Zim", description: "Wiki personnel de bureau.", icon: "📔", category: "Productivité", installMethod: "apt", packageId: "zim" },
-  { id: "planner", name: "Planner", description: "Gestion de tâches et projets simple.", icon: "📅", category: "Productivité", installMethod: "flatpak", packageId: "com.github.alainm23.planner" },
+  { id: "planner", name: "Planify", description: "Gestion de tâches et projets simple (anciennement Planner, renommé par son auteur).", icon: "📅", category: "Productivité", installMethod: "flatpak", packageId: "io.github.alainm23.planify" },
 
   // --- Ligne de commande ---
   { id: "btop", name: "btop", description: "Moniteur de ressources système moderne en terminal.", icon: "📊", category: "Ligne de commande", installMethod: "apt", packageId: "btop" },
@@ -488,7 +487,6 @@ export const appCatalog: AppCatalogEntry[] = [
   { id: "ghidra", name: "Ghidra", description: "Framework de rétro-ingénierie logicielle.", icon: "🔍", category: "Développement", installMethod: "flatpak", packageId: "org.ghidra_sre.Ghidra" },
   { id: "beekeeper-studio", name: "Beekeeper Studio", description: "Client SQL moderne multi-bases.", icon: "🐝", category: "Développement", installMethod: "flatpak", packageId: "io.beekeeperstudio.Studio" },
   { id: "sourcetree-alt", name: "GitKraken", description: "Client Git graphique avancé.", icon: "🐙", category: "Développement", installMethod: "flatpak", packageId: "com.axosoft.GitKraken" },
-  { id: "figma-linux", name: "Figma Linux", description: "Client non-officiel pour Figma.", icon: "🎨", category: "Développement", installMethod: "flatpak", packageId: "io.github.Figma_Linux.figma_linux" },
   { id: "podman-desktop", name: "Podman Desktop", description: "Interface graphique pour Podman.", icon: "🦭", category: "Développement", installMethod: "flatpak", packageId: "io.podman_desktop.PodmanDesktop" },
 
   // --- Utilitaires (approfondissement) ---

@@ -23,4 +23,21 @@ describe("FirewallPage", () => {
     expect(wrapper.text()).not.toContain("Scan malware");
     expect(wrapper.text()).not.toContain("Dépannage");
   });
+
+  it("shows an empty-state message instead of a blank card when UFW is active with no rules", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ active: true, rules: [] });
+    const wrapper = mount(FirewallPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("actif"));
+    expect(wrapper.find(".fw-row").exists()).toBe(false);
+    expect(wrapper.text()).toMatch(/aucune règle/i);
+  });
+
+  it("does not render an empty rules card when UFW is inactive", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ active: false, rules: [] });
+    const wrapper = mount(FirewallPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("inactif"));
+    expect(wrapper.find(".fw-rules").exists()).toBe(false);
+  });
 });

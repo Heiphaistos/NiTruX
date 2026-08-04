@@ -29,7 +29,7 @@ impl PackageManager for Pacman {
         // specific case as an empty, successful list rather than an error.
         match subprocess::run_with_timeout("pacman", &["-Qu"], Duration::from_secs(15)) {
             Ok(output) => Ok(output.lines().filter_map(parse_pacman_line).collect()),
-            Err(e) if e.contains("code 1") => Ok(Vec::new()),
+            Err(e) if is_pacman_no_updates_error(&e) => Ok(Vec::new()),
             Err(e) => Err(e),
         }
     }
@@ -48,9 +48,31 @@ pub fn parse_pacman_q_line(line: &str) -> Option<super::InstalledPackage> {
     Some(super::InstalledPackage { name, version })
 }
 
+/// `subprocess::run_with_timeout` formats a non-zero exit as
+/// `"{program} a échoué (code {code}) : {stderr}"`. Matching on the
+/// substring `"code 1"` (without the closing paren) would also match
+/// "code 10", "code 11", "code 100"... -- silently swallowing a real
+/// failure as "no updates" instead of surfacing it. Matching the closing
+/// paren makes this an exact match on exit code 1 specifically.
+fn is_pacman_no_updates_error(e: &str) -> bool {
+    e.contains("(code 1)")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn treats_exit_code_1_as_no_updates() {
+        assert!(is_pacman_no_updates_error("pacman a échoué (code 1) : "));
+    }
+
+    #[test]
+    fn does_not_treat_exit_codes_starting_with_1_as_no_updates() {
+        assert!(!is_pacman_no_updates_error("pacman a échoué (code 10) : disque plein"));
+        assert!(!is_pacman_no_updates_error("pacman a échoué (code 11) : base corrompue"));
+        assert!(!is_pacman_no_updates_error("pacman a échoué (code 100) : erreur fatale"));
+    }
 
     #[test]
     fn parses_pacman_qu_line() {
