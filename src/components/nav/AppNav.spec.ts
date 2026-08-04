@@ -76,6 +76,21 @@ describe("AppNav", () => {
     expect(dashboardButton).toBeTruthy();
   });
 
+  it("in the icons variant, also exposes each page's label as aria-label -- title alone is an unreliable accessible-name source for screen readers on custom-styled buttons", () => {
+    const wrapper = mount(AppNav, { props: { modelValue: "dashboard", variant: "icons" } });
+    const buttons = wrapper.findAll("button");
+    const dashboardButton = buttons.find((b) => b.attributes("aria-label") === "Tableau de bord");
+    expect(dashboardButton).toBeTruthy();
+  });
+
+  it("in the list and horizontal variants, does not set aria-label (the visible <span> label is already the accessible name)", () => {
+    const listWrapper = mount(AppNav, { props: { modelValue: "dashboard", variant: "list" } });
+    expect(listWrapper.findAll("button").every((b) => b.attributes("aria-label") === undefined)).toBe(true);
+
+    const horizontalWrapper = mount(AppNav, { props: { modelValue: "dashboard", variant: "horizontal" } });
+    expect(horizontalWrapper.findAll("button").every((b) => b.attributes("aria-label") === undefined)).toBe(true);
+  });
+
   it("in the horizontal variant, hides category titles but keeps page labels", () => {
     const wrapper = mount(AppNav, { props: { modelValue: "dashboard", variant: "horizontal" } });
     expect(wrapper.classes()).toContain("nx-app-nav--horizontal");

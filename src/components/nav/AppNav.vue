@@ -80,6 +80,7 @@ function getIcon(name: string): Component {
         class="nx-app-nav__item"
         :class="{ active: modelValue === page.id }"
         :title="variant === 'icons' ? page.label : undefined"
+        :aria-label="variant === 'icons' ? page.label : undefined"
         @click="$emit('update:modelValue', page.id)"
       >
         <component :is="getIcon(page.icon)" :size="16" class="nx-app-nav__icon" />
