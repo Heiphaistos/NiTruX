@@ -40,6 +40,7 @@ onMounted(async () => {
           <span>{{ e.label }} ({{ e.id }})</span>
           <NxBadge :status="e.is_current ? 'success' : 'info'">{{ e.is_current ? "actif" : "inactif" }}</NxBadge>
         </div>
+        <div v-if="snapshot.efi_entries.length === 0" class="bm-empty">Aucune entrée de démarrage EFI trouvée.</div>
       </NxCard>
     </template>
   </div>
