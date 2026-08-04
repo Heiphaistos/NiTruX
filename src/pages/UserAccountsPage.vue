@@ -20,10 +20,12 @@ onMounted(async () => {
     <NxCard v-for="a in accounts" :key="a.username" class="ua-row">
       <strong>{{ a.username }}</strong> (UID {{ a.uid }}) — {{ a.home }} — {{ a.shell }}
     </NxCard>
+    <div v-if="accounts.length === 0" class="ua-empty">Aucun compte utilisateur réel trouvé.</div>
   </div>
 </template>
 
 <style scoped>
 .ua-page { padding: 24px; display: flex; flex-direction: column; gap: 10px; }
 .ua-row { font-size: 13px; }
+.ua-empty { color: var(--nx-text-secondary); font-size: 13px; }
 </style>

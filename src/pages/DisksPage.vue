@@ -146,12 +146,14 @@ function bytesToGb(bytes: number): string {
         <span v-if="smartError[disk.name]" class="disks-smart-error">{{ smartError[disk.name] }}</span>
       </div>
     </NxCard>
+    <div v-if="!disksError && disks.length === 0" class="disks-empty">Aucun disque détecté.</div>
 
     <NxCard>
       <div v-for="u in usage" :key="u.mountpoint" class="disks-usage-row">
         <span>{{ u.mountpoint }}</span>
         <span>{{ bytesToGb(u.used_bytes) }} / {{ bytesToGb(u.total_bytes) }} GB ({{ u.used_percent }}%)</span>
       </div>
+      <div v-if="!disksError && usage.length === 0" class="disks-empty">Aucune information d'utilisation disque.</div>
     </NxCard>
 
     <NxCard danger>
@@ -204,6 +206,7 @@ function bytesToGb(bytes: number): string {
 
 <style scoped>
 .disks-page { padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+.disks-empty { color: var(--nx-text-secondary); font-size: 13px; }
 .disks-disk-card { font-size: 13px; }
 .disks-usage-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 4px 0; font-size: 13px; }
 .disks-form-row { display: flex; gap: 10px; align-items: center; margin: 10px 0; }

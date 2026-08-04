@@ -23,6 +23,12 @@ describe("DisksPage", () => {
     expect(wrapper.text()).not.toContain("Vérif. hash");
   });
 
+  it("shows empty-state messages instead of blank cards when there are no disks or usage entries", async () => {
+    const wrapper = mount(DisksPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Aucun disque détecté."));
+    expect(wrapper.text()).toContain("Aucune information d'utilisation disque.");
+  });
+
   it("keeps the format-partition typed-confirmation gate intact", () => {
     const wrapper = mount(DisksPage);
     expect(wrapper.text()).toContain("Formater une partition");

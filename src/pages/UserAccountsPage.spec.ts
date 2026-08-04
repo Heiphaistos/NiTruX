@@ -18,4 +18,11 @@ describe("UserAccountsPage", () => {
     expect(wrapper.text()).toContain("/home/dev");
     expect(wrapper.text()).toContain("/bin/bash");
   });
+
+  it("shows an empty-state message instead of a blank page when there are no accounts", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementationOnce((cmd: string) => (cmd === "get_user_accounts" ? Promise.resolve([]) : Promise.resolve(null)));
+    const wrapper = mount(UserAccountsPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Aucun compte utilisateur réel trouvé."));
+  });
 });
