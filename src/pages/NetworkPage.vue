@@ -41,7 +41,7 @@ onMounted(async () => {
   docker.value = await invoke<DockerSnapshot>("get_docker_snapshot");
   if (snapshot.value) {
     hostsEditable.value = snapshot.value.hosts_file;
-    dnsEditable.value = snapshot.value.dns_servers.join("\n");
+    dnsEditable.value = snapshot.value.dns_servers.map((ip) => `nameserver ${ip}`).join("\n");
   }
 });
 

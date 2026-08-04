@@ -56,4 +56,24 @@ describe("NetworkPage", () => {
     await saveButtons[0].trigger("click");
     expect(invoke).toHaveBeenCalledWith("write_hosts_file", { content: "127.0.0.1 localhost\n127.0.1.1 test\n" });
   });
+
+  it("pre-fills the DNS editor with content that already passes validate_dns_content's 'nameserver' requirement", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") {
+        return Promise.resolve({
+          wifi_networks: [],
+          listening_ports: [],
+          dns_servers: ["1.1.1.1", "8.8.8.8"],
+          hosts_file: "127.0.0.1 localhost\n",
+        });
+      }
+      if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await vi.waitFor(() => expect(wrapper.findAll("textarea").length).toBe(2));
+    const dnsTextarea = wrapper.findAll("textarea")[1];
+    expect((dnsTextarea.element as HTMLTextAreaElement).value).toBe("nameserver 1.1.1.1\nnameserver 8.8.8.8");
+  });
 });
