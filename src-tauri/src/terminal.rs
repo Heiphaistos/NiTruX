@@ -58,6 +58,23 @@ fn open_shell_pty(
     Ok((pair.master, writer, reader, child))
 }
 
+/// Inserts `session` under `id`, killing whatever session (and its shell
+/// child process) previously lived under that same id instead of letting
+/// `HashMap::insert` silently drop and orphan it. Not reachable via the
+/// current frontend (each TerminalPage instance generates a fresh UUID
+/// once, and KeepAlive means `spawn_terminal` is only ever called once per
+/// instance -- see App.spec.ts's dedicated KeepAlive test), but a real,
+/// cheap-to-close gap: unlike `close_terminal`, plain `insert` would leak
+/// a whole running shell process with no way left to reach or kill it.
+/// Same "fix even though not currently exploitable, for consistency with
+/// this codebase's established defensive-validation discipline" rationale
+/// already applied to `trash.rs`'s path validation.
+fn insert_session(sessions: &mut HashMap<String, TerminalSession>, id: String, session: TerminalSession) {
+    if let Some(mut previous) = sessions.insert(id, session) {
+        let _ = previous.child.kill();
+    }
+}
+
 #[tauri::command]
 pub fn spawn_terminal(
     id: String,
@@ -82,7 +99,7 @@ pub fn spawn_terminal(
         }
     });
 
-    state.0.lock().unwrap().insert(id, TerminalSession { master, writer, child });
+    insert_session(&mut state.0.lock().unwrap(), id, TerminalSession { master, writer, child });
     Ok(())
 }
 
@@ -168,5 +185,66 @@ mod tests {
         let mut sessions: HashMap<String, TerminalSession> = HashMap::new();
         let result = write_to_session(&mut sessions, "nonexistent-id", "echo hi\n");
         assert!(result.is_err());
+    }
+
+    /// `/proc/<pid>` keeps existing for a killed-but-not-yet-reaped process
+    /// (zombie state "Z" in the 3rd whitespace-separated field of
+    /// /proc/<pid>/stat, per proc(5)) -- so "still really running" means
+    /// the path exists AND the state isn't "Z", not just path existence.
+    fn proc_is_running(pid: u32) -> bool {
+        let Ok(stat) = std::fs::read_to_string(format!("/proc/{pid}/stat")) else {
+            return false; // no such pid at all
+        };
+        // comm (2nd field) is parenthesized and may itself contain spaces,
+        // so the state is the first token after the LAST ')', per proc(5).
+        let Some(after_comm) = stat.rsplit_once(')').map(|(_, rest)| rest) else {
+            return false;
+        };
+        after_comm.split_whitespace().next() != Some("Z")
+    }
+
+    /// Regression guard for the actual gap: plain `HashMap::insert` would
+    /// silently drop (and, per portable_pty's Child trait, never
+    /// implicitly kill) whatever real shell process previously lived under
+    /// a reused id, leaking a running process with no way left to reach
+    /// it. Uses two genuinely spawned shells (real ptys, like the pty test
+    /// above) rather than a mock -- the first child's real OS pid is
+    /// captured before it's moved into the session, then `/proc/<pid>`
+    /// (this project's test environment is confirmed Linux/WSL2 by the pty
+    /// test above) is checked after the reused-id insert to prove the
+    /// actual process was killed, not just that a HashMap entry was
+    /// overwritten.
+    #[test]
+    fn insert_session_kills_the_previous_session_under_a_reused_id() {
+        let (master1, writer1, _reader1, child1) = open_shell_pty(24, 80).expect("should open first pty");
+        let first_pid = child1.process_id().expect("a freshly spawned shell should have a pid");
+        let (master2, writer2, _reader2, child2) = open_shell_pty(24, 80).expect("should open second pty");
+
+        let mut sessions: HashMap<String, TerminalSession> = HashMap::new();
+        insert_session(&mut sessions, "reused-id".to_string(), TerminalSession { master: master1, writer: writer1, child: child1 });
+        assert!(
+            proc_is_running(first_pid),
+            "sanity check: the first shell should still be running right after being inserted"
+        );
+
+        insert_session(&mut sessions, "reused-id".to_string(), TerminalSession { master: master2, writer: writer2, child: child2 });
+
+        // Exactly one session remains under the id, and it's still usable.
+        assert_eq!(sessions.len(), 1);
+        write_to_session(&mut sessions, "reused-id", "echo still-alive\n").expect("the second session should still be writable");
+
+        // The first shell's actual OS process must have been killed, not
+        // merely dropped from the map -- poll briefly since the kernel may
+        // take an instant to transition it to zombie/gone after the kill
+        // signal is sent.
+        let mut still_running = proc_is_running(first_pid);
+        for _ in 0..20 {
+            if !still_running {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(50));
+            still_running = proc_is_running(first_pid);
+        }
+        assert!(!still_running, "the first shell's process ({first_pid}) should have been killed when its id was reused, not leaked");
     }
 }
