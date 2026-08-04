@@ -52,7 +52,7 @@ describe("HardwareDetailsPage", () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain("pciutils"));
   });
 
-  it("shows a plain dash instead of the nonsensical '— GB' when a memory field is unavailable", async () => {
+  it("shows a plain dash instead of the nonsensical '— Go' when a memory field is unavailable", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     vi.mocked(invoke).mockImplementation((cmd: string) => {
       if (cmd === "get_hardware_details") {
@@ -66,6 +66,18 @@ describe("HardwareDetailsPage", () => {
     });
     const wrapper = mount(HardwareDetailsPage);
     await vi.waitFor(() => expect(wrapper.text()).toContain("Test CPU"));
-    expect(wrapper.text()).not.toContain("— GB");
+    expect(wrapper.text()).not.toContain("— Go");
+  });
+
+  it("shows memory sizes in French units (Go), not the English 'GB'", async () => {
+    // Not asserting on the top-level mock's specific CPU model text here --
+    // an earlier test in this file overrides the shared `invoke` mock via
+    // mockImplementation without resetting it afterwards, so by this point
+    // in the file "Test CPU" (from that override) is what actually resolves.
+    // The unit-label behavior under test doesn't depend on which fixture won.
+    const wrapper = mount(HardwareDetailsPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Mémoire"));
+    expect(wrapper.text()).toContain("Go");
+    expect(wrapper.text()).not.toContain("GB");
   });
 });
