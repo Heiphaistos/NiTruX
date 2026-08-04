@@ -11,6 +11,9 @@ vi.mock("@tauri-apps/api/core", () => ({
     if (cmd === "get_docker_snapshot") {
       return Promise.resolve({ available: false, containers: [], images: [] });
     }
+    if (cmd === "get_network_interfaces") {
+      return Promise.resolve([]);
+    }
     return Promise.resolve(null);
   }),
 }));
@@ -75,5 +78,30 @@ describe("NetworkPage", () => {
     await vi.waitFor(() => expect(wrapper.findAll("textarea").length).toBe(2));
     const dnsTextarea = wrapper.findAll("textarea")[1];
     expect((dnsTextarea.element as HTMLTextAreaElement).value).toBe("nameserver 1.1.1.1\nnameserver 8.8.8.8");
+  });
+
+  it("shows each network interface's name, MAC address, and throughput", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") {
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n" });
+      }
+      if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
+      if (cmd === "get_network_interfaces") {
+        return Promise.resolve([
+          { name: "eth0", mac_address: "aa:bb:cc:dd:ee:ff", rx_bytes_per_sec: 2048, tx_bytes_per_sec: 1024 },
+          { name: "wlan0", mac_address: null, rx_bytes_per_sec: 0, tx_bytes_per_sec: 0 },
+        ]);
+      }
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("get_network_interfaces"));
+    await vi.waitFor(() => expect(wrapper.text()).toContain("eth0"));
+    expect(wrapper.text()).toContain("aa:bb:cc:dd:ee:ff");
+    expect(wrapper.text()).toContain("2.0 Ko/s");
+    expect(wrapper.text()).toContain("1.0 Ko/s");
+    expect(wrapper.text()).toContain("wlan0");
+    expect(wrapper.text()).toContain("MAC inconnue");
   });
 });

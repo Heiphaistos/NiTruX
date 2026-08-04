@@ -150,6 +150,88 @@ pub fn get_network_snapshot() -> NetworkSnapshot {
     }
 }
 
+#[derive(Serialize, Clone)]
+pub struct NetworkInterface {
+    pub name: String,
+    pub mac_address: Option<String>,
+    pub rx_bytes_per_sec: u64,
+    pub tx_bytes_per_sec: u64,
+}
+
+/// Parses one non-header `/proc/net/dev` line into (interface name,
+/// cumulative rx_bytes, cumulative tx_bytes) -- confirmed live against
+/// this project's own dev machine's real kernel output, e.g.
+/// "  eth0:  210412     857    0 ... 500       25033     377 ...": the
+/// interface name is followed by ':' with no guaranteed space before it,
+/// rx_bytes is the first numeric field after the colon, and tx_bytes is
+/// the 9th (index 8) -- the Receive block always has exactly 8 columns
+/// (bytes/packets/errs/drop/fifo/frame/compressed/multicast) ahead of the
+/// Transmit block's own bytes column, a fixed kernel format, not
+/// something that varies by interface.
+pub fn parse_proc_net_dev_line(line: &str) -> Option<(String, u64, u64)> {
+    let (name, rest) = line.trim().split_once(':')?;
+    let fields: Vec<&str> = rest.split_whitespace().collect();
+    if fields.len() < 9 {
+        return None;
+    }
+    let rx_bytes: u64 = fields[0].parse().ok()?;
+    let tx_bytes: u64 = fields[8].parse().ok()?;
+    Some((name.trim().to_string(), rx_bytes, tx_bytes))
+}
+
+fn read_interface_byte_counters() -> std::collections::HashMap<String, (u64, u64)> {
+    fs::read_to_string("/proc/net/dev")
+        .ok()
+        .map(|content| content.lines().filter_map(parse_proc_net_dev_line).map(|(name, rx, tx)| (name, (rx, tx))).collect())
+        .unwrap_or_default()
+}
+
+/// Readable without root on every system tested during this feature's
+/// research (confirmed live: `/sys/class/net/eth0/address` readable as a
+/// normal user) -- absent entirely is a normal, expected outcome for a
+/// virtual/loopback-only interface, not an error to surface.
+fn read_mac_address(iface: &str) -> Option<String> {
+    fs::read_to_string(format!("/sys/class/net/{iface}/address"))
+        .ok()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+}
+
+/// Bounds the throughput sample: two `/proc/net/dev` reads separated by
+/// this real wall-clock delay, the same delta-over-time approach
+/// `system::build_snapshot`'s CPU usage relies on (see that function's
+/// doc comment) -- except here both samples are taken within this one
+/// command rather than across separate polls, since this page has no
+/// existing polling loop to reuse a previous sample from. Short enough
+/// not to make a one-time page load noticeably slower.
+const THROUGHPUT_SAMPLE_WINDOW: Duration = Duration::from_millis(300);
+
+/// Lists real network interfaces (loopback excluded -- it is not a
+/// physical network path and its "throughput" is not meaningful to a
+/// user asking about their network hardware) with MAC address and
+/// instantaneous rx/tx throughput.
+#[tauri::command]
+pub fn get_network_interfaces() -> Vec<NetworkInterface> {
+    let before = read_interface_byte_counters();
+    std::thread::sleep(THROUGHPUT_SAMPLE_WINDOW);
+    let after = read_interface_byte_counters();
+    let window_secs = THROUGHPUT_SAMPLE_WINDOW.as_secs_f64();
+
+    before
+        .iter()
+        .filter(|(name, _)| name.as_str() != "lo")
+        .map(|(name, &(rx0, tx0))| {
+            let (rx1, tx1) = after.get(name).copied().unwrap_or((rx0, tx0));
+            NetworkInterface {
+                name: name.clone(),
+                mac_address: read_mac_address(name),
+                rx_bytes_per_sec: (rx1.saturating_sub(rx0) as f64 / window_secs) as u64,
+                tx_bytes_per_sec: (tx1.saturating_sub(tx0) as f64 / window_secs) as u64,
+            }
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -220,6 +302,48 @@ mod tests {
     fn ignores_non_nameserver_resolv_conf_lines() {
         let content = "search example.com\noptions rotate\n";
         assert!(parse_resolv_conf(content).is_empty());
+    }
+
+    #[test]
+    fn parses_a_real_proc_net_dev_line() {
+        // Captured live from this project's own dev machine's real
+        // /proc/net/dev, not a hand-constructed guess at the format.
+        let line = "  eth0:  210412     857    0    0    0     0          0       500    25033     377    0    8    0     0       0          0";
+        let (name, rx, tx) = parse_proc_net_dev_line(line).expect("should parse");
+        assert_eq!(name, "eth0");
+        assert_eq!(rx, 210412);
+        assert_eq!(tx, 25033);
+    }
+
+    #[test]
+    fn parses_the_loopback_proc_net_dev_line_too() {
+        let line = "    lo: 17413491    8001    0    0    0     0          0         0 17413491    8001    0    0    0     0       0          0";
+        let (name, rx, tx) = parse_proc_net_dev_line(line).expect("should parse");
+        assert_eq!(name, "lo");
+        assert_eq!(rx, 17413491);
+        assert_eq!(tx, 17413491);
+    }
+
+    #[test]
+    fn skips_the_proc_net_dev_header_lines() {
+        assert!(parse_proc_net_dev_line("Inter-|   Receive                                                |  Transmit").is_none());
+        assert!(parse_proc_net_dev_line(" face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed").is_none());
+    }
+
+    #[test]
+    fn skips_malformed_proc_net_dev_lines() {
+        assert!(parse_proc_net_dev_line("not a valid line at all").is_none());
+        assert!(parse_proc_net_dev_line("eth0: 123 456").is_none());
+    }
+
+    #[test]
+    fn get_network_interfaces_excludes_loopback_and_reads_real_data_on_this_host() {
+        // Real end-to-end call, not a mock: on any Linux host (including
+        // this project's own WSL2 dev environment) at least one interface
+        // besides loopback should be present and readable.
+        let interfaces = get_network_interfaces();
+        assert!(!interfaces.iter().any(|i| i.name == "lo"), "loopback must be excluded");
+        assert!(!interfaces.is_empty(), "expected at least one non-loopback interface on this host");
     }
 }
 
