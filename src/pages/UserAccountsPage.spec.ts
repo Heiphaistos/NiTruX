@@ -25,4 +25,17 @@ describe("UserAccountsPage", () => {
     const wrapper = mount(UserAccountsPage);
     await vi.waitFor(() => expect(wrapper.text()).toContain("Aucun compte utilisateur réel trouvé."));
   });
+
+  it("does not flash 'no accounts found' while get_user_accounts is still pending", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    let resolveAccounts!: (value: unknown[]) => void;
+    vi.mocked(invoke).mockImplementationOnce(() => new Promise((resolve) => (resolveAccounts = resolve)));
+
+    const wrapper = mount(UserAccountsPage);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.text()).not.toContain("Aucun compte utilisateur réel trouvé.");
+
+    resolveAccounts([{ username: "dev", uid: 1000, home: "/home/dev", shell: "/bin/bash" }]);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("dev"));
+  });
 });

@@ -37,4 +37,26 @@ describe("ProcessesPage", () => {
     expect(wrapper.text()).toContain("bash");
     expect(wrapper.text()).not.toContain("nitrux");
   });
+
+  it("does not flash 'no service found' while get_systemd_services is still pending", async () => {
+    // services/autostart/scheduledTasks (and processes, via filteredProcesses)
+    // defaulted to [] rather than null, making their empty-state checks
+    // indistinguishable from "still loading".
+    const { invoke } = await import("@tauri-apps/api/core");
+    let resolveServices!: (value: string[]) => void;
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_processes") return Promise.resolve([]);
+      if (cmd === "get_systemd_services") return new Promise((resolve) => (resolveServices = resolve));
+      if (cmd === "get_autostart_entries") return Promise.resolve([]);
+      if (cmd === "get_scheduled_tasks") return Promise.resolve([]);
+      return Promise.resolve(null);
+    });
+
+    const wrapper = mount(ProcessesPage);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.text()).not.toContain("Aucun service systemd trouvé.");
+
+    resolveServices(["ssh.service"]);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("ssh.service"));
+  });
 });
