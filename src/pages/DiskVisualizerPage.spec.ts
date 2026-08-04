@@ -38,4 +38,19 @@ describe("DiskVisualizerPage", () => {
     const paths = wrapper.findAll(".dv-file-path").map((n) => n.text());
     expect(paths).toEqual(["/home/dev/big.iso", "/home/dev/small.iso"]);
   });
+
+  it("shows an empty-state message when a scan completes with no large files found", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) => {
+      if (cmd === "list_disk_usage") return Promise.resolve([]);
+      if (cmd === "find_large_files_cmd") return Promise.resolve([]);
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(DiskVisualizerPage);
+    await wrapper.find("input").setValue("/home/dev/empty");
+    const button = wrapper.findAll("button").find((b) => b.text() === "Analyser")!;
+    await button.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toMatch(/aucun gros fichier/i));
+    expect(wrapper.find(".dv-file-row").exists()).toBe(false);
+  });
 });
