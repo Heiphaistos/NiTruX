@@ -29,15 +29,18 @@ function formatGb(bytes: number): string {
 
 const scanDir = ref("");
 const scanning = ref(false);
+const scanDone = ref(false);
 const scanError = ref<string | null>(null);
 const largeFiles = ref<LargeFile[]>([]);
 
 async function scan() {
   scanning.value = true;
+  scanDone.value = false;
   scanError.value = null;
   try {
     const results = await invoke<LargeFile[]>("find_large_files_cmd", { directory: scanDir.value, minSizeBytes: MIN_SIZE_BYTES });
     largeFiles.value = [...results].sort((a, b) => b.size_bytes - a.size_bytes);
+    scanDone.value = true;
   } catch (e) {
     scanError.value = String(e);
   } finally {
@@ -72,6 +75,7 @@ function maxSize(): number {
         <NxButton :disabled="scanning || scanDir === ''" @click="scan">{{ scanning ? "Analyse..." : "Analyser" }}</NxButton>
       </div>
       <NxCard v-if="scanError" danger>{{ scanError }}</NxCard>
+      <div v-else-if="scanDone && largeFiles.length === 0" class="dv-empty">Aucun gros fichier trouvé.</div>
       <div v-for="f in largeFiles" :key="f.path" class="dv-file-row">
         <span class="dv-file-path">{{ f.path }}</span>
         <div class="dv-file-bar-wrap">
@@ -90,6 +94,7 @@ function maxSize(): number {
 .dv-bar { height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--nx-accent-primary) 15%, transparent); overflow: hidden; }
 .dv-bar-fill { height: 100%; background: var(--nx-accent-primary); border-radius: 4px; }
 .dv-scan { display: flex; flex-direction: column; gap: 10px; }
+.dv-empty { color: var(--nx-text-secondary); font-size: 13px; }
 .dv-scan-row { display: flex; gap: 10px; align-items: center; }
 .dv-file-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; font-size: 12px; }
 .dv-file-path { min-width: 220px; word-break: break-all; }
