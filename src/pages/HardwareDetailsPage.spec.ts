@@ -51,4 +51,21 @@ describe("HardwareDetailsPage", () => {
     const wrapper = mount(HardwareDetailsPage);
     await vi.waitFor(() => expect(wrapper.text()).toContain("pciutils"));
   });
+
+  it("shows a plain dash instead of the nonsensical '— GB' when a memory field is unavailable", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_hardware_details") {
+        return Promise.resolve({
+          cpu: { model_name: "Test CPU", sockets: "1", cores_per_socket: "1", threads_per_core: "1" },
+          board: { product_name: null, sys_vendor: null, board_name: null, bios_version: null },
+          memory: { total_kb: 1000, available_kb: 500, cached_kb: 100, swap_total_kb: null },
+        });
+      }
+      return Promise.resolve([]);
+    });
+    const wrapper = mount(HardwareDetailsPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Test CPU"));
+    expect(wrapper.text()).not.toContain("— GB");
+  });
 });

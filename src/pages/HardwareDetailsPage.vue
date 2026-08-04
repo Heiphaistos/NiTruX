@@ -32,14 +32,14 @@ onMounted(async () => {
 });
 
 function kbToGb(kb: number | null): string {
-  return kb === null ? "—" : (kb / 1024 / 1024).toFixed(1);
+  return kb === null ? "—" : `${(kb / 1024 / 1024).toFixed(1)} GB`;
 }
 
 const memoryRows = computed(() => details.value ? [
-  { label: "Total", value: kbToGb(details.value.memory.total_kb) + " GB" },
-  { label: "Disponible", value: kbToGb(details.value.memory.available_kb) + " GB" },
-  { label: "Cache", value: kbToGb(details.value.memory.cached_kb) + " GB" },
-  { label: "Swap total", value: kbToGb(details.value.memory.swap_total_kb) + " GB" },
+  { label: "Total", value: kbToGb(details.value.memory.total_kb) },
+  { label: "Disponible", value: kbToGb(details.value.memory.available_kb) },
+  { label: "Cache", value: kbToGb(details.value.memory.cached_kb) },
+  { label: "Swap total", value: kbToGb(details.value.memory.swap_total_kb) },
 ] : []);
 </script>
 
