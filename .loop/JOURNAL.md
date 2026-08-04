@@ -577,3 +577,13 @@ Aucun changement de code ce cycle. Version inchangée (0.25.14).
 Vérifié : test isolé `AppNav.spec.ts` 12/12 (10+2). `vue-tsc --noEmit` 0 erreur. `cargo test` non ré-exécuté (aucun fichier Rust touché). Suite complète `npm run test -- --run` propre du premier coup : 64/64 fichiers, 292/292 tests. Commit `d3a65d4` poussé (BOM vérifié absent). Version 0.25.14 → 0.25.15.
 
 Note pour un futur cycle : l'absence totale d'attributs `aria-*` dans tout le reste du projet reste un gap plus large (icônes seules dans d'autres contextes, `role` sur les éléments interactifs non natifs comme les `<div>` cliquables si il y en a, etc.) -- pourrait justifier un futur cycle dédié à un audit a11y plus systématique, ou une demande explicite à l'utilisateur si la portée s'avère plus large qu'un correctif ciblé.
+
+[2026-08-04T20:10:00+02:00] Cycle 89 : poursuite de l'angle accessibilité ouvert au cycle 88 (correctif `AppNav.vue` icônes seules). **Rien trouvé de nouveau ce cycle** -- audit réel sur 4 sous-angles distincts, tous propres.
+
+- Icônes lucide sans texte visible : seuls 2 fichiers utilisent `lucide-vue-next` (`DashboardPage.vue` via `NxQuickActionTile` qui a toujours un `<span>` de libellé visible -- accessible ; `AppNav.vue`, déjà corrigé au cycle 88). Aucun autre cas.
+- Cases à cocher (`type="checkbox"`, 2 occurrences dans tout le projet -- `InstallProfilesPage.vue`/`SettingsPreferencesPage.vue`) : les deux correctement enveloppées dans un `<label>` natif avec texte visible (association implicite label↔input, pleinement accessible sans `aria-label` nécessaire).
+- Champs `NxInput`/`NxSelect` sans `placeholder` sur une seule ligne de grep : tous les faux positifs vérifiés individuellement -- `placeholder` présent mais sur une ligne suivante (attribut multi-lignes), ou libellé `<label>` visible adjacent. Aucun champ sans nom accessible.
+- Éléments cliquables non natifs (`<div @click>`/`<span @click>`) : **0 occurrence** dans tout le projet -- chaque élément interactif utilise déjà `<button>`/`<input>`/`<select>`/`<a>` natifs, accessibles au clavier par défaut sans configuration supplémentaire.
+- `tabindex` : **0 occurrence** -- aucun ordre de tabulation manuel, donc aucun risque de l'anti-pattern classique (valeurs positives cassant l'ordre naturel du DOM).
+
+**Conclusion** : au-delà du correctif du cycle 88, cette application n'a pas d'autre lacune d'accessibilité facilement identifiable par recherche statique -- le socle de composants `Nx*` s'appuie systématiquement sur des éléments HTML natifs avec texte visible, ce qui explique en réalité pourquoi 87 cycles précédents n'avaient jamais eu besoin de toucher à l'a11y. Aucun changement de code ce cycle. Version inchangée (0.25.15).
