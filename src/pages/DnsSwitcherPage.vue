@@ -26,12 +26,27 @@ async function refresh() {
 
 onMounted(refresh);
 
-async function apply(content: string) {
+// set_dns_servers writes its `content` as-is to resolv.conf and requires at
+// least one line starting with "nameserver " (validate_dns_content,
+// backend/network_write.rs) -- bare IPs alone are rejected outright. This
+// page's own UX (preset buttons, "one DNS server per line" placeholder)
+// intentionally works with bare IPs so users never need to know that
+// syntax; this converts them to valid resolv.conf lines right before
+// sending, one single place for every caller (presets and manual entry).
+function toResolvConfContent(rawServers: string[]): string {
+  return rawServers
+    .map((s) => s.trim())
+    .filter((s) => s !== "")
+    .map((ip) => `nameserver ${ip}`)
+    .join("\n");
+}
+
+async function apply(servers: string[]) {
   applying.value = true;
   applyError.value = null;
   applySuccess.value = false;
   try {
-    await invoke("set_dns_servers", { content });
+    await invoke("set_dns_servers", { content: toResolvConfContent(servers) });
     applySuccess.value = true;
     await refresh();
   } catch (e) {
@@ -50,14 +65,14 @@ async function apply(content: string) {
     <NxBadge v-if="applySuccess" status="success">DNS mis à jour.</NxBadge>
 
     <NxCard class="dns-presets">
-      <NxButton v-for="p in PRESETS" :key="p.label" :disabled="applying" @click="apply(p.servers.join('\n'))">
+      <NxButton v-for="p in PRESETS" :key="p.label" :disabled="applying" @click="apply(p.servers)">
         {{ p.label }}
       </NxButton>
     </NxCard>
 
     <NxCard class="dns-manual">
       <textarea v-model="manualDns" class="dns-textarea" rows="4" placeholder="Un serveur DNS par ligne..."></textarea>
-      <NxButton :disabled="applying || manualDns === ''" @click="apply(manualDns)">Appliquer</NxButton>
+      <NxButton :disabled="applying || manualDns === ''" @click="apply(manualDns.split('\n'))">Appliquer</NxButton>
     </NxCard>
   </div>
 </template>
