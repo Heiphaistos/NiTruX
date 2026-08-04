@@ -200,11 +200,13 @@ async function runScan() {
           <span>{{ c.name }} ({{ c.image }})</span>
           <span>{{ c.status }}</span>
         </div>
+        <div v-if="docker.containers.length === 0" class="net-empty">Aucun conteneur.</div>
         <NxSectionHeader title="Images" />
         <div v-for="i in docker.images" :key="i.id" class="net-row">
           <span>{{ i.repository }}:{{ i.tag }}</span>
           <span>{{ i.size }}</span>
         </div>
+        <div v-if="docker.images.length === 0" class="net-empty">Aucune image.</div>
       </template>
     </NxCard>
   </div>
