@@ -167,3 +167,25 @@ Demande verbatim : parité intégrale NiTriTe (traduite en vrais équivalents Li
 **Rapport testeurs AppImage v0.24.3 (9 items utilisateur) : intégralement traité et poussé.** Détail complet dans JOURNAL.md (entrées 2026-08-04T13:35 à 15:10). Résumé : pkexec AppImage auto-install premier lancement, terminal persistant (KeepAlive), filtre dépendances Logiciels installés, benchmark CPU freq+SMART, message clamscan clarifié, cartes réseau/MAC/débit, export PDF réel (nouvelle dép. `printpdf` 0.12.5, réutilise `render_html` existant). Boucle 10 min reprend son cycle normal après ce cycle.
 
 **Flakiness d'infra observée cette session** (distincte du problème R13/xterm déjà résolu ci-dessus) : `npm run test -- --run` sur ce repo (D:\ monté depuis WSL2) échoue par intermittence avec `[vitest-pool]: Failed to start forks worker ... Timeout waiting for worker to respond` sur des fichiers aléatoires — pas liés à un module lourd non-mocké, juste I/O cross-filesystem WSL2↔Windows sous charge. `--no-file-parallelism` en contournement est resté bloqué >15min sans jamais finir (pire, pas mieux). Pattern de contournement qui a fonctionné : relancer 2x en parallélisme normal — sur 2 tentatives, 100% des fichiers qui ont pu démarrer sont passés (0 échec réel), seul le nombre de fichiers exécutés variait. Si ça persiste sur un futur cycle, envisager de lancer `npm run test` depuis un terminal WSL2 natif pointant vers une copie du repo sur `/mnt` avec moins de charge disque concurrente, plutôt que de re-diagnostiquer depuis zéro.
+
+## État courant (2026-08-04, v0.25.20, cycle 100)
+
+**Rapport testeurs AppImage v0.24.3 (9 items) et release v0.25.10 : intégralement traités et poussés.** Voir section précédente pour le détail v0.25.5→v0.25.10.
+
+**Campagne cycles 71-100 (v0.25.6 → v0.25.20) : dizaines de bugs réels trouvés et corrigés**, méthode principalement transversale (grep multi-fichiers) une fois l'inventaire fichier-par-fichier épuisé vers le cycle 79. Points marquants les plus significatifs :
+- **`firewall.rs` (cycle 97, le plus sérieux)** : `ufw status` non-privilégié sort en code 0 avec stdout vide (erreur réelle sur stderr, ignorée) -- la page Pare-feu affichait TOUJOURRS "inactif" indépendamment de l'état réel, dans le mode d'exécution NORMAL de l'app (sans privilège). Corrigé, `parse_ufw_output` maintenant faillible.
+- **`themeStore.ts` (cycle 90)** : thèmes personnalisés jamais persistés en localStorage (seul le thème actif l'était) -- disparaissaient au redémarrage.
+- **`terminal.rs` (cycle 96)** : fuite de processus shell sur réutilisation d'id (`HashMap::insert` sans kill préalable) -- non atteignable via le frontend actuel mais corrigé par prudence.
+- **`PackagesPage.vue`/`SystemToolsPage.vue`/`UninstallerPage.vue` (cycles 75/76/99)** : données périmées affichées après une action, ou no-op silencieux sans gestionnaire de paquets détecté.
+- **Localisation Mo/Go (cycles 81/82)** : balayage exhaustif, 5 pages corrigées, plus aucune unité anglaise dans l'UI.
+- **`update_history.rs` (cycle 74)** : parsing apt ne reconnaissait que 3 des 6 types d'action réels.
+- **Catalogue** : Microsoft Teams retiré (404 Flathub confirmé, cycle 84) ; apt non re-vérifiable depuis cet environnement (WSL2 Ubuntu ≠ Debian cible, cycle 83 -- piège méthodologique identifié et évité).
+- **Accessibilité (cycle 88)** : première vérification a11y de toute la campagne, `aria-label` ajouté à la navigation icônes-seules (disposition Floating Dock).
+
+**Suspects non résolus, en attente d'environnement de test** :
+- `timeshift --list`/`efibootmgr` (cycle 98) : suspectés du même bug que `ufw` (nécessitent typiquement root), non installés dans cet environnement WSL2, aucun accès root pour les installer -- nécessite VM Debian ou environnement avec accès root.
+- Cycles 18/34/44 (pré-v0.25) : décision benchmark disque déjà résolue (disclaimer, cycle 72) ; bug exit-code `apt-autoremove` du script pkexec partagé et gap de validation `quarantine-file` (chemin `/` accepté) toujours en attente de VM pour re-vérification live avant tout correctif (règle du projet : jamais modifier pkexec déjà vérifié sans re-test live).
+
+**VM Debian (172.18.32.124) injoignable sur TOUTE la campagne cycles 71-100** (`No route to host` de façon constante) -- re-vérifiée à chaque tentative de reprendre les découvertes pkexec en attente, jamais de succès.
+
+**Pièges d'infra confirmés cette campagne** (voir LESSONS.md pour le détail complet) : corruption `$()`/interpolation de variable via `wsl.exe bash -lc "..."` inline (pas seulement les heredocs) -- toujours écrire les scripts avec boucles/substitutions dans un fichier via Write puis `wsl.exe bash -lc "bash '<chemin>'"` ; cache de build `target/` périmé après déplacement de repo (Desktop→D:\Projet) -- nettoyage ciblé `cargo clean -p nitrux -p tauri -p tauri-build` plutôt que `rm -rf target/` complet ; notification "completed" d'une tâche background pipée vers `tail` reflète l'exit code de `tail`, pas de la commande réelle -- toujours rediriger vers un fichier log + `echo EXIT_CODE=$?` pour les commandes dont le succès doit être vérifié.

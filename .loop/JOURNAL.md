@@ -678,3 +678,14 @@ Observation notée mais non corrigée (cohérente avec un patron déjà établi 
 Couvre les 4 correctifs depuis v0.25.16 (cycles 95/96/97/99) : couverture de test `PkexecIntegrationBanner`, fuite de processus terminal sur réutilisation d'id (cas limite non atteignable actuellement, corrigé par prudence), **pare-feu affichant faussement "inactif" quand `ufw status` échoue par manque de droits admin** (bug sérieux, mode d'exécution normal de l'app), désinstalleur silencieusement inopérant sans gestionnaire de paquets détecté.
 
 Reprise du cycle normal d'audit après cette parenthèse.
+
+[2026-08-04T22:24:00+02:00] Cycle 100 (jalon) : clôture du balayage systématique entamé au cycle 98 (recherche du même motif que le bug `ufw` corrigé au cycle 97 -- commande non-privilégiée sortant en code 0 avec stdout vide, erreur réelle sur stderr silencieusement ignorée). Vérification live des 4 commandes restantes disponibles dans cet environnement et jamais encore testées :
+
+- `xrandr --query` : code 0, 30 lignes de sortie réelle, aucun stderr -- sain.
+- `lsusb` : code 0, 0 ligne de sortie, aucun stderr -- vérifié que ce n'est PAS le motif du bug (pas de message d'erreur caché sur stderr), juste un environnement WSL2 sans périphérique USB réel exposé au invité (comportement attendu de la virtualisation, pas un bug).
+- `systemctl list-units --type=service` : code 0, 48 lignes réelles, aucun stderr -- sain.
+- `crontab -l` : code 0, stdout vide, message "no crontab for momo" sur stderr -- **vérifié que ce N'EST PAS le même bug que `ufw`** : contrairement à `ufw`/`timeshift` (nécessitent systématiquement root), `crontab -l` interroge la propre table de tâches planifiées de L'UTILISATEUR COURANT, une opération intrinsèquement non-privilégiée -- l'absence de crontab personnel est un état parfaitement normal et courant (la plupart des utilisateurs n'en configurent jamais), pas une erreur de permission. Le code de sortie 0 + stdout vide est ici le signal CORRECT de "aucune tâche planifiée", déjà géré adéquatement par `.unwrap_or_default()` (confirmé sain au cycle 57).
+
+**Conclusion du balayage complet (cycles 97/98/100)** : sur les ~20 commandes non-privilégiées invoquées directement dans ce projet, une seule instance réelle du bug a été trouvée et corrigée (`ufw`, cycle 97). `timeshift`/`efibootmgr` restent des suspects plausibles mais non vérifiables dans cet environnement (non installés, pas d'accès root pour les installer) -- consignés au cycle 98, toujours en attente d'un environnement de test approprié (VM Debian, toujours injoignable ce cycle également). Toutes les autres commandes testables ont été vérifiées saines.
+
+Aucun changement de code ce cycle. Version inchangée (0.25.20).
