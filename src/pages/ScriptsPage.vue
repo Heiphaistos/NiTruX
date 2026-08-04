@@ -12,10 +12,16 @@ const store = useScriptsStore();
 
 const newName = ref("");
 const newContent = ref("");
+const saveError = ref<string | null>(null);
 
 function saveScript() {
   if (newName.value === "" || newContent.value === "") return;
-  store.addScript(newName.value, newContent.value);
+  const result = store.addScript(newName.value, newContent.value);
+  if (!result.ok) {
+    saveError.value = result.error;
+    return;
+  }
+  saveError.value = null;
   newName.value = "";
   newContent.value = "";
 }
@@ -45,6 +51,7 @@ async function runScript(name: string, content: string) {
       <NxInput v-model="newName" placeholder="Nom du script..." />
       <textarea v-model="newContent" class="scr-textarea" rows="4" placeholder="Contenu du script..."></textarea>
       <NxButton @click="saveScript">Enregistrer</NxButton>
+      <NxCard v-if="saveError" danger>{{ saveError }}</NxCard>
     </NxCard>
 
     <NxCard v-for="s in store.scripts" :key="s.name" class="scr-item">

@@ -38,4 +38,20 @@ describe("ScriptsPage", () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain("hello"));
     expect(invoke).toHaveBeenCalledWith("run_script", { content: "echo hello" });
   });
+
+  it("shows an error and keeps only the first script when saving a duplicate name", async () => {
+    const wrapper = mount(ScriptsPage);
+    await wrapper.find("input[placeholder*='Nom']").setValue("backup");
+    await wrapper.find("textarea").setValue("echo first");
+    await wrapper.findAll("button").find((b) => b.text() === "Enregistrer")!.trigger("click");
+
+    await wrapper.find("input[placeholder*='Nom']").setValue("backup");
+    await wrapper.find("textarea").setValue("echo second");
+    await wrapper.findAll("button").find((b) => b.text() === "Enregistrer")!.trigger("click");
+
+    expect(wrapper.text()).toMatch(/existe déjà/);
+    expect(wrapper.findAll(".scr-item")).toHaveLength(1);
+    expect(wrapper.text()).toContain("echo first");
+    expect(wrapper.text()).not.toContain("echo second");
+  });
 });
