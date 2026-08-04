@@ -18,6 +18,30 @@ pub fn parse_health_line(output: &str) -> Option<String> {
         .map(|s| s.trim().to_string())
 }
 
+/// Extracts smartctl's actual failure explanation from its stdout, e.g.
+/// "Smartctl open device: /dev/sdd failed: Permission denied". Confirmed
+/// live (extracting the real `smartctl` binary via `apt-get
+/// download`/`dpkg-deb -x`, no root needed, run unprivileged against a
+/// real block device in this dev environment) that on a communication
+/// failure smartctl prints its actual, actionable reason to STDOUT
+/// (alongside its version/copyright banner) with an EMPTY stderr -- the
+/// same "real explanation lives on stdout, not stderr" pattern already
+/// found and fixed for `timeshift` in `snapshots.rs`. Filters out the
+/// banner lines (version string, copyright) rather than assuming a fixed
+/// line position, since smartctl's banner content varies by build.
+fn extract_failure_reason(output: &str) -> Option<String> {
+    let lines: Vec<&str> = output
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty() && !l.starts_with("smartctl ") && !l.starts_with("Copyright"))
+        .collect();
+    if lines.is_empty() {
+        None
+    } else {
+        Some(lines.join(" "))
+    }
+}
+
 /// `smartctl`'s exit status is a BITMASK, not a simple 0/success ==
 /// everything-else/error scheme (confirmed against the smartctl(8) man
 /// page): bit 0 (1) = command line didn't parse, bit 1 (2) = device open
@@ -31,7 +55,10 @@ pub fn parse_health_line(output: &str) -> Option<String> {
 fn interpret_smartctl_result(output: &str, code: i32) -> Result<Option<String>, String> {
     const COMMUNICATION_FAILURE_BITS: i32 = 0b111; // bits 0-2
     if code & COMMUNICATION_FAILURE_BITS != 0 {
-        return Err(format!("smartctl n'a pas pu interroger le périphérique (code {code})"));
+        return Err(match extract_failure_reason(output) {
+            Some(reason) => format!("smartctl n'a pas pu interroger le périphérique (code {code}) : {reason}"),
+            None => format!("smartctl n'a pas pu interroger le périphérique (code {code})"),
+        });
     }
     Ok(parse_health_line(output))
 }
@@ -100,6 +127,32 @@ mod tests {
         // line exists in this case, this must remain an error.
         let err = interpret_smartctl_result("", 2).expect_err("bit 1 should be a real error");
         assert!(err.contains('2'), "error should mention the exit code: {err}");
+    }
+
+    #[test]
+    fn device_open_failure_surfaces_smartctls_real_explanation_instead_of_losing_it() {
+        // Regression test using the EXACT raw output captured live from a
+        // real smartctl binary run unprivileged against a real block
+        // device in this dev environment (permission denied). Before this
+        // fix, the banner+explanation on stdout was entirely discarded,
+        // leaving the user with a bare "(code 2)" and no indication that
+        // running as admin would fix it.
+        let output = "smartctl 7.2 2020-12-30 r5155 [x86_64-linux-6.18.33.2-microsoft-standard-WSL2] (local build)\nCopyright (C) 2002-20, Bruce Allen, Christian Franke, www.smartmontools.org\n\nSmartctl open device: /dev/sdd failed: Permission denied\n";
+        let err = interpret_smartctl_result(output, 2).expect_err("bit 1 should be a real error");
+        assert!(err.contains("Permission denied"), "error should preserve smartctl's real explanation: {err}");
+        assert!(!err.contains("Copyright"), "banner lines should be filtered out: {err}");
+    }
+
+    #[test]
+    fn extract_failure_reason_filters_out_the_version_and_copyright_banner() {
+        let output = "smartctl 7.2 2020-12-30 r5155 (local build)\nCopyright (C) 2002-20, Bruce Allen\n\nSmartctl open device: /dev/sda failed: No such device\n";
+        assert_eq!(extract_failure_reason(output).as_deref(), Some("Smartctl open device: /dev/sda failed: No such device"));
+    }
+
+    #[test]
+    fn extract_failure_reason_returns_none_for_purely_banner_output() {
+        let output = "smartctl 7.2 2020-12-30 r5155 (local build)\nCopyright (C) 2002-20, Bruce Allen\n";
+        assert_eq!(extract_failure_reason(output), None);
     }
 
     #[test]
