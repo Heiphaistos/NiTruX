@@ -28,7 +28,7 @@ pub fn parse_timer_line(line: &str) -> Option<String> {
 
 #[tauri::command]
 pub fn get_processes(state: tauri::State<Mutex<System>>) -> Vec<ProcessInfo> {
-    let mut sys = state.lock().unwrap();
+    let mut sys = state.lock().expect("system state mutex poisoned");
     sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
     sys.processes()
         .iter()
