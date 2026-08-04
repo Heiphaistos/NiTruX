@@ -10,6 +10,9 @@ vi.mock("@tauri-apps/api/core", () => ({
     if (cmd === "run_troubleshoot_action" && args?.action === "clean-cache") {
       return Promise.resolve("cache vidé");
     }
+    if (cmd === "run_troubleshoot_action" && args?.action === "vacuum-logs") {
+      return Promise.resolve("journaux purgés");
+    }
     return Promise.resolve(null);
   }),
 }));
@@ -27,5 +30,20 @@ describe("CleanerPage", () => {
     const button = wrapper.findAll("button").find((b) => b.text().includes("Vider le cache"))!;
     await button.trigger("click");
     await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("run_troubleshoot_action", { action: "clean-cache" }));
+  });
+
+  it("runs vacuum-logs when the button is clicked, and does not re-fetch cache sizes (logs aren't part of that report)", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const wrapper = mount(CleanerPage);
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("get_cache_size_report"));
+    const cacheReportCallsBefore = vi.mocked(invoke).mock.calls.filter((c) => c[0] === "get_cache_size_report").length;
+
+    const button = wrapper.findAll("button").find((b) => b.text().includes("Purger les journaux"))!;
+    await button.trigger("click");
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("run_troubleshoot_action", { action: "vacuum-logs" }));
+    await vi.waitFor(() => expect(wrapper.text()).toContain("journaux purgés"));
+
+    const cacheReportCallsAfter = vi.mocked(invoke).mock.calls.filter((c) => c[0] === "get_cache_size_report").length;
+    expect(cacheReportCallsAfter).toBe(cacheReportCallsBefore);
   });
 });
