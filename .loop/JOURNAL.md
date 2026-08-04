@@ -540,3 +540,13 @@ Aucun changement de code ce cycle. Version inchangée (0.25.13).
 Vérifié : `appCatalog.spec.ts`/`QuickInstallPage.spec.ts`/`InstallProfilesPage.spec.ts` isolés 12/12. `vue-tsc --noEmit` 0 erreur. `cargo test` non ré-exécuté (aucun fichier Rust touché). Suite complète `npm run test -- --run` propre du premier coup : 64/64 fichiers, 290/290 tests. Commit `d6058cc` poussé (BOM vérifié absent). Version 0.25.13 → 0.25.14.
 
 Les 58 autres entrées flatpak confirmées toujours valides -- catalogue flatpak de nouveau intégralement à jour.
+
+[2026-08-04T19:30:00+02:00] Cycle 85 : suite de la re-vérification du catalogue entamée aux cycles 83/84. **Rien trouvé de nouveau ce cycle.**
+
+- Catalogue snap (1 seule entrée restante depuis le retrait de Portainer au cycle 1 : `spotify`) : vérifié en direct via l'API Snap Store réelle (`api.snapcraft.io/v2/snaps/info/spotify`, indépendante de la distro hôte comme Flathub) -- présent sur le canal `stable` (contrairement au bug Portainer historique où l'app n'existait que sur `edge`, canal non supporté par le script pkexec). Entrée saine, confirmée réellement installable.
+- Cross-référencement complet des cibles de navigation : les 5 tuiles d'action rapide de `DashboardPage.vue` (`diagnostic`/`quick-install`/`updates`/`troubleshoot`/`report-generator`) toutes vérifiées présentes dans `navigation/categories.ts`. Recherche élargie : `DashboardPage.vue` est le SEUL fichier de tout le projet à émettre l'événement `navigate` (aucun autre composant/page ne le fait), donc pas d'autre surface à vérifier sur cet angle.
+- Diff exhaustif bidirectionnel entre les 41 ids de page de `navigation/categories.ts` et les 41 clés du dictionnaire `pages` d'`App.vue` (qui route chaque id vers son composant Vue réel) : **correspondance parfaite dans les deux sens** -- aucun id de navigation sans composant enregistré (ce qui afficherait une page blanche au clic) et aucun composant enregistré sans entrée de navigation (page inatteignable depuis le menu). Câblage de routage entièrement sain.
+
+Piège d'infra rencontré et contourné à nouveau ce cycle (même famille que le cycle 83) : une boucle `for id in ...; do grep -c "id: \"\$id\""; done` inline dans `wsl.exe bash -lc "..."` a silencieusement renvoyé des résultats vides/faux (0 partout) -- contournée en écrivant le script dans un fichier via l'outil Write puis en l'exécutant via `wsl.exe bash -lc "bash '<chemin>'"`, confirmant que la leçon déjà notée au cycle 83 (LESSONS.md) s'applique bien au-delà des heredocs -- toute boucle avec interpolation de variable est concernée, pas seulement `$()`.
+
+Aucun changement de code ce cycle. Version inchangée (0.25.14).
