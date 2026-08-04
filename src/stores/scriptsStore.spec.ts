@@ -25,4 +25,19 @@ describe("scriptsStore", () => {
     store.removeScript("A");
     expect(store.scripts.map((s) => s.name)).toEqual(["B"]);
   });
+
+  it("rejects adding a script whose name is already taken, instead of silently creating a duplicate", () => {
+    // Without this guard, two scripts could share a name -- removeScript
+    // filters by name, so deleting either one would silently delete BOTH
+    // (real data loss), and Vue's :key="s.name" in ScriptsPage.vue would
+    // warn/misbehave on the duplicate keys.
+    const store = useScriptsStore();
+    const first = store.addScript("backup", "echo first");
+    expect(first.ok).toBe(true);
+
+    const second = store.addScript("backup", "echo second");
+    expect(second.ok).toBe(false);
+    expect(store.scripts).toHaveLength(1);
+    expect(store.scripts[0].content).toBe("echo first");
+  });
 });
