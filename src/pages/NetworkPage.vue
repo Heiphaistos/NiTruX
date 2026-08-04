@@ -14,12 +14,18 @@ interface PortResult { port: number; open: boolean }
 interface Container { id: string; image: string; name: string; status: string }
 interface DockerImageInfo { id: string; repository: string; tag: string; size: string }
 interface DockerSnapshot { available: boolean; containers: Container[]; images: DockerImageInfo[] }
+interface NetworkInterface { name: string; mac_address: string | null; rx_bytes_per_sec: number; tx_bytes_per_sec: number }
 
 type Tab = "overview" | "portscan" | "docker";
 const activeTab = ref<Tab>("overview");
 
 const snapshot = ref<NetworkSnapshot | null>(null);
 const docker = ref<DockerSnapshot | null>(null);
+const interfaces = ref<NetworkInterface[] | null>(null);
+
+function formatThroughput(bytesPerSec: number): string {
+  return `${(bytesPerSec / 1024).toFixed(1)} Ko/s`;
+}
 
 const hostsEditable = ref("");
 const hostsSaving = ref(false);
@@ -43,6 +49,7 @@ onMounted(async () => {
     hostsEditable.value = snapshot.value.hosts_file;
     dnsEditable.value = snapshot.value.dns_servers.map((ip) => `nameserver ${ip}`).join("\n");
   }
+  interfaces.value = await invoke<NetworkInterface[]>("get_network_interfaces");
 });
 
 async function saveHosts() {
@@ -135,6 +142,16 @@ async function runScan() {
     </div>
 
     <template v-if="activeTab === 'overview' && snapshot">
+      <NxCard v-if="interfaces">
+        <NxSectionHeader title="Cartes réseau" />
+        <div v-if="interfaces.length === 0" class="net-empty">Aucune carte réseau détectée.</div>
+        <div v-for="i in interfaces" :key="i.name" class="net-row net-iface-row">
+          <span>{{ i.name }}</span>
+          <span>{{ i.mac_address ?? "MAC inconnue" }}</span>
+          <span>↓ {{ formatThroughput(i.rx_bytes_per_sec) }} · ↑ {{ formatThroughput(i.tx_bytes_per_sec) }}</span>
+        </div>
+      </NxCard>
+
       <NxCard>
         <NxSectionHeader title="Wi-Fi" />
         <div v-for="w in snapshot.wifi_networks" :key="w.ssid" class="net-row">

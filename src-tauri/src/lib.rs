@@ -142,6 +142,7 @@ pub fn run() {
             hashcheck::verify_file_hash,
             smart::get_smart_status,
             network::get_network_snapshot,
+            network::get_network_interfaces,
             portscan::scan_ports_cmd,
             processes::get_processes,
             processes::get_systemd_services,
