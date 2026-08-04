@@ -1,6 +1,6 @@
 [package]
 name = "nitrux"
-version = "0.25.4"
+version = "0.25.5"
 description = "NiTruX — couteau suisse de maintenance et diagnostic pour Linux"
 authors = ["Heiphaistos"]
 edition = "2021"
@@ -28,4 +28,5 @@ md-5 = "0.10"
 sha1 = "0.10"
 base64 = "0.22"
 portable-pty = "0.9.0"
+printpdf = "0.12.5"
 

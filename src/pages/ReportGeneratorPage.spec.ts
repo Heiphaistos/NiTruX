@@ -11,6 +11,13 @@ vi.mock("@tauri-apps/api/core", () => ({
     if (cmd === "generate_system_report" && args?.format === "markdown") {
       return Promise.resolve("# Rapport système NiTruX");
     }
+    if (cmd === "generate_pdf_report") {
+      // base64 of the literal bytes "%PDF-1.7 fake" -- just needs to be
+      // valid base64 that round-trips through atob, not a real PDF, since
+      // this test only proves the download plumbing (Blob/anchor), not
+      // printpdf's rendering (already covered by report.rs's own Rust tests).
+      return Promise.resolve(btoa("%PDF-1.7 fake"));
+    }
     return Promise.resolve(null);
   }),
 }));
@@ -82,5 +89,43 @@ describe("ReportGeneratorPage", () => {
 
     expect(capturedDownload).toBe("nitrux-rapport.json");
     clickSpy.mockRestore();
+  });
+
+  it("downloads a PDF via generate_pdf_report, independently of the text-format selector/preview state", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    URL.createObjectURL = vi.fn(() => "blob:mock-pdf-url");
+    URL.revokeObjectURL = vi.fn();
+    let capturedDownload = "";
+    let capturedBlob: Blob | undefined;
+    const originalCreateObjectURL = URL.createObjectURL;
+    URL.createObjectURL = vi.fn((blob: Blob) => {
+      capturedBlob = blob;
+      return originalCreateObjectURL(blob);
+    });
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      capturedDownload = this.download;
+    });
+
+    // No prior "Générer" click -- PDF export must work standalone.
+    const wrapper = mount(ReportGeneratorPage);
+    const pdfButton = wrapper.findAll("button").find((b) => b.text() === "Télécharger en PDF")!;
+    await pdfButton.trigger("click");
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("generate_pdf_report"));
+    await vi.waitFor(() => expect(capturedDownload).toBe("nitrux-rapport.pdf"));
+
+    expect(capturedBlob?.type).toBe("application/pdf");
+    clickSpy.mockRestore();
+  });
+
+  it("shows an error message when PDF generation fails", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) => {
+      if (cmd === "generate_pdf_report") return Promise.reject("échec de génération du PDF : police introuvable");
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(ReportGeneratorPage);
+    const pdfButton = wrapper.findAll("button").find((b) => b.text() === "Télécharger en PDF")!;
+    await pdfButton.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("police introuvable"));
   });
 });

@@ -40,6 +40,31 @@ const reportContent = ref<string | null>(null);
 // stay faithful to the displayed content, not the current selector.
 const generatedFormat = ref<ReportFormat | null>(null);
 
+const pdfGenerating = ref(false);
+const pdfError = ref<string | null>(null);
+
+async function downloadPdf() {
+  pdfGenerating.value = true;
+  pdfError.value = null;
+  try {
+    const base64 = await invoke<string>("generate_pdf_report");
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const blob = new Blob([bytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "nitrux-rapport.pdf";
+    link.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    pdfError.value = String(e);
+  } finally {
+    pdfGenerating.value = false;
+  }
+}
+
 async function generate() {
   generating.value = true;
   error.value = null;
@@ -75,10 +100,12 @@ function download() {
         <NxSelect v-model="selectedFormat" :options="FORMAT_OPTIONS" />
         <NxButton :disabled="generating" @click="generate">{{ generating ? "Génération..." : "Générer" }}</NxButton>
         <NxButton :disabled="!reportContent" @click="download">Télécharger</NxButton>
+        <NxButton :disabled="pdfGenerating" @click="downloadPdf">{{ pdfGenerating ? "Génération PDF..." : "Télécharger en PDF" }}</NxButton>
       </div>
     </NxCard>
 
     <NxCard v-if="error" danger>{{ error }}</NxCard>
+    <NxCard v-if="pdfError" danger>{{ pdfError }}</NxCard>
 
     <NxCard v-if="reportContent" class="rg-preview">
       <NxSectionHeader title="Aperçu" />
