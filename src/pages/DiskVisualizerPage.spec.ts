@@ -1,7 +1,9 @@
 // src/pages/DiskVisualizerPage.spec.ts
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
+import { setActivePinia, createPinia } from "pinia";
 import DiskVisualizerPage from "./DiskVisualizerPage.vue";
+import { usePreferencesStore } from "@/stores/preferencesStore";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((cmd: string) => {
@@ -21,6 +23,18 @@ vi.mock("@tauri-apps/api/core", () => ({
 }));
 
 describe("DiskVisualizerPage", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    localStorage.clear();
+  });
+
+  it("pre-fills the scan directory input from the defaultScanDirectory preference", () => {
+    const preferences = usePreferencesStore();
+    preferences.setDefaultScanDirectory("/home/dev/downloads");
+    const wrapper = mount(DiskVisualizerPage);
+    expect((wrapper.find("input").element as HTMLInputElement).value).toBe("/home/dev/downloads");
+  });
+
   it("shows per-mountpoint usage bars on mount", async () => {
     const wrapper = mount(DiskVisualizerPage);
     await vi.waitFor(() => expect(wrapper.text()).toContain("/"));

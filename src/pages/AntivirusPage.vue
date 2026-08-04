@@ -6,10 +6,12 @@ import NxCard from "@/components/ui/NxCard.vue";
 import NxButton from "@/components/ui/NxButton.vue";
 import NxInput from "@/components/ui/NxInput.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
+import { usePreferencesStore } from "@/stores/preferencesStore";
 
 interface MalwareFinding { path: string; signature: string }
 
-const scanDir = ref("");
+const preferences = usePreferencesStore();
+const scanDir = ref(preferences.defaultScanDirectory);
 const findings = ref<MalwareFinding[]>([]);
 const scanError = ref<string | null>(null);
 const scanning = ref(false);
