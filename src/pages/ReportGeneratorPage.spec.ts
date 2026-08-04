@@ -57,4 +57,30 @@ describe("ReportGeneratorPage", () => {
     await button.trigger("click");
     await vi.waitFor(() => expect(wrapper.text()).toContain("erreur de génération"));
   });
+
+  it("downloads with the format the content was actually generated in, even if the selector is changed afterwards", async () => {
+    URL.createObjectURL = vi.fn(() => "blob:mock-url");
+    URL.revokeObjectURL = vi.fn();
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      capturedDownload = this.download;
+    });
+    let capturedDownload = "";
+
+    const wrapper = mount(ReportGeneratorPage);
+    const generateButton = wrapper.findAll("button").find((b) => b.text() === "Générer")!;
+    await generateButton.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("generated_at"));
+
+    // Report was generated as JSON, but the user changes the selector to
+    // Markdown afterwards WITHOUT regenerating -- the downloaded file must
+    // still reflect the actual (JSON) content, not the now-selected format.
+    const select = wrapper.find("select");
+    await select.setValue("markdown");
+
+    const downloadButton = wrapper.findAll("button").find((b) => b.text() === "Télécharger")!;
+    await downloadButton.trigger("click");
+
+    expect(capturedDownload).toBe("nitrux-rapport.json");
+    clickSpy.mockRestore();
+  });
 });

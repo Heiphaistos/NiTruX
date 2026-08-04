@@ -30,7 +30,8 @@ onMounted(loadFirewall);
       <NxBadge :status="firewall.active ? 'success' : 'warning'">
         UFW {{ firewall.active ? "actif" : "inactif" }}
       </NxBadge>
-      <NxCard class="fw-rules">
+      <NxCard v-if="firewall.active" class="fw-rules">
+        <div v-if="firewall.rules.length === 0" class="fw-empty">Aucune règle configurée.</div>
         <div v-for="(r, i) in firewall.rules" :key="i" class="fw-row">{{ r }}</div>
       </NxCard>
     </template>
@@ -42,4 +43,5 @@ onMounted(loadFirewall);
 .fw-rules { padding: 4px 16px; }
 .fw-row { padding: 6px 0; font-size: 13px; border-bottom: 1px solid var(--nx-style-border-color); }
 .fw-row:last-child { border-bottom: none; }
+.fw-empty { color: var(--nx-text-secondary); font-size: 13px; }
 </style>

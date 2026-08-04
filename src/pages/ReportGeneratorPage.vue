@@ -34,6 +34,11 @@ const selectedFormat = ref<ReportFormat>("json");
 const generating = ref(false);
 const error = ref<string | null>(null);
 const reportContent = ref<string | null>(null);
+// The format `reportContent` was actually generated in -- tracked
+// separately from `selectedFormat` because the user can change the
+// selector after generating without regenerating, and download() must
+// stay faithful to the displayed content, not the current selector.
+const generatedFormat = ref<ReportFormat | null>(null);
 
 async function generate() {
   generating.value = true;
@@ -41,6 +46,7 @@ async function generate() {
   reportContent.value = null;
   try {
     reportContent.value = await invoke<string>("generate_system_report", { format: selectedFormat.value });
+    generatedFormat.value = selectedFormat.value;
   } catch (e) {
     error.value = String(e);
   } finally {
@@ -49,12 +55,12 @@ async function generate() {
 }
 
 function download() {
-  if (!reportContent.value) return;
-  const blob = new Blob([reportContent.value], { type: FORMAT_MIME[selectedFormat.value] });
+  if (!reportContent.value || !generatedFormat.value) return;
+  const blob = new Blob([reportContent.value], { type: FORMAT_MIME[generatedFormat.value] });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `nitrux-rapport.${FORMAT_EXTENSION[selectedFormat.value]}`;
+  link.download = `nitrux-rapport.${FORMAT_EXTENSION[generatedFormat.value]}`;
   link.click();
   URL.revokeObjectURL(url);
 }
