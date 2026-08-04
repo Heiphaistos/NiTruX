@@ -11,10 +11,15 @@ interface InstalledPackage { name: string; version: string }
 const packages = ref<InstalledPackage[]>([]);
 const envVars = ref<[string, string][]>([]);
 const softwareFilter = ref("");
+const loadError = ref<string | null>(null);
 
 onMounted(async () => {
-  packages.value = await invoke<InstalledPackage[]>("list_installed_packages");
-  envVars.value = await invoke<[string, string][]>("get_environment_variables");
+  try {
+    packages.value = await invoke<InstalledPackage[]>("list_installed_packages");
+    envVars.value = await invoke<[string, string][]>("get_environment_variables");
+  } catch (e) {
+    loadError.value = String(e);
+  }
 });
 
 const filteredPackages = computed(() =>
@@ -26,12 +31,15 @@ const filteredPackages = computed(() =>
   <div class="sw-page">
     <NxSectionHeader title="Logiciels installés" description="Inventaire complet des paquets installés et variables d'environnement." />
 
+    <NxCard v-if="loadError" danger>{{ loadError }}</NxCard>
+
     <NxCard>
       <NxSectionHeader :title="`Paquets (${packages.length})`" />
       <NxInput v-model="softwareFilter" placeholder="Filtrer par nom..." />
       <div v-for="p in filteredPackages" :key="p.name" class="sw-row">
         <span>{{ p.name }}</span><span>{{ p.version }}</span>
       </div>
+      <div v-if="filteredPackages.length === 0" class="sw-empty">Aucun paquet ne correspond à cette recherche.</div>
     </NxCard>
 
     <NxCard>
@@ -46,4 +54,5 @@ const filteredPackages = computed(() =>
 <style scoped>
 .sw-page { padding: 24px; display: flex; flex-direction: column; gap: 12px; }
 .sw-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 4px 0; font-size: 13px; border-bottom: 1px solid var(--nx-style-border-color); }
+.sw-empty { color: var(--nx-text-secondary); font-size: 13px; }
 </style>
