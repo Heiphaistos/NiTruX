@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
+import { setActivePinia, createPinia } from "pinia";
 import FileToolsPage from "./FileToolsPage.vue";
+import { usePreferencesStore } from "@/stores/preferencesStore";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((cmd: string, args?: Record<string, unknown>) => {
@@ -12,7 +14,22 @@ vi.mock("@tauri-apps/api/core", () => ({
 }));
 
 describe("FileToolsPage", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setActivePinia(createPinia());
+    localStorage.clear();
+  });
+
+  it("pre-fills both the duplicates and large-files directory inputs from the defaultScanDirectory preference", async () => {
+    const preferences = usePreferencesStore();
+    preferences.setDefaultScanDirectory("/home/dev/downloads");
+    const wrapper = mount(FileToolsPage);
+    expect((wrapper.findAll(".nx-input")[0].element as HTMLInputElement).value).toBe("/home/dev/downloads");
+
+    const tabs = wrapper.findAll("button");
+    await tabs.find((b) => b.text() === "Gros fichiers")!.trigger("click");
+    expect((wrapper.findAll(".nx-input")[0].element as HTMLInputElement).value).toBe("/home/dev/downloads");
+  });
 
   it("shows the 3 tool tabs", () => {
     const wrapper = mount(FileToolsPage);

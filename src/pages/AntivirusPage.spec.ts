@@ -1,7 +1,9 @@
 // src/pages/AntivirusPage.spec.ts
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
+import { setActivePinia, createPinia } from "pinia";
 import AntivirusPage from "./AntivirusPage.vue";
+import { usePreferencesStore } from "@/stores/preferencesStore";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((cmd: string) => {
@@ -14,6 +16,18 @@ vi.mock("@tauri-apps/api/core", () => ({
 }));
 
 describe("AntivirusPage", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    localStorage.clear();
+  });
+
+  it("pre-fills the scan directory input from the defaultScanDirectory preference", () => {
+    const preferences = usePreferencesStore();
+    preferences.setDefaultScanDirectory("/home/dev/downloads");
+    const wrapper = mount(AntivirusPage);
+    expect((wrapper.find("input").element as HTMLInputElement).value).toBe("/home/dev/downloads");
+  });
+
   it("scans a directory and lists findings", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     const wrapper = mount(AntivirusPage);

@@ -6,12 +6,14 @@ import NxCard from "@/components/ui/NxCard.vue";
 import NxButton from "@/components/ui/NxButton.vue";
 import NxInput from "@/components/ui/NxInput.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
+import { usePreferencesStore } from "@/stores/preferencesStore";
 
 interface UsageEntry { mountpoint: string; total_bytes: number; used_bytes: number; used_percent: number }
 interface LargeFile { path: string; size_bytes: number }
 
 const MIN_SIZE_BYTES = 100 * 1024 * 1024; // 100 MB
 
+const preferences = usePreferencesStore();
 const usage = ref<UsageEntry[]>([]);
 const usageError = ref<string | null>(null);
 
@@ -27,7 +29,7 @@ function formatGb(bytes: number): string {
   return `${(bytes / 1_073_741_824).toFixed(1)} Go`;
 }
 
-const scanDir = ref("");
+const scanDir = ref(preferences.defaultScanDirectory);
 const scanning = ref(false);
 const scanDone = ref(false);
 const scanError = ref<string | null>(null);

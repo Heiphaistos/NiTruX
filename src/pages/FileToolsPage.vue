@@ -8,6 +8,7 @@ import NxInput from "@/components/ui/NxInput.vue";
 import NxSelect from "@/components/ui/NxSelect.vue";
 import NxBadge from "@/components/ui/NxBadge.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
+import { usePreferencesStore } from "@/stores/preferencesStore";
 
 interface DuplicateGroup { hash: string; paths: string[]; size_bytes: number }
 interface LargeFile { path: string; size_bytes: number }
@@ -15,7 +16,8 @@ interface LargeFile { path: string; size_bytes: number }
 type Tab = "duplicates" | "largefiles" | "hashcheck";
 const activeTab = ref<Tab>("duplicates");
 
-const scanDir = ref("");
+const preferences = usePreferencesStore();
+const scanDir = ref(preferences.defaultScanDirectory);
 const duplicateGroups = ref<DuplicateGroup[]>([]);
 const duplicatesError = ref<string | null>(null);
 const duplicatesLoading = ref(false);
@@ -32,7 +34,7 @@ async function scanDuplicates() {
   }
 }
 
-const largeFileDir = ref("");
+const largeFileDir = ref(preferences.defaultScanDirectory);
 const minSizeMb = ref("100");
 const largeFiles = ref<LargeFile[]>([]);
 const largeFilesError = ref<string | null>(null);
