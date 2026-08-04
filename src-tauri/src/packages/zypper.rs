@@ -30,6 +30,14 @@ impl PackageManager for Zypper {
         Ok(output.lines().filter_map(parse_zypper_line).collect())
     }
 
+    /// Unlike `apt.rs`/`dnf.rs`/`pacman.rs`, this still returns every
+    /// installed package including transitive dependencies -- zypper has
+    /// no equivalent of `apt-mark showmanual`/`dnf repoquery
+    /// --userinstalled`/`pacman -Qe` that reliably distinguishes
+    /// user-requested installs from auto-pulled dependencies. Rather than
+    /// guess at an unverified command, this is left as a known, honest
+    /// limitation (same "not something this task works around" spirit as
+    /// this file's own `parse_zypper_installed_line` version-column note).
     fn list_installed(&self) -> Result<Vec<super::InstalledPackage>, String> {
         let output = subprocess::run_with_timeout("zypper", &["se", "--installed-only"], Duration::from_secs(15))?;
         Ok(output.lines().filter_map(parse_zypper_installed_line).collect())
