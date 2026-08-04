@@ -672,3 +672,9 @@ Reproduit AVANT correction : nouveau test simulant `detect_native_manager` réso
 Vérifié : test isolé `UninstallerPage.spec.ts` 4/4 (3+1). `vue-tsc --noEmit` 0 erreur. `cargo test` non ré-exécuté (aucun fichier Rust touché). Suite complète `npm run test -- --run` propre du premier coup : 65/65 fichiers, 299/299 tests. Commit `0204b8c` poussé (BOM vérifié absent). Version 0.25.19 → 0.25.20.
 
 Observation notée mais non corrigée (cohérente avec un patron déjà établi ailleurs, pas une régression propre à cette page) : la description de la page (`nativeManager ? ... : 'Détection du gestionnaire...'`) ne distingue jamais "encore en cours de détection" de "aucun gestionnaire trouvé" -- même ambiguïté déjà présente à l'identique dans `QuickInstallPage.vue`, pas une incohérence introduite ici.
+
+[2026-08-04T22:16:00+02:00] **Release v0.25.20 publiée** (demande explicite utilisateur, hors cadence normale des cycles). `.deb`/`.rpm`/`.AppImage` construits via `npm run tauri build` (exit code 0 vérifié explicitement, artefacts confirmés avec horodatage du jour) et publiés sur GitHub (https://github.com/Heiphaistos/NiTruX/releases/tag/v0.25.20). Build réussi du premier coup, aucun cache périmé à nettoyer.
+
+Couvre les 4 correctifs depuis v0.25.16 (cycles 95/96/97/99) : couverture de test `PkexecIntegrationBanner`, fuite de processus terminal sur réutilisation d'id (cas limite non atteignable actuellement, corrigé par prudence), **pare-feu affichant faussement "inactif" quand `ufw status` échoue par manque de droits admin** (bug sérieux, mode d'exécution normal de l'app), désinstalleur silencieusement inopérant sans gestionnaire de paquets détecté.
+
+Reprise du cycle normal d'audit après cette parenthèse.
