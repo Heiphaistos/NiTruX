@@ -28,4 +28,16 @@ describe("OptimizationsPage", () => {
       expect(b.text().toLowerCase()).not.toMatch(/désactiver|activer|appliquer|modifier/);
     }
   });
+
+  it("shows an empty-state message instead of a bare header when no service is enabled", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockResolvedValueOnce({
+      enabled_services: [],
+      swappiness: 60,
+      zram_active: false,
+      fstrim_timer_enabled: true,
+    });
+    const wrapper = mount(OptimizationsPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Aucun service activé au démarrage."));
+  });
 });

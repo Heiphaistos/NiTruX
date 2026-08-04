@@ -61,6 +61,7 @@ const swappinessAdvice = computed(() => {
         <div class="opt-services">
           <NxBadge v-for="s in snapshot.enabled_services" :key="s" status="info">{{ s }}</NxBadge>
         </div>
+        <div v-if="snapshot.enabled_services.length === 0" class="opt-empty">Aucun service activé au démarrage.</div>
       </NxCard>
     </template>
   </div>
@@ -71,4 +72,5 @@ const swappinessAdvice = computed(() => {
 .opt-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
 .opt-advice { margin: 0; font-size: 13px; color: var(--nx-text-secondary); line-height: 1.5; }
 .opt-services { display: flex; flex-wrap: wrap; gap: 6px; }
+.opt-empty { color: var(--nx-text-secondary); font-size: 13px; }
 </style>
