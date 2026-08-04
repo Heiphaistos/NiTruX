@@ -38,10 +38,26 @@ pub fn validate_partition_device(device: &str) -> Result<(), String> {
     let looks_like_partition = (device.starts_with("/dev/sd") || device.starts_with("/dev/vd"))
         && device.len() > 8
         && device.chars().last().is_some_and(|c| c.is_ascii_digit());
-    let looks_like_nvme_partition = device.starts_with("/dev/nvme")
-        && device.contains('n')
-        && device.contains('p')
-        && device.chars().last().is_some_and(|c| c.is_ascii_digit());
+    // NOTE: a naive `.contains('n')` check is vacuous here -- the literal
+    // "nvme" prefix already contains 'n', so it adds no real constraint
+    // (caught live by this function's own unit test: "/dev/nvmep1" would
+    // otherwise wrongly pass, since it starts with the prefix, contains
+    // 'p', and ends in a digit). The structure must actually be
+    // <digits>n<digits>p<digits>, checked explicitly via split_once,
+    // mirroring the loop-partition pattern above.
+    let looks_like_nvme_partition = device
+        .strip_prefix("/dev/nvme")
+        .and_then(|suffix| suffix.split_once('n'))
+        .is_some_and(|(ctrl_num, rest)| {
+            !ctrl_num.is_empty()
+                && ctrl_num.bytes().all(|b| b.is_ascii_digit())
+                && rest.split_once('p').is_some_and(|(ns_num, part_num)| {
+                    !ns_num.is_empty()
+                        && ns_num.bytes().all(|b| b.is_ascii_digit())
+                        && !part_num.is_empty()
+                        && part_num.bytes().all(|b| b.is_ascii_digit())
+                })
+        });
     let looks_like_mmc_partition = device.starts_with("/dev/mmcblk")
         && device.contains('p')
         && device.chars().last().is_some_and(|c| c.is_ascii_digit());
@@ -89,8 +105,23 @@ pub fn validate_disk_device(device: &str) -> Result<(), String> {
     let is_known_whole_disk_shape = (device.starts_with("/dev/sd") || device.starts_with("/dev/vd"))
         && device.len() == 8
         && device.chars().last().is_some_and(|c| c.is_ascii_alphabetic());
-    let is_nvme_whole_disk =
-        device.starts_with("/dev/nvme") && device.contains('n') && !device.contains('p');
+    // Same vacuous-`.contains('n')` gap as the partition-side check above:
+    // "/dev/nvme" and "/dev/nvmeXYZ" would otherwise wrongly pass (any
+    // string starting with "/dev/nvme" trivially contains 'n', and lacking
+    // any 'p' was the only other condition). Requires the real
+    // <digits>n<digits> structure instead. This also naturally rejects a
+    // partition path (its namespace segment contains a non-digit 'p'),
+    // replacing the old `!device.contains('p')` check with something that
+    // can't be fooled by a namespace number embedding extra characters.
+    let is_nvme_whole_disk = device
+        .strip_prefix("/dev/nvme")
+        .and_then(|suffix| suffix.split_once('n'))
+        .is_some_and(|(ctrl_num, ns_num)| {
+            !ctrl_num.is_empty()
+                && ctrl_num.bytes().all(|b| b.is_ascii_digit())
+                && !ns_num.is_empty()
+                && ns_num.bytes().all(|b| b.is_ascii_digit())
+        });
     let is_mmc_whole_disk = device.starts_with("/dev/mmcblk")
         && !device.contains('p')
         && device.chars().last().is_some_and(|c| c.is_ascii_digit());
@@ -235,11 +266,34 @@ mod tests {
     fn accepts_well_formed_disk_devices() {
         assert!(validate_disk_device("/dev/sda").is_ok());
         assert!(validate_disk_device("/dev/nvme0n1").is_ok());
+        assert!(validate_disk_device("/dev/nvme12n1").is_ok());
     }
 
     #[test]
     fn rejects_partition_device_as_disk_device() {
         assert!(validate_disk_device("/dev/sda1").is_err());
+        assert!(validate_disk_device("/dev/nvme0n1p1").is_err());
+    }
+
+    #[test]
+    fn rejects_malformed_nvme_whole_disk_shapes() {
+        // Regression test: a naive `device.contains('n')` check is
+        // trivially true for anything starting with "/dev/nvme" (the
+        // prefix itself contains 'n'), so these previously slipped through
+        // as "valid" whole-disk paths despite not being real device shapes.
+        assert!(validate_disk_device("/dev/nvme").is_err());
+        assert!(validate_disk_device("/dev/nvmeXYZ").is_err());
+        assert!(validate_disk_device("/dev/nvme0").is_err());
+        assert!(validate_disk_device("/dev/nvme0n").is_err());
+    }
+
+    #[test]
+    fn rejects_malformed_nvme_partition_shapes() {
+        // Regression test: mirrors rejects_malformed_nvme_whole_disk_shapes
+        // above, for the partition-side check.
+        assert!(validate_partition_device("/dev/nvmep1").is_err());
+        assert!(validate_partition_device("/dev/nvme0p1").is_err());
+        assert!(validate_partition_device("/dev/nvme0n1p").is_err());
     }
 
     #[test]
