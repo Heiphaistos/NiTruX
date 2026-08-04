@@ -32,7 +32,7 @@ onMounted(async () => {
 });
 
 function kbToGb(kb: number | null): string {
-  return kb === null ? "—" : `${(kb / 1024 / 1024).toFixed(1)} GB`;
+  return kb === null ? "—" : `${(kb / 1024 / 1024).toFixed(1)} Go`;
 }
 
 const memoryRows = computed(() => details.value ? [
