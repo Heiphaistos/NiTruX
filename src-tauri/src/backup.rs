@@ -22,6 +22,26 @@ pub fn backup_filename(now_epoch_secs: u64) -> String {
     format!("nitrux-backup-{now_epoch_secs}.tar.gz")
 }
 
+/// GNU tar's real exit-code convention: 0 = no issues, 1 = "some files
+/// differ" -- e.g. a file changed size while being read, which is a real,
+/// common occurrence when archiving a live, in-use directory (browser
+/// profile databases, logs, caches, swap files...) and NOT specific to the
+/// self-referential archive-writing-itself case `--exclude` already
+/// guards against below. The archive is still written successfully in
+/// this case (confirmed live: tar prints "File shrank by N bytes; padding
+/// with zeros" to stderr and still produces a valid, listable .tar.gz) --
+/// only exit codes >= 2 are fatal (e.g. invalid path, disk full,
+/// permission denied). Previously `run_with_timeout` treated exit 1 as a
+/// hard `Err`, so backing up a real $HOME (this feature's primary use
+/// case) would very plausibly report "backup failed" to the user even
+/// though a good archive was sitting right there on disk.
+fn interpret_tar_result(dest_path: String, code: i32) -> Result<String, String> {
+    match code {
+        0 | 1 => Ok(dest_path),
+        _ => Err(format!("tar a rencontré une erreur (code {code})")),
+    }
+}
+
 #[tauri::command]
 pub fn create_backup(source_dir: String) -> Result<String, String> {
     validate_source_dir(&source_dir)?;
@@ -44,13 +64,13 @@ pub fn create_backup(source_dir: String) -> Result<String, String> {
     // mid-write, which is more robust than relying on however the archive
     // happened to come out this time.
     let exclude_arg = format!("--exclude={filename}");
-    subprocess::run_with_timeout(
+    let (_, code) = subprocess::run_capturing_exit_code(
         "tar",
         &["-czf", &dest_path, &exclude_arg, "-C", &source_dir, "."],
         Duration::from_secs(300),
     )?;
 
-    Ok(dest_path)
+    interpret_tar_result(dest_path, code)
 }
 
 #[cfg(test)]
@@ -80,5 +100,30 @@ mod tests {
     #[test]
     fn backup_filename_includes_the_epoch_timestamp() {
         assert_eq!(backup_filename(1735689600), "nitrux-backup-1735689600.tar.gz");
+    }
+
+    #[test]
+    fn exit_code_1_still_reports_success_with_the_archive_path() {
+        // Reproduced live: tar exits 1 (not 0) when a file changes size
+        // while being archived ("File shrank by N bytes; padding with
+        // zeros" on stderr) -- the archive is still written successfully,
+        // this must not be reported as a failed backup.
+        let result = interpret_tar_result("/home/dev/nitrux-backup-1.tar.gz".to_string(), 1)
+            .expect("exit 1 (files changed during archiving) should be Ok, not an error");
+        assert_eq!(result, "/home/dev/nitrux-backup-1.tar.gz");
+    }
+
+    #[test]
+    fn exit_code_0_reports_success() {
+        let result = interpret_tar_result("/home/dev/nitrux-backup-1.tar.gz".to_string(), 0)
+            .expect("exit 0 should be Ok");
+        assert_eq!(result, "/home/dev/nitrux-backup-1.tar.gz");
+    }
+
+    #[test]
+    fn exit_code_2_is_a_real_fatal_error() {
+        let err = interpret_tar_result("/home/dev/nitrux-backup-1.tar.gz".to_string(), 2)
+            .expect_err("exit 2 should be a real error");
+        assert!(err.contains('2'), "error should mention the exit code: {err}");
     }
 }
