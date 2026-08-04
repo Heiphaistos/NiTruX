@@ -101,4 +101,30 @@ describe("FileToolsPage", () => {
     await verifyButton.trigger("click");
     await vi.waitFor(() => expect(wrapper.text()).toContain("ne correspond pas"));
   });
+
+  it("shows file sizes in French units (Mo), not the English 'MB', on both duplicates and large-files tabs", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) => {
+      if (cmd === "find_duplicate_files") {
+        return Promise.resolve([{ hash: "abc", paths: ["/a", "/b"], size_bytes: 2 * 1024 * 1024 }]);
+      }
+      if (cmd === "find_large_files_cmd") {
+        return Promise.resolve([{ path: "/big.iso", size_bytes: 500 * 1024 * 1024 }]);
+      }
+      return Promise.resolve([]);
+    });
+    const wrapper = mount(FileToolsPage);
+    const searchButton = wrapper.findAll("button").find((b) => b.text() === "Rechercher")!;
+    await searchButton.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("2.0 Mo"));
+    expect(wrapper.text()).not.toContain("MB");
+
+    const tabs = wrapper.findAll("button");
+    await tabs.find((b) => b.text() === "Gros fichiers")!.trigger("click");
+    const largeFilesSearchButton = wrapper.findAll("button").find((b) => b.text() === "Rechercher")!;
+    await largeFilesSearchButton.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("500.0 Mo"));
+    expect(wrapper.text()).not.toContain("MB");
+    expect(wrapper.find(".nx-input").attributes("placeholder")).not.toBe("MB min");
+  });
 });

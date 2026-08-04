@@ -62,4 +62,11 @@ describe("DashboardPage", () => {
     await diagnosticTile.trigger("click");
     expect(wrapper.emitted("navigate")).toEqual([["diagnostic"]]);
   });
+
+  it("shows memory in French units (Go), not the English 'GB'", async () => {
+    const wrapper = mount(DashboardPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Test CPU"));
+    expect(wrapper.text()).toContain("Go");
+    expect(wrapper.text()).not.toContain("GB");
+  });
 });

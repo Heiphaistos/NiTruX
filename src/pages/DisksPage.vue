@@ -151,7 +151,7 @@ function bytesToGb(bytes: number): string {
     <NxCard>
       <div v-for="u in usage" :key="u.mountpoint" class="disks-usage-row">
         <span>{{ u.mountpoint }}</span>
-        <span>{{ bytesToGb(u.used_bytes) }} / {{ bytesToGb(u.total_bytes) }} GB ({{ u.used_percent }}%)</span>
+        <span>{{ bytesToGb(u.used_bytes) }} / {{ bytesToGb(u.total_bytes) }} Go ({{ u.used_percent }}%)</span>
       </div>
       <div v-if="!disksError && usage.length === 0" class="disks-empty">Aucune information d'utilisation disque.</div>
     </NxCard>

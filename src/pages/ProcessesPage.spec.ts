@@ -59,4 +59,19 @@ describe("ProcessesPage", () => {
     resolveServices(["ssh.service"]);
     await vi.waitFor(() => expect(wrapper.text()).toContain("ssh.service"));
   });
+
+  it("shows process memory in French units (Mo), not the English 'MB'", async () => {
+    // A prior test in this file overrides the shared `invoke` mock via
+    // mockImplementation without resetting it afterwards, so the module-level
+    // mock's fixture can't be relied on here -- set it explicitly instead.
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) => {
+      if (cmd === "get_processes") return Promise.resolve([{ pid: 1234, name: "nitrux", cpu_percent: 2.5, memory_bytes: 104857600 }]);
+      return Promise.resolve([]);
+    });
+    const wrapper = mount(ProcessesPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("nitrux"));
+    expect(wrapper.text()).toContain("100.0 Mo");
+    expect(wrapper.text()).not.toContain("MB");
+  });
 });

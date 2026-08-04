@@ -99,7 +99,7 @@ const QUICK_ACTIONS = [
         <NxStatTile :label="cpu.name || `CPU ${i}`" :value="cpu.usage_display" />
       </NxCard>
       <NxCard>
-        <NxStatTile label="Mémoire" :value="`${bytesToGb(snapshot.memory_used_bytes)} / ${bytesToGb(snapshot.memory_total_bytes)} GB`" />
+        <NxStatTile label="Mémoire" :value="`${bytesToGb(snapshot.memory_used_bytes)} / ${bytesToGb(snapshot.memory_total_bytes)} Go`" />
       </NxCard>
       <NxCard>
         <NxStatTile label="Processus" :value="String(snapshot.process_count)" />

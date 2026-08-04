@@ -125,7 +125,7 @@ function bytesToMb(bytes: number): string {
       </div>
       <NxCard v-if="duplicatesError" danger>{{ duplicatesError }}</NxCard>
       <div v-for="g in duplicateGroups" :key="g.hash" class="ft-dup-group">
-        <div>{{ g.paths.length }} fichiers identiques ({{ bytesToMb(g.size_bytes) }} MB chacun)</div>
+        <div>{{ g.paths.length }} fichiers identiques ({{ bytesToMb(g.size_bytes) }} Mo chacun)</div>
         <ul><li v-for="p in g.paths" :key="p">{{ p }}</li></ul>
       </div>
     </NxCard>
@@ -133,13 +133,13 @@ function bytesToMb(bytes: number): string {
     <NxCard v-else-if="activeTab === 'largefiles'">
       <div class="ft-form-row">
         <NxInput v-model="largeFileDir" placeholder="Dossier à scanner..." />
-        <NxInput v-model="minSizeMb" placeholder="MB min" />
+        <NxInput v-model="minSizeMb" placeholder="Mo min" />
         <NxButton :disabled="largeFilesLoading" @click="scanLargeFiles">{{ largeFilesLoading ? "Analyse..." : "Rechercher" }}</NxButton>
       </div>
       <NxCard v-if="largeFilesError" danger>{{ largeFilesError }}</NxCard>
       <div v-for="f in largeFiles" :key="f.path" class="ft-row">
         <span>{{ f.path }}</span>
-        <span>{{ bytesToMb(f.size_bytes) }} MB</span>
+        <span>{{ bytesToMb(f.size_bytes) }} Mo</span>
       </div>
     </NxCard>
 
