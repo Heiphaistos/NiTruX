@@ -30,6 +30,18 @@ pub struct DockerImage {
 #[derive(Serialize, Clone)]
 pub struct DockerSnapshot {
     pub available: bool,
+    /// Whether the `docker` binary itself is present on `PATH`. Distinct
+    /// from `available`: a host can have Docker installed but its daemon
+    /// stopped, or the invoking user missing from the `docker` group --
+    /// both produce `available: false` from a failed `docker ps`, but are
+    /// a materially different, actionable situation from "not installed
+    /// at all" and deserve a different message to the user.
+    pub installed: bool,
+    /// The real error from the failed `docker ps` call (e.g. "daemon is
+    /// running?" / "permission denied"), when `installed` is true but
+    /// `available` is false. `None` whenever Docker isn't installed at
+    /// all, or the call succeeded.
+    pub error: Option<String>,
     pub containers: Vec<Container>,
     pub images: Vec<DockerImage>,
 }
@@ -84,14 +96,17 @@ pub fn parse_image_line(line: &str) -> Option<DockerImage> {
 /// the frontend has to specifically handle.
 #[tauri::command]
 pub fn get_docker_snapshot() -> DockerSnapshot {
-    let containers = subprocess::run_with_timeout(
+    let installed = crate::packages::binary_exists("docker");
+
+    let containers_result = subprocess::run_with_timeout(
         "docker",
         &["ps", "-a", "--format", "{{json .}}"],
         Duration::from_secs(10),
     );
-    let available = containers.is_ok();
+    let available = containers_result.is_ok();
+    let error = containers_result.as_ref().err().cloned();
 
-    let containers = containers
+    let containers = containers_result
         .map(|output| output.lines().filter_map(parse_container_line).collect())
         .unwrap_or_default();
 
@@ -105,6 +120,8 @@ pub fn get_docker_snapshot() -> DockerSnapshot {
 
     DockerSnapshot {
         available,
+        installed,
+        error,
         containers,
         images,
     }

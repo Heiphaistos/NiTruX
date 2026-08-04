@@ -13,7 +13,7 @@ interface NetworkSnapshot { wifi_networks: WifiNetwork[]; listening_ports: Liste
 interface PortResult { port: number; open: boolean }
 interface Container { id: string; image: string; name: string; status: string }
 interface DockerImageInfo { id: string; repository: string; tag: string; size: string }
-interface DockerSnapshot { available: boolean; containers: Container[]; images: DockerImageInfo[] }
+interface DockerSnapshot { available: boolean; installed: boolean; error: string | null; containers: Container[]; images: DockerImageInfo[] }
 interface NetworkInterface { name: string; mac_address: string | null; rx_bytes_per_sec: number; tx_bytes_per_sec: number }
 
 type Tab = "overview" | "portscan" | "docker";
@@ -210,7 +210,10 @@ async function runScan() {
     </NxCard>
 
     <NxCard v-else-if="activeTab === 'docker'">
-      <div v-if="!docker?.available" class="net-empty">Docker n'est pas disponible sur ce système.</div>
+      <div v-if="!docker?.available && !docker?.installed" class="net-empty">Docker n'est pas installé sur ce système.</div>
+      <div v-else-if="!docker?.available" class="net-empty">
+        Docker est installé mais injoignable{{ docker?.error ? " : " + docker.error : "" }}. Vérifiez que le démon est démarré et que votre utilisateur a les droits nécessaires.
+      </div>
       <template v-else>
         <NxSectionHeader title="Conteneurs" />
         <div v-for="c in docker.containers" :key="c.id" class="net-row">

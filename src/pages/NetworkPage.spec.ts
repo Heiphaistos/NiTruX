@@ -49,6 +49,50 @@ describe("NetworkPage", () => {
     expect(wrapper.text()).toContain("Aucune image.");
   });
 
+  it("shows a 'not installed' message when Docker's binary is absent", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") {
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n" });
+      }
+      if (cmd === "get_docker_snapshot") {
+        return Promise.resolve({ available: false, installed: false, error: null, containers: [], images: [] });
+      }
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("get_docker_snapshot"));
+    const dockerTab = wrapper.findAll("button").find((b) => b.text() === "Docker")!;
+    await dockerTab.trigger("click");
+    expect(wrapper.text()).toContain("Docker n'est pas installé sur ce système.");
+  });
+
+  it("shows the real daemon error when Docker is installed but unreachable, distinct from 'not installed'", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") {
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n" });
+      }
+      if (cmd === "get_docker_snapshot") {
+        return Promise.resolve({
+          available: false,
+          installed: true,
+          error: "failed to connect to the docker API at unix:///var/run/docker.sock: dial unix /var/run/docker.sock: connect: no such file or directory",
+          containers: [],
+          images: [],
+        });
+      }
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("get_docker_snapshot"));
+    const dockerTab = wrapper.findAll("button").find((b) => b.text() === "Docker")!;
+    await dockerTab.trigger("click");
+    expect(wrapper.text()).toContain("Docker est installé mais injoignable");
+    expect(wrapper.text()).toContain("no such file or directory");
+    expect(wrapper.text()).not.toContain("n'est pas installé");
+  });
+
   it("calls write_hosts_file with the edited content on save", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     const wrapper = mount(NetworkPage);
