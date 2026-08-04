@@ -7,7 +7,7 @@ import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 
 interface UserAccount { username: string; uid: number; home: string; shell: string }
 
-const accounts = ref<UserAccount[]>([]);
+const accounts = ref<UserAccount[] | null>(null);
 
 onMounted(async () => {
   accounts.value = await invoke<UserAccount[]>("get_user_accounts");
@@ -17,10 +17,10 @@ onMounted(async () => {
 <template>
   <div class="ua-page">
     <NxSectionHeader title="Comptes utilisateurs" description="Comptes réels du système (lecture seule)." />
-    <NxCard v-for="a in accounts" :key="a.username" class="ua-row">
+    <NxCard v-for="a in accounts ?? []" :key="a.username" class="ua-row">
       <strong>{{ a.username }}</strong> (UID {{ a.uid }}) — {{ a.home }} — {{ a.shell }}
     </NxCard>
-    <div v-if="accounts.length === 0" class="ua-empty">Aucun compte utilisateur réel trouvé.</div>
+    <div v-if="accounts && accounts.length === 0" class="ua-empty">Aucun compte utilisateur réel trouvé.</div>
   </div>
 </template>
 
