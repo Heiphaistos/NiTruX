@@ -41,18 +41,43 @@ mod terminal;
 mod trash;
 mod update_history;
 
+/// Combines each detected native manager's `list_upgradable()` outcome
+/// (already tagged with that manager's id) into one result. A host with two
+/// native managers is rare but real (see `detect_package_managers`'s own
+/// doc comment) -- if one of them fails, that must not discard updates
+/// already found by another that succeeded, matching this codebase's
+/// dominant "each source degrades independently" philosophy (`network.rs`,
+/// `docker.rs`, ...) rather than the previous all-or-nothing `?` in a loop.
+/// A manager's error is only surfaced (attributed, e.g. "apt: permission
+/// denied") when EVERY manager failed and there is nothing else to show --
+/// in the overwhelmingly common single-manager case this preserves the
+/// original, still-useful behavior exactly.
+fn aggregate_update_results(results: Vec<(&str, Result<Vec<packages::PackageUpdate>, String>)>) -> Result<Vec<packages::PackageUpdate>, String> {
+    let mut all_updates = Vec::new();
+    let mut first_error = None;
+    for (manager_id, result) in results {
+        match result {
+            Ok(updates) => all_updates.extend(updates),
+            Err(e) => {
+                first_error.get_or_insert(format!("{manager_id}: {e}"));
+            }
+        }
+    }
+    if all_updates.is_empty() {
+        if let Some(e) = first_error {
+            return Err(e);
+        }
+    }
+    Ok(all_updates)
+}
+
 #[tauri::command]
 fn list_updates() -> Result<Vec<packages::PackageUpdate>, String> {
-    let mut all_updates = Vec::new();
-    for manager in packages::detect_package_managers() {
-        // Attribute the error to the manager that raised it (e.g. "apt:
-        // permission denied") so the frontend can surface something
-        // actionable rather than a bare, unattributed message.
-        let updates = manager
-            .list_upgradable()
-            .map_err(|e| format!("{}: {}", manager.id(), e))?;
-        all_updates.extend(updates);
-    }
+    let native_results: Vec<(&str, Result<Vec<packages::PackageUpdate>, String>)> = packages::detect_package_managers()
+        .iter()
+        .map(|manager| (manager.id(), manager.list_upgradable()))
+        .collect();
+    let mut all_updates = aggregate_update_results(native_results)?;
     all_updates.extend(packages::universal::list_universal_updates());
     Ok(all_updates)
 }
@@ -158,4 +183,49 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use packages::PackageUpdate;
+
+    fn update(name: &str) -> PackageUpdate {
+        PackageUpdate { name: name.to_string(), current_version: "1.0".to_string(), new_version: "1.1".to_string(), source: "apt".to_string() }
+    }
+
+    #[test]
+    fn a_single_failing_manager_surfaces_its_attributed_error() {
+        let result = aggregate_update_results(vec![("apt", Err("permission denied".to_string()))]);
+        assert_eq!(result, Err("apt: permission denied".to_string()));
+    }
+
+    #[test]
+    fn one_manager_failing_does_not_discard_another_managers_successful_updates() {
+        // The bug this guards against: a naive `?` inside the aggregation
+        // loop would propagate dnf's error and discard apt's already-found
+        // updates entirely, even though apt succeeded.
+        let result = aggregate_update_results(vec![
+            ("apt", Ok(vec![update("curl")])),
+            ("dnf", Err("dnf not configured".to_string())),
+        ]);
+        let updates = result.expect("should still return apt's updates despite dnf failing");
+        assert_eq!(updates.len(), 1);
+        assert_eq!(updates[0].name, "curl");
+    }
+
+    #[test]
+    fn all_managers_failing_surfaces_the_first_error() {
+        let result = aggregate_update_results(vec![
+            ("apt", Err("first failure".to_string())),
+            ("dnf", Err("second failure".to_string())),
+        ]);
+        assert_eq!(result, Err("apt: first failure".to_string()));
+    }
+
+    #[test]
+    fn no_managers_detected_returns_an_empty_list_not_an_error() {
+        let result = aggregate_update_results(vec![]);
+        assert_eq!(result, Ok(vec![]));
+    }
 }
