@@ -52,7 +52,6 @@ export const appCatalog: AppCatalogEntry[] = [
   { id: "slack", name: "Slack", description: "Messagerie collaborative pour équipes.", icon: "💬", category: "Communication", installMethod: "flatpak", packageId: "com.slack.Slack" },
   { id: "zoom", name: "Zoom", description: "Visioconférence professionnelle.", icon: "🎥", category: "Communication", installMethod: "flatpak", packageId: "us.zoom.Zoom" },
   { id: "element", name: "Element", description: "Client Matrix pour messagerie décentralisée.", icon: "🧩", category: "Communication", installMethod: "flatpak", packageId: "im.riot.Riot" },
-  { id: "teams", name: "Microsoft Teams", description: "Visioconférence et collaboration Microsoft.", icon: "👥", category: "Communication", installMethod: "flatpak", packageId: "com.microsoft.Teams" },
   { id: "mattermost", name: "Mattermost", description: "Alternative open source à Slack.", icon: "💠", category: "Communication", installMethod: "flatpak", packageId: "com.mattermost.Desktop" },
   { id: "pidgin", name: "Pidgin", description: "Client de messagerie instantanée multi-protocoles.", icon: "🐦", category: "Communication", installMethod: "apt", packageId: "pidgin" },
   { id: "hexchat", name: "HexChat", description: "Client IRC graphique.", icon: "#️⃣", category: "Communication", installMethod: "apt", packageId: "hexchat" },
