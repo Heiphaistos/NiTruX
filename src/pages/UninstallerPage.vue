@@ -44,7 +44,10 @@ function startConfirm(name: string) {
 }
 
 async function confirmUninstall(name: string) {
-  if (!nativeManager.value) return;
+  if (!nativeManager.value) {
+    uninstallError.value = "aucun gestionnaire de paquets natif détecté";
+    return;
+  }
   uninstalling.value = name;
   uninstallError.value = null;
   try {
