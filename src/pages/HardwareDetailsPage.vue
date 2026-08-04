@@ -13,11 +13,22 @@ interface PciDevice { slot: string; class: string; description: string }
 
 const details = ref<HardwareDetails | null>(null);
 const gpus = ref<PciDevice[]>([]);
+// get_hardware_details is infallible (bare return type), but get_pci_devices
+// is Result<Vec<PciDevice>, String> (e.g. errors if the pciutils package
+// isn't installed) and had no try/catch -- a rejection there would leave
+// gpus stuck at its default [], indistinguishable from the already-handled
+// "genuinely no GPU" empty state, with no indication anything actually
+// failed.
+const gpuError = ref<string | null>(null);
 
 onMounted(async () => {
   details.value = await invoke<HardwareDetails>("get_hardware_details");
-  const pci = await invoke<PciDevice[]>("get_pci_devices");
-  gpus.value = pci.filter((d) => d.class.includes("VGA") || d.class.includes("3D"));
+  try {
+    const pci = await invoke<PciDevice[]>("get_pci_devices");
+    gpus.value = pci.filter((d) => d.class.includes("VGA") || d.class.includes("3D"));
+  } catch (e) {
+    gpuError.value = String(e);
+  }
 });
 
 function kbToGb(kb: number | null): string {
@@ -62,7 +73,8 @@ const memoryRows = computed(() => details.value ? [
 
       <NxCard>
         <NxSectionHeader title="GPU" />
-        <div v-if="gpus.length === 0" class="hd-empty">Aucun GPU PCI détecté.</div>
+        <div v-if="gpuError" class="hd-empty">{{ gpuError }}</div>
+        <div v-else-if="gpus.length === 0" class="hd-empty">Aucun GPU PCI détecté.</div>
         <div v-for="g in gpus" :key="g.slot" class="hd-row">
           <span>{{ g.description }}</span><span>{{ g.slot }}</span>
         </div>
