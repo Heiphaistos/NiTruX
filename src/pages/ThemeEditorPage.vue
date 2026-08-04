@@ -14,6 +14,7 @@ const styleStore = useStyleStore();
 const activeTab = ref<"theme" | "layout" | "style">("theme");
 const themeName = ref(themeStore.active.name);
 const fileInput = ref<HTMLInputElement | null>(null);
+const importError = ref<string | null>(null);
 
 const colorKeys = REQUIRED_COLOR_KEYS;
 
@@ -49,10 +50,11 @@ function handleImportClick() {
 function handleFileImport(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0];
   if (!file) return;
+  importError.value = null;
   const reader = new FileReader();
   reader.onload = (ev) => {
     const result = themeStore.importTheme(ev.target?.result as string);
-    if (!result.ok) alert(result.error);
+    if (!result.ok) importError.value = result.error;
   };
   reader.readAsText(file);
   (event.target as HTMLInputElement).value = "";
@@ -94,6 +96,7 @@ function handleFileImport(event: Event) {
         <button @click="handleImportClick">Importer</button>
         <input ref="fileInput" type="file" accept=".json" style="display:none" @change="handleFileImport" />
       </div>
+      <p v-if="importError" class="te-import-error">{{ importError }}</p>
     </section>
 
     <section v-else-if="activeTab === 'layout'" class="te-panel">
@@ -139,6 +142,7 @@ function handleFileImport(event: Event) {
 .te-colors { display: grid; gap: 8px; margin-bottom: 20px; }
 .te-color-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--nx-text-secondary); }
 .te-actions { display: flex; gap: 8px; }
+.te-import-error { margin: 10px 0 0; font-size: 13px; color: var(--nx-accent-danger); }
 .te-actions button { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--nx-border); background: var(--nx-bg-elevated); color: var(--nx-text-primary); cursor: pointer; }
 .te-layouts { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
 .te-layout-option { text-align: left; padding: 14px; border-radius: 10px; border: 1px solid var(--nx-border); background: var(--nx-bg-elevated); color: var(--nx-text-primary); cursor: pointer; }

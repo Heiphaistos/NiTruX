@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { setActivePinia, createPinia } from "pinia";
 import ThemeEditorPage from "./ThemeEditorPage.vue";
@@ -54,5 +54,15 @@ describe("ThemeEditorPage — theme tab custom themes", () => {
     const swatches = wrapper.findAll(".te-swatch");
     expect(swatches.length).toBe(builtinThemes.length + 1);
     expect(swatches.some((s) => s.attributes("title") === "Mon thème perso")).toBe(true);
+  });
+
+  it("shows an inline error (not a blocking native alert) when an imported file is invalid", async () => {
+    const wrapper = mount(ThemeEditorPage);
+    const input = wrapper.find('input[type="file"]');
+    const badFile = new File(["not valid json"], "bad-theme.json", { type: "application/json" });
+    Object.defineProperty(input.element, "files", { value: [badFile], configurable: true });
+
+    await input.trigger("change");
+    await vi.waitFor(() => expect(wrapper.text()).toMatch(/JSON invalide/i));
   });
 });
