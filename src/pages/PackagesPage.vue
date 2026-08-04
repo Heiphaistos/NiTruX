@@ -73,6 +73,7 @@ async function upgradeAll() {
   upgradeResult.value = null;
   try {
     upgradeResult.value = await invoke<string>("upgrade_all_packages");
+    await refresh();
   } catch (e) {
     upgradeError.value = String(e);
   } finally {
