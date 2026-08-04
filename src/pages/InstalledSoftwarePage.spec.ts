@@ -38,4 +38,19 @@ describe("InstalledSoftwarePage", () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain("HOME"));
     expect(wrapper.text()).toContain("/home/dev");
   });
+
+  it("shows an empty-state message when the search matches no package", async () => {
+    const wrapper = mount(InstalledSoftwarePage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("firefox"));
+    const filterInput = wrapper.findAll("input")[0];
+    await filterInput.setValue("zzznotarealpackagezzz");
+    expect(wrapper.text()).toContain("Aucun paquet ne correspond à cette recherche.");
+  });
+
+  it("shows an error instead of silently failing when list_installed_packages rejects", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementationOnce(() => Promise.reject("aucun gestionnaire de paquets détecté"));
+    const wrapper = mount(InstalledSoftwarePage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("aucun gestionnaire de paquets détecté"));
+  });
 });
