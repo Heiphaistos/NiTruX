@@ -17,6 +17,27 @@ fn trash_dir() -> PathBuf {
     PathBuf::from(home).join(".local/share/Trash")
 }
 
+/// `trashed_name` is meant to be a single path component (a `.trashinfo`
+/// file's stem, as returned by `list_trash`), never a path -- every other
+/// command in this codebase that turns a frontend string into a filesystem
+/// path validates it first (`backup::validate_source_dir`,
+/// `security_write::validate_quarantine_path`, `install::validate_package_name`,
+/// ...); this one built `trash_dir().join("files").join(&trashed_name)`
+/// directly with no check at all. `PathBuf::join` does not resolve `..`
+/// components away, so an unvalidated `trashed_name` containing a path
+/// separator or `..` could make `restore_trash_item`/
+/// `delete_trash_item_permanently` operate outside the actual trash
+/// directory entirely.
+fn validate_trashed_name(name: &str) -> Result<(), String> {
+    if name.is_empty() {
+        return Err("nom d'élément de corbeille vide".to_string());
+    }
+    if name.contains('/') || name.contains('\\') || name == ".." || name == "." {
+        return Err(format!("nom d'élément de corbeille invalide : {name}"));
+    }
+    Ok(())
+}
+
 /// Decodes the small set of percent-encoded characters expected in a
 /// `.trashinfo` `Path=` value for this v1 -- currently just `%20` (space),
 /// the overwhelmingly common case. Any other `%XX` sequence is left as-is
@@ -72,6 +93,7 @@ pub fn list_trash() -> Vec<TrashedItem> {
 
 #[tauri::command]
 pub fn restore_trash_item(trashed_name: String) -> Result<(), String> {
+    validate_trashed_name(&trashed_name)?;
     let info_path = trash_dir().join("info").join(format!("{trashed_name}.trashinfo"));
     let content = std::fs::read_to_string(&info_path).map_err(|e| format!("élément introuvable dans la corbeille : {e}"))?;
     let (original_path, _) = parse_trashinfo(&content).ok_or("fichier .trashinfo invalide (Path= manquant)")?;
@@ -125,6 +147,7 @@ fn move_path(from: &std::path::Path, to: &std::path::Path) -> std::io::Result<()
 
 #[tauri::command]
 pub fn delete_trash_item_permanently(trashed_name: String) -> Result<(), String> {
+    validate_trashed_name(&trashed_name)?;
     let info_path = trash_dir().join("info").join(format!("{trashed_name}.trashinfo"));
     let file_path = trash_dir().join("files").join(&trashed_name);
 
@@ -140,6 +163,43 @@ pub fn delete_trash_item_permanently(trashed_name: String) -> Result<(), String>
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rejects_empty_trashed_name() {
+        assert!(validate_trashed_name("").is_err());
+    }
+
+    #[test]
+    fn rejects_trashed_name_with_a_path_separator() {
+        assert!(validate_trashed_name("../../etc/passwd").is_err());
+        assert!(validate_trashed_name("subdir/file.txt").is_err());
+    }
+
+    #[test]
+    fn rejects_bare_dot_dot_trashed_name() {
+        assert!(validate_trashed_name("..").is_err());
+        assert!(validate_trashed_name(".").is_err());
+    }
+
+    #[test]
+    fn accepts_a_well_formed_trashed_name() {
+        assert!(validate_trashed_name("report.pdf").is_ok());
+        assert!(validate_trashed_name("report.pdf.2").is_ok());
+    }
+
+    #[test]
+    fn restore_trash_item_rejects_malicious_trashed_name_before_touching_the_filesystem() {
+        let result = restore_trash_item("../../etc/passwd".to_string());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("invalide"));
+    }
+
+    #[test]
+    fn delete_trash_item_permanently_rejects_malicious_trashed_name_before_touching_the_filesystem() {
+        let result = delete_trash_item_permanently("../../etc/passwd".to_string());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("invalide"));
+    }
 
     #[test]
     fn parses_a_well_formed_trashinfo() {
