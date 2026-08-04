@@ -26,6 +26,26 @@ describe("NetworkPage", () => {
     expect(invoke).toHaveBeenCalledWith("get_docker_snapshot");
   });
 
+  it("shows empty-state messages when Docker is available but has no containers or images", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    // Override just this test's docker response; keep get_network_snapshot's
+    // real shape (not null) so this doesn't leak a broken overview tab into
+    // whichever test runs next in this file.
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") {
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n" });
+      }
+      if (cmd === "get_docker_snapshot") return Promise.resolve({ available: true, containers: [], images: [] });
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("get_docker_snapshot"));
+    const dockerTab = wrapper.findAll("button").find((b) => b.text() === "Docker")!;
+    await dockerTab.trigger("click");
+    expect(wrapper.text()).toContain("Aucun conteneur.");
+    expect(wrapper.text()).toContain("Aucune image.");
+  });
+
   it("calls write_hosts_file with the edited content on save", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     const wrapper = mount(NetworkPage);
