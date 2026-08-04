@@ -45,6 +45,7 @@ const filteredCatalog = computed<SystemTool[]>(() => {
 async function runTool(tool: SystemTool) {
   running.value = tool.id;
   delete errors.value[tool.id];
+  delete outputs.value[tool.id];
   try {
     const output = tool.privilegedAction
       ? await invoke<string>("run_system_tool", { action: tool.privilegedAction })

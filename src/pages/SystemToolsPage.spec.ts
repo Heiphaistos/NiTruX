@@ -61,4 +61,26 @@ describe("SystemToolsPage", () => {
     await search.setValue("zzznotarealtoolzzz");
     expect(wrapper.text()).toContain("Aucun outil ne correspond à cette recherche.");
   });
+
+  it("clears a previous run's stale output when a rerun of the same tool fails, instead of showing both at once", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string, args?: Record<string, unknown>) => {
+      if (cmd === "run_script" && args?.content === "uname -a") return Promise.resolve("Linux DEV 6.12.0 x86_64");
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(SystemToolsPage);
+    const card = wrapper.findAll(".st-card").find((c) => c.text().includes("Informations noyau"))!;
+    await card.find("button").trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Linux DEV 6.12.0 x86_64"));
+
+    // Rerun the same tool, this time it fails.
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string, args?: Record<string, unknown>) => {
+      if (cmd === "run_script" && args?.content === "uname -a") return Promise.reject("commande introuvable");
+      return Promise.resolve(null);
+    });
+    await card.find("button").trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("commande introuvable"));
+
+    expect(wrapper.text()).not.toContain("Linux DEV 6.12.0 x86_64");
+  });
 });
