@@ -48,4 +48,28 @@ describe("UninstallerPage", () => {
     await confirmButton.trigger("click");
     await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("uninstall_package", { manager: "apt", package: "curl" }));
   });
+
+  it("shows a clear error instead of silently doing nothing when no native package manager was detected", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) => {
+      if (cmd === "list_installed_packages") return Promise.resolve([{ name: "curl", version: "7.88.1" }]);
+      if (cmd === "detect_native_manager") return Promise.resolve(null);
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(UninstallerPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("curl"));
+    const uninstallButton = wrapper.findAll("button").find((b) => b.text() === "Désinstaller")!;
+    await uninstallButton.trigger("click");
+    const confirmInput = wrapper.find("input[placeholder*='curl']");
+    await confirmInput.setValue("curl");
+    const confirmButton = wrapper.findAll("button").find((b) => b.text() === "Confirmer la désinstallation")!;
+    // Mock call history is shared (not cleared) across tests in this file,
+    // so an earlier test's genuine uninstall_package call is still in it --
+    // compare the count before/after this click instead of absolute history.
+    const uninstallCallsBefore = vi.mocked(invoke).mock.calls.filter((c) => c[0] === "uninstall_package").length;
+    await confirmButton.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("aucun gestionnaire de paquets natif détecté"));
+    const uninstallCallsAfter = vi.mocked(invoke).mock.calls.filter((c) => c[0] === "uninstall_package").length;
+    expect(uninstallCallsAfter).toBe(uninstallCallsBefore);
+  });
 });
