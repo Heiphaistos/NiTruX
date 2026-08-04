@@ -34,8 +34,15 @@ impl PackageManager for Pacman {
         }
     }
 
+    /// `-Qe` ("explicitly installed") rather than plain `-Q` -- excludes
+    /// packages only pulled in as another package's dependency, same
+    /// rationale as `apt.rs`'s equivalent filter. Output shape is
+    /// identical to `-Q` ("name version" per line), so `parse_pacman_q_line`
+    /// is reused unchanged. No `pacman` available in this project's WSL2
+    /// dev environment (Arch-only tool) to verify live -- only the parsing
+    /// logic is tested.
     fn list_installed(&self) -> Result<Vec<super::InstalledPackage>, String> {
-        let output = subprocess::run_with_timeout("pacman", &["-Q"], Duration::from_secs(15))?;
+        let output = subprocess::run_with_timeout("pacman", &["-Qe"], Duration::from_secs(15))?;
         Ok(output.lines().filter_map(parse_pacman_q_line).collect())
     }
 }

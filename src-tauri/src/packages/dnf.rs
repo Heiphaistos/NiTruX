@@ -56,8 +56,22 @@ impl PackageManager for Dnf {
         interpret_check_update_result(&output, code)
     }
 
+    /// Restricted to user-installed packages via `dnf repoquery
+    /// --userinstalled` (accepts the same `--queryformat` syntax as `rpm
+    /// -qa`, so `parse_rpm_qa_line` is reused unchanged) rather than
+    /// `rpm -qa`'s full list -- same rationale as `apt.rs`'s equivalent
+    /// filter: an "installed software" list showing every transitive
+    /// dependency alongside real applications is far less useful than the
+    /// packages the user actually chose. No `dnf` available in this
+    /// project's WSL2 dev environment to verify live (same limitation
+    /// already noted elsewhere in this file) -- only the parsing logic is
+    /// tested.
     fn list_installed(&self) -> Result<Vec<super::InstalledPackage>, String> {
-        let output = subprocess::run_with_timeout("rpm", &["-qa", "--queryformat", "%{NAME} %{VERSION}-%{RELEASE}\n"], Duration::from_secs(15))?;
+        let output = subprocess::run_with_timeout(
+            "dnf",
+            &["repoquery", "--userinstalled", "--queryformat", "%{NAME} %{VERSION}-%{RELEASE}\n"],
+            Duration::from_secs(15),
+        )?;
         Ok(output.lines().filter_map(parse_rpm_qa_line).collect())
     }
 }

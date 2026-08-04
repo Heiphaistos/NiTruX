@@ -53,4 +53,21 @@ describe("InstalledSoftwarePage", () => {
     const wrapper = mount(InstalledSoftwarePage);
     await vi.waitFor(() => expect(wrapper.text()).toContain("aucun gestionnaire de paquets détecté"));
   });
+
+  it("does not flash 'no package matches' while list_installed_packages is still pending", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    let resolvePackages!: (value: unknown[]) => void;
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "list_installed_packages") return new Promise((resolve) => (resolvePackages = resolve));
+      if (cmd === "get_environment_variables") return Promise.resolve([]);
+      return Promise.resolve(null);
+    });
+
+    const wrapper = mount(InstalledSoftwarePage);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.text()).not.toContain("Aucun paquet ne correspond à cette recherche.");
+
+    resolvePackages([{ name: "firefox", version: "128.0" }]);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("firefox"));
+  });
 });

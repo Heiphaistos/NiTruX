@@ -1,5 +1,6 @@
 use super::{PackageManager, PackageUpdate};
 use crate::subprocess;
+use std::collections::HashSet;
 use std::time::Duration;
 
 pub struct Apt;
@@ -41,6 +42,18 @@ pub fn parse_dpkg_l_line(line: &str) -> Option<super::InstalledPackage> {
     Some(super::InstalledPackage { name: fields[1].to_string(), version: fields[2].to_string() })
 }
 
+/// Parses `apt-mark showmanual` output: one package name per line, no
+/// version. This is the set of packages the user (or an install script
+/// acting on their behalf) explicitly asked for -- everything else `dpkg
+/// -l` reports is a transitively-pulled dependency (on a typical desktop,
+/// this is the overwhelming majority: verified live, 64 manually-installed
+/// vs. 1241 total `dpkg -l` entries on this project's own dev system).
+/// Showing all 1241 in an "installed software" list buries the ~60 the
+/// user actually cares about.
+pub fn parse_manual_names(output: &str) -> HashSet<String> {
+    output.lines().map(str::trim).filter(|l| !l.is_empty()).map(str::to_string).collect()
+}
+
 impl PackageManager for Apt {
     fn id(&self) -> &'static str {
         "apt"
@@ -51,9 +64,22 @@ impl PackageManager for Apt {
         Ok(output.lines().filter_map(parse_apt_line).collect())
     }
 
+    /// Restricted to manually-installed packages (see `parse_manual_names`'s
+    /// doc comment) -- an "installed software" or "uninstall" list showing
+    /// every transitive library dependency alongside real applications is
+    /// far less useful than the ~5% of packages the user actually chose.
     fn list_installed(&self) -> Result<Vec<super::InstalledPackage>, String> {
+        let manual_names = parse_manual_names(&subprocess::run_with_timeout(
+            "apt-mark",
+            &["showmanual"],
+            Duration::from_secs(15),
+        )?);
         let output = subprocess::run_with_timeout("dpkg", &["-l"], Duration::from_secs(15))?;
-        Ok(output.lines().filter_map(parse_dpkg_l_line).collect())
+        Ok(output
+            .lines()
+            .filter_map(parse_dpkg_l_line)
+            .filter(|pkg| manual_names.contains(&pkg.name))
+            .collect())
     }
 }
 
@@ -98,5 +124,41 @@ mod tests {
     fn skips_dpkg_l_header_lines() {
         assert!(parse_dpkg_l_line("Desired=Unknown/Install/Remove/Purge/Hold").is_none());
         assert!(parse_dpkg_l_line("+++-======================================").is_none());
+    }
+
+    #[test]
+    fn parses_manual_names_from_apt_mark_showmanual_output() {
+        let output = "curl\nfirefox-esr\ngit\n";
+        let names = parse_manual_names(output);
+        assert_eq!(names.len(), 3);
+        assert!(names.contains("curl"));
+        assert!(names.contains("firefox-esr"));
+        assert!(names.contains("git"));
+    }
+
+    #[test]
+    fn parse_manual_names_ignores_blank_lines() {
+        let names = parse_manual_names("curl\n\n\ngit\n");
+        assert_eq!(names.len(), 2);
+    }
+
+    #[test]
+    fn filtering_dpkg_output_by_manual_names_excludes_transitive_dependencies() {
+        // Reproduces the actual reported bug: a dependency-only package
+        // (libcurl4, never in apt-mark showmanual's output) must not
+        // appear in the filtered result even though dpkg -l reports it as
+        // installed, while a manually-installed package must.
+        let dpkg_output = "\
+ii  curl                                8.5.0-2ubuntu10                         amd64        command line tool for transferring data
+ii  libcurl4                            8.5.0-2ubuntu10                         amd64        easy-to-use client-side URL transfer library
+";
+        let manual_names = parse_manual_names("curl\n");
+        let filtered: Vec<crate::packages::InstalledPackage> = dpkg_output
+            .lines()
+            .filter_map(parse_dpkg_l_line)
+            .filter(|pkg| manual_names.contains(&pkg.name))
+            .collect();
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0].name, "curl");
     }
 }
