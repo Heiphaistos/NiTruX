@@ -41,7 +41,7 @@ function bytesToMb(bytes: number): string {
       <div v-if="processes && filteredProcesses.length === 0" class="proc-empty">Aucun processus trouvé.</div>
       <div v-for="p in filteredProcesses" :key="p.pid" class="proc-row">
         <span>{{ p.name }} ({{ p.pid }})</span>
-        <span>{{ p.cpu_percent.toFixed(1) }}% · {{ bytesToMb(p.memory_bytes) }} MB</span>
+        <span>{{ p.cpu_percent.toFixed(1) }}% · {{ bytesToMb(p.memory_bytes) }} Mo</span>
       </div>
     </NxCard>
 

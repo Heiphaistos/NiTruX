@@ -67,4 +67,18 @@ describe("DisksPage", () => {
     await button.trigger("click");
     await vi.waitFor(() => expect(wrapper.text()).toContain("Permission denied"));
   });
+
+  it("shows disk usage in French units (Go), not the English 'GB'", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) => {
+      if (cmd === "list_disks") return Promise.resolve([]);
+      if (cmd === "list_disk_usage") {
+        return Promise.resolve([{ mountpoint: "/", total_bytes: 500 * 1024 * 1024 * 1024, used_bytes: 100 * 1024 * 1024 * 1024, used_percent: 20 }]);
+      }
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(DisksPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Go"));
+    expect(wrapper.text()).not.toContain("GB");
+  });
 });
