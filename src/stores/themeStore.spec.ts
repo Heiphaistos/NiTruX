@@ -45,6 +45,19 @@ describe("themeStore", () => {
     expect(store.customThemes.map((t) => t.id)).toContain("my-custom");
   });
 
+  it("persists custom themes to localStorage and restores them on next init, same as the active theme", () => {
+    const store = useThemeStore();
+    const custom = {
+      id: "my-custom", name: "My Custom", mode: "dark" as const,
+      colors: builtinThemes[0].colors,
+    };
+    store.saveCustomTheme(custom);
+
+    setActivePinia(createPinia());
+    const reloaded = useThemeStore();
+    expect(reloaded.customThemes.map((t) => t.id)).toContain("my-custom");
+  });
+
   it("exports the active theme as JSON and re-imports it", () => {
     const store = useThemeStore();
     store.setTheme(builtinThemes[1]);

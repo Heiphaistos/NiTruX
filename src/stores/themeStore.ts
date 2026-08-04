@@ -34,6 +34,7 @@ function applyToDom(theme: Theme) {
 }
 
 const STORAGE_KEY = "nitrux-theme";
+const CUSTOM_THEMES_STORAGE_KEY = "nitrux-custom-themes";
 const DEFAULT_THEME = builtinThemes.find((t) => t.id === "oled-noir") as Theme;
 
 function readPersistedTheme(): Theme {
@@ -48,10 +49,26 @@ function readPersistedTheme(): Theme {
   return DEFAULT_THEME;
 }
 
+// Mirrors readPersistedTheme's defensive parsing -- a saved/imported custom
+// theme is otherwise silently lost from the swatch picker on every reload
+// (only the currently *active* theme was ever persisted; the list of saved
+// custom themes itself never was).
+function readPersistedCustomThemes(): Theme[] {
+  const stored = localStorage.getItem(CUSTOM_THEMES_STORAGE_KEY);
+  if (!stored) return [];
+  try {
+    const parsed = JSON.parse(stored) as Theme[];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((t) => t?.id && hasAllRequiredColors(t.colors));
+  } catch {
+    return [];
+  }
+}
+
 export const useThemeStore = defineStore("theme", {
   state: () => ({
     active: readPersistedTheme(),
-    customThemes: [] as Theme[],
+    customThemes: readPersistedCustomThemes(),
   }),
   actions: {
     setTheme(theme: Theme) {
@@ -67,6 +84,7 @@ export const useThemeStore = defineStore("theme", {
       const existingIndex = this.customThemes.findIndex((t) => t.id === theme.id);
       if (existingIndex >= 0) this.customThemes.splice(existingIndex, 1, theme);
       else this.customThemes.push(theme);
+      localStorage.setItem(CUSTOM_THEMES_STORAGE_KEY, JSON.stringify(this.customThemes));
     },
     exportActiveTheme(): string {
       return JSON.stringify(this.active, null, 2);
