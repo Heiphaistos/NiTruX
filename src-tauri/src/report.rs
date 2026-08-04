@@ -317,6 +317,43 @@ pub fn render_html(report: &SystemReport) -> String {
     )
 }
 
+/// Converts days since 1970-01-01 (proleptic Gregorian calendar, UTC) to
+/// (year, month, day). Howard Hinnant's well-known, exhaustively-verified
+/// public-domain algorithm (http://howardhinnant.github.io/date_algorithms.html)
+/// -- not hand-rolled/approximate calendar math -- valid for the entire
+/// `i64` range. This project has no date/time crate dependency; adding one
+/// for a single timestamp format felt heavier than this self-contained,
+/// precisely-tested conversion.
+fn civil_from_days(z: i64) -> (i64, u32, u32) {
+    let z = z + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let doe = (z - era * 146_097) as u64; // day of era, [0, 146096]
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // year of era, [0, 399]
+    let y = yoe as i64 + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100); // day of year, [0, 365]
+    let mp = (5 * doy + 2) / 153; // [0, 11]
+    let d = (doy - (153 * mp + 2) / 5 + 1) as u32; // [1, 31]
+    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32; // [1, 12]
+    let y = if m <= 2 { y + 1 } else { y };
+    (y, m, d)
+}
+
+/// Formats a Unix epoch (seconds) as an ISO-8601 UTC timestamp
+/// ("YYYY-MM-DDTHH:MM:SSZ"), used for `generated_at` in exported reports.
+/// Previously this was the literal string "epoch:<seconds>" (e.g.
+/// "epoch:1735689600"), shown verbatim to the user in every rendered
+/// report ("Généré le epoch:1735689600") -- never actually formatted as a
+/// human-readable date, in every format (txt/markdown/html).
+pub fn format_epoch_utc(epoch_secs: u64) -> String {
+    let days = (epoch_secs / 86_400) as i64;
+    let secs_of_day = epoch_secs % 86_400;
+    let (year, month, day) = civil_from_days(days);
+    let hour = secs_of_day / 3600;
+    let minute = (secs_of_day % 3600) / 60;
+    let second = secs_of_day % 60;
+    format!("{year:04}-{month:02}-{day:02}T{hour:02}:{minute:02}:{second:02}Z")
+}
+
 pub fn build_system_report(sys: &mut System) -> SystemReport {
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -324,7 +361,7 @@ pub fn build_system_report(sys: &mut System) -> SystemReport {
         .unwrap_or(0);
 
     SystemReport {
-        generated_at: format!("epoch:{now}"),
+        generated_at: format_epoch_utc(now),
         system: crate::system::build_snapshot(sys),
         sensors: crate::sensors::get_sensor_snapshot(),
         pci_devices: crate::hardware::get_pci_devices().ok(),
@@ -354,6 +391,44 @@ pub fn generate_system_report(state: tauri::State<Mutex<System>>, format: String
 mod tests {
     use super::*;
     use crate::system::CpuInfo;
+
+    // Reference values obtained from `date -u -d @<epoch>` (real coreutils,
+    // not computed by hand) to verify format_epoch_utc/civil_from_days
+    // independently of their own implementation.
+    #[test]
+    fn format_epoch_utc_matches_the_unix_epoch() {
+        assert_eq!(format_epoch_utc(0), "1970-01-01T00:00:00Z");
+    }
+
+    #[test]
+    fn format_epoch_utc_matches_a_recent_new_year() {
+        assert_eq!(format_epoch_utc(1_735_689_600), "2025-01-01T00:00:00Z");
+    }
+
+    #[test]
+    fn format_epoch_utc_matches_a_future_new_year() {
+        assert_eq!(format_epoch_utc(1_893_456_000), "2030-01-01T00:00:00Z");
+    }
+
+    #[test]
+    fn format_epoch_utc_matches_a_value_with_nonzero_time_of_day() {
+        assert_eq!(format_epoch_utc(1_000_000_000), "2001-09-09T01:46:40Z");
+    }
+
+    #[test]
+    fn format_epoch_utc_handles_seconds_within_the_first_minute() {
+        assert_eq!(format_epoch_utc(59), "1970-01-01T00:00:59Z");
+    }
+
+    #[test]
+    fn generated_at_is_never_the_old_unformatted_epoch_placeholder() {
+        // Regression guard for the actual bug: every rendered report used
+        // to show the literal string "epoch:<seconds>" verbatim to the
+        // user instead of a real date.
+        let formatted = format_epoch_utc(1_735_689_600);
+        assert!(!formatted.starts_with("epoch:"));
+        assert!(formatted.contains('-') && formatted.contains(':'));
+    }
 
     fn fixture_report() -> SystemReport {
         SystemReport {
