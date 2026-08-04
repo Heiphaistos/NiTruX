@@ -696,3 +696,10 @@ Aucun changement de code ce cycle. Version inchangée (0.25.20).
 - Vérification de sécurité rétrospective du correctif `firewall.rs` du cycle 97 : `report.rs` (générateur de rapport, consommateur de `get_firewall_status().ok()`) utilise déjà `Option<FirewallStatus>` avec dégradation "indisponible" déjà confirmée saine au cycle 39 -- le correctif du cycle 97 (qui fait échouer la requête plus souvent en usage non-privilégié réel) ne casse rien : le rapport affichera "indisponible" plus fréquemment au lieu du faux "inactif, aucune règle" d'avant -- une amélioration de justesse, pas une régression.
 
 Aucun changement de code ce cycle. Version inchangée (0.25.20).
+
+[2026-08-04T22:45:00+02:00] Cycle 102 : VM toujours injoignable (`No route to host`). Deux modules Rust relus intégralement pour la première fois (seuls des fragments avaient été spot-vérifiés auparavant). **Rien trouvé de nouveau.**
+
+- `optimizations.rs` : infaillible par conception (`get_optimization_snapshot` dégrade chaque champ indépendamment, jamais d'erreur globale -- philosophie "purement informationnel" déjà établie ailleurs). Vérifié live que `systemctl is-enabled fstrim.timer` (le champ le plus à risque de ce module) ne nécessite PAS root, contrairement à `ufw status` -- code 0, "enabled" retourné correctement. Pas de récidive du bug du cycle 97 ici.
+- `smart.rs` : relu en entier -- déjà EXEMPLAIRE sur exactement la classe de bug corrigée dans `firewall.rs` au cycle 97. Le commentaire de module documente explicitement "smartctl commonly requires root... a permission-denied failure is surfaced as a normal Err" -- le bit 1 du bitmask de code de sortie de smartctl (device open failed, qui couvre le cas permission refusée) est déjà correctement traité comme une vraie erreur, jamais silencieusement absorbé en "santé inconnue" trompeuse. Déjà résolu avant même que le pattern général ne soit identifié au cycle 97.
+
+Aucun changement de code ce cycle. Version inchangée (0.25.20).
