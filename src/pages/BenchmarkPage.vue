@@ -58,6 +58,12 @@ async function run() {
       <NxCard><NxStatTile label="Bande passante mémoire" :value="`${result.memory_bandwidth_gbps.toFixed(1)} Go/s`" /></NxCard>
     </div>
 
+    <p v-if="result" class="bench-disk-caveat">
+      Note : l'écriture/lecture disque se fait sur un fichier temporaire sans vider le cache du système —
+      la mesure de lecture peut donc refléter la bande passante mémoire (cache) plutôt que le disque physique,
+      surtout sur HDD. Si le dossier temporaire est un tmpfs (RAM) sur ce système, l'écriture est concernée aussi.
+    </p>
+
     <NxCard v-if="result && result.disk_health.length > 0">
       <NxSectionHeader title="Santé des disques (SMART)" />
       <div v-for="d in result.disk_health" :key="d.device" class="bench-disk-row">
@@ -71,6 +77,7 @@ async function run() {
 <style scoped>
 .bench-page { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
 .bench-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.bench-disk-caveat { font-size: 12px; color: var(--nx-text-secondary); margin: 0; }
 .bench-disk-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; font-size: 13px; border-bottom: 1px solid var(--nx-style-border-color); }
 .bench-disk-row:last-child { border-bottom: none; }
 </style>

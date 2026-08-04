@@ -61,6 +61,15 @@ describe("BenchmarkPage", () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain("inconnue"));
   });
 
+  it("shows a caveat about the disk measurement possibly reflecting the OS cache rather than real disk throughput", async () => {
+    const wrapper = mount(BenchmarkPage);
+    // Not shown before a result exists -- there's nothing to caveat yet.
+    expect(wrapper.text()).not.toContain("cache du système");
+    const button = wrapper.findAll("button").find((b) => b.text() === "Lancer le benchmark")!;
+    await button.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("cache du système"));
+  });
+
   it("shows an error message when the benchmark command rejects", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     (invoke as ReturnType<typeof vi.fn>).mockRejectedValueOnce("erreur de benchmark disque");
