@@ -8,9 +8,9 @@ import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 interface AudioSink { name: string; driver: string; state: string }
 interface PrinterInfo { name: string; status: string }
 
-const monitors = ref<string[]>([]);
-const usbDevices = ref<string[]>([]);
-const audioSinks = ref<AudioSink[]>([]);
+const monitors = ref<string[] | null>(null);
+const usbDevices = ref<string[] | null>(null);
+const audioSinks = ref<AudioSink[] | null>(null);
 const printers = ref<PrinterInfo[] | null>(null);
 
 onMounted(async () => {
@@ -27,20 +27,20 @@ onMounted(async () => {
 
     <NxCard>
       <NxSectionHeader title="Moniteurs" />
-      <div v-if="monitors.length === 0" class="ph-empty">Aucun moniteur détecté.</div>
-      <div v-for="m in monitors" :key="m" class="ph-row">{{ m }}</div>
+      <div v-if="monitors && monitors.length === 0" class="ph-empty">Aucun moniteur détecté.</div>
+      <div v-for="m in monitors ?? []" :key="m" class="ph-row">{{ m }}</div>
     </NxCard>
 
     <NxCard>
       <NxSectionHeader title="USB" />
-      <div v-if="usbDevices.length === 0" class="ph-empty">Aucun périphérique USB détecté.</div>
-      <div v-for="u in usbDevices" :key="u" class="ph-row">{{ u }}</div>
+      <div v-if="usbDevices && usbDevices.length === 0" class="ph-empty">Aucun périphérique USB détecté.</div>
+      <div v-for="u in usbDevices ?? []" :key="u" class="ph-row">{{ u }}</div>
     </NxCard>
 
     <NxCard>
       <NxSectionHeader title="Audio" />
-      <div v-if="audioSinks.length === 0" class="ph-empty">Aucune sortie audio détectée.</div>
-      <div v-for="a in audioSinks" :key="a.name" class="ph-row">{{ a.name }} ({{ a.driver }}) — {{ a.state }}</div>
+      <div v-if="audioSinks && audioSinks.length === 0" class="ph-empty">Aucune sortie audio détectée.</div>
+      <div v-for="a in audioSinks ?? []" :key="a.name" class="ph-row">{{ a.name }} ({{ a.driver }}) — {{ a.state }}</div>
     </NxCard>
 
     <NxCard>
