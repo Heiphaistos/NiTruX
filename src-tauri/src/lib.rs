@@ -26,6 +26,7 @@ mod network_write;
 mod optimizations;
 mod packages;
 mod peripherals;
+mod pkexec_bootstrap;
 mod portscan;
 mod processes;
 mod report;
@@ -180,6 +181,8 @@ pub fn run() {
             terminal::write_to_terminal,
             terminal::resize_terminal,
             terminal::close_terminal,
+            pkexec_bootstrap::is_pkexec_integration_installed,
+            pkexec_bootstrap::install_pkexec_integration,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

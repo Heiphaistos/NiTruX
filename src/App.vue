@@ -5,6 +5,7 @@ import { useLayoutStore } from "@/stores/layoutStore";
 import type { LayoutId } from "@/types/layout";
 import LayoutShell from "@/layouts/LayoutShell.vue";
 import AppNav from "@/components/nav/AppNav.vue";
+import PkexecIntegrationBanner from "@/components/PkexecIntegrationBanner.vue";
 import DashboardPage from "@/pages/DashboardPage.vue";
 import DiagnosticPage from "@/pages/DiagnosticPage.vue";
 import DriversPage from "@/pages/DriversPage.vue";
@@ -127,7 +128,17 @@ const pages: Record<string, Component> = {
     <template #nav>
       <AppNav v-model="currentPage" :variant="navVariant" />
     </template>
-    <component :is="pages[currentPage] ?? pages.dashboard" @navigate="currentPage = $event" />
+    <PkexecIntegrationBanner />
+    <!-- KeepAlive scoped to TerminalPage only: switching tabs must not
+         kill the running pty session (close_terminal on unmount) or reset
+         the visible shell state. Every other page intentionally re-fetches
+         fresh data on each visit, so they are not kept alive. Requires
+         Vue's SFC name inference from the filename ("TerminalPage") to
+         match the "terminal" entry's component -- verified in
+         App.spec.ts. -->
+    <KeepAlive include="TerminalPage">
+      <component :is="pages[currentPage] ?? pages.dashboard" @navigate="currentPage = $event" />
+    </KeepAlive>
   </LayoutShell>
 </template>
 

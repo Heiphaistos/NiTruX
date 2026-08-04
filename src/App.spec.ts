@@ -39,7 +39,13 @@ const ARRAY_RETURNING_COMMANDS = new Set([
 ]);
 
 vi.mock("@tauri-apps/api/core", () => ({
-  invoke: vi.fn().mockImplementation((cmd: string) => Promise.resolve(ARRAY_RETURNING_COMMANDS.has(cmd) ? [] : null)),
+  invoke: vi.fn().mockImplementation((cmd: string) => {
+    // Default to "already installed" (the normal .deb/.rpm case) so the
+    // AppImage-only setup banner doesn't show up in every unrelated test
+    // in this file -- its own dedicated tests below override this.
+    if (cmd === "is_pkexec_integration_installed") return Promise.resolve(true);
+    return Promise.resolve(ARRAY_RETURNING_COMMANDS.has(cmd) ? [] : null);
+  }),
   Channel: vi.fn(function () {
     return { onmessage: null };
   }),
@@ -277,5 +283,48 @@ describe("App", () => {
     const wrapper = mount(App);
     expect(wrapper.text()).toContain("Système");
     expect(wrapper.text()).toContain("Tableau de bord");
+  });
+
+  it("shows the pkexec integration banner only when it is not yet installed (AppImage case)", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "is_pkexec_integration_installed") return Promise.resolve(false);
+      return Promise.resolve(ARRAY_RETURNING_COMMANDS.has(cmd) ? [] : null);
+    });
+    const wrapper = mount(App);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Fonctions privilégiées non activées"));
+  });
+
+  it("does not show the pkexec integration banner when already installed (normal .deb/.rpm case)", async () => {
+    const wrapper = mount(App);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.text()).not.toContain("Fonctions privilégiées non activées");
+  });
+
+  it("keeps the terminal session alive when switching away and back (does not re-spawn)", async () => {
+    // invoke's call history is shared (not cleared) across tests in this
+    // file, so this counts spawn_terminal calls made from this test's own
+    // mount onward, not from zero.
+    const { invoke } = await import("@tauri-apps/api/core");
+    const spawnCallsBefore = vi.mocked(invoke).mock.calls.filter((c) => c[0] === "spawn_terminal").length;
+    const closeCallsBefore = vi.mocked(invoke).mock.calls.filter((c) => c[0] === "close_terminal").length;
+
+    const wrapper = mount(App);
+    const buttons = () => wrapper.findAll("button");
+
+    await buttons().find((b) => b.text() === "Terminal")!.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Shell interactif"));
+    const spawnCallsAfterFirstVisit = vi.mocked(invoke).mock.calls.filter((c) => c[0] === "spawn_terminal").length - spawnCallsBefore;
+    expect(spawnCallsAfterFirstVisit).toBe(1);
+
+    await buttons().find((b) => b.text() === "Tableau de bord")!.trigger("click");
+    await wrapper.vm.$nextTick();
+    await buttons().find((b) => b.text() === "Terminal")!.trigger("click");
+    await wrapper.vm.$nextTick();
+
+    const spawnCallsAfterReturning = vi.mocked(invoke).mock.calls.filter((c) => c[0] === "spawn_terminal").length - spawnCallsBefore;
+    expect(spawnCallsAfterReturning).toBe(1);
+    const closeCallsAfterReturning = vi.mocked(invoke).mock.calls.filter((c) => c[0] === "close_terminal").length - closeCallsBefore;
+    expect(closeCallsAfterReturning).toBe(0);
   });
 });
