@@ -3,7 +3,9 @@ import { mount } from "@vue/test-utils";
 import { setActivePinia, createPinia } from "pinia";
 import ThemeEditorPage from "./ThemeEditorPage.vue";
 import { useStyleStore } from "@/stores/styleStore";
+import { useThemeStore } from "@/stores/themeStore";
 import { styleRegistry } from "@/styles/registry";
+import { builtinThemes } from "@/themes/builtin";
 
 describe("ThemeEditorPage — style tab", () => {
   beforeEach(() => {
@@ -35,5 +37,22 @@ describe("ThemeEditorPage — style tab", () => {
     const brutalismOption = wrapper.findAll(".te-style-option").find((el) => el.text().includes("Brutalisme"))!;
     await brutalismOption.trigger("click");
     expect(store.current).toBe("brutalism");
+  });
+});
+
+describe("ThemeEditorPage — theme tab custom themes", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    localStorage.clear();
+  });
+
+  it("shows a saved custom theme as a selectable swatch, not just the builtin ones", () => {
+    const themeStore = useThemeStore();
+    themeStore.saveCustomTheme({ ...builtinThemes[0], id: "custom-test-1", name: "Mon thème perso" });
+
+    const wrapper = mount(ThemeEditorPage);
+    const swatches = wrapper.findAll(".te-swatch");
+    expect(swatches.length).toBe(builtinThemes.length + 1);
+    expect(swatches.some((s) => s.attributes("title") === "Mon thème perso")).toBe(true);
   });
 });

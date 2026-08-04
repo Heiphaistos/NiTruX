@@ -72,7 +72,7 @@ function handleFileImport(event: Event) {
 
       <div class="te-swatches">
         <button
-          v-for="theme in builtinThemes"
+          v-for="theme in [...builtinThemes, ...themeStore.customThemes]"
           :key="theme.id"
           class="te-swatch"
           :style="{ background: theme.colors.bgBase, borderColor: theme.colors.accentPrimary }"

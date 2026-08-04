@@ -54,6 +54,18 @@ describe("themeStore", () => {
     expect(store.customThemes.some((t) => t.id === builtinThemes[1].id)).toBe(true);
   });
 
+  it("activates an imported theme immediately, not just saves it to the unused customThemes list", () => {
+    const store = useThemeStore();
+    store.setTheme(builtinThemes[0]); // start on a known, different theme
+    const otherTheme = builtinThemes[1];
+    expect(store.active.id).not.toBe(otherTheme.id);
+
+    const imported = store.importTheme(JSON.stringify(otherTheme));
+
+    expect(imported.ok).toBe(true);
+    expect(store.active.id).toBe(otherTheme.id);
+  });
+
   it("rejects an imported theme whose colors object is missing required keys", () => {
     const store = useThemeStore();
     const incomplete = {

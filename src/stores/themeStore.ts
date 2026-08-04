@@ -81,6 +81,7 @@ export const useThemeStore = defineStore("theme", {
           return { ok: false, error: "Fichier de thème invalide : couleurs manquantes dans colors." };
         }
         this.saveCustomTheme(parsed);
+        this.setTheme(parsed);
         return { ok: true };
       } catch {
         return { ok: false, error: "JSON invalide." };
