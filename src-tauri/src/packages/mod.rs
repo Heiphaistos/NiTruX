@@ -8,7 +8,7 @@ pub mod pacman;
 pub mod universal;
 pub mod zypper;
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug, PartialEq)]
 pub struct PackageUpdate {
     pub name: String,
     pub current_version: String,
