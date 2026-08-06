@@ -63,7 +63,7 @@ export const systemToolsCatalog: SystemTool[] = [
   // Nettoyage (utilisateur, non-privilégié)
   { id: "clean-thumbnails", name: "Vider le cache des miniatures", description: "Supprime les vignettes d'images mises en cache.", category: "nettoyage", command: "rm -rf ~/.cache/thumbnails/*" },
   { id: "clean-old-cache", name: "Nettoyer le cache ancien", description: "Supprime les fichiers de cache non touchés depuis 30 jours.", category: "nettoyage", command: "find ~/.cache -type f -atime +30 -delete" },
-  { id: "cache-size", name: "Taille du cache", description: "Espace occupé par le dossier de cache utilisateur.", category: "nettoyage", command: "du -sh ~/.cache" },
+  { id: "cache-size", name: "Taille du cache", description: "Espace occupé par le dossier de cache utilisateur.", category: "nettoyage", command: "du -sh ~/.cache || true" },
   { id: "npm-cache-clean", name: "Vider le cache npm", description: "Nettoie le cache npm (si npm installé).", category: "nettoyage", command: "npm cache clean --force" },
   { id: "pip-cache-purge", name: "Vider le cache pip", description: "Nettoie le cache pip (si pip installé).", category: "nettoyage", command: "pip cache purge" },
   { id: "clean-fontcache", name: "Vider le cache des polices", description: "Supprime le cache de polices utilisateur (régénéré automatiquement).", category: "nettoyage", command: "rm -rf ~/.cache/fontconfig/*" },
@@ -71,7 +71,7 @@ export const systemToolsCatalog: SystemTool[] = [
   // Stockage
   { id: "lsblk-fs", name: "Systèmes de fichiers", description: "Disques avec type de système de fichiers et point de montage.", category: "stockage", command: "lsblk -f" },
   { id: "biggest-home-dirs", name: "Plus gros dossiers du home", description: "10 plus gros éléments de votre dossier personnel.", category: "stockage", command: "du -sh ~/* 2>/dev/null | sort -rh | head -10" },
-  { id: "varlog-size", name: "Taille des journaux système", description: "Espace disque occupé par /var/log.", category: "stockage", command: "du -sh /var/log 2>/dev/null" },
+  { id: "varlog-size", name: "Taille des journaux système", description: "Espace disque occupé par /var/log.", category: "stockage", command: "du -sh /var/log 2>/dev/null || true" },
 
   // Diagnostics (approfondissement)
   { id: "proc-version", name: "Version détaillée du noyau", description: "Chaîne de version complète du noyau (compilateur, date).", category: "diagnostics", command: "cat /proc/version" },
@@ -222,30 +222,30 @@ export const systemToolsCatalog: SystemTool[] = [
   { id: "clean-trash", name: "Vider la corbeille utilisateur", description: "Supprime définitivement le contenu de la corbeille.", category: "nettoyage", command: "rm -rf ~/.local/share/Trash/files/* ~/.local/share/Trash/info/*" },
   { id: "clean-recently-used", name: "Effacer l'historique des fichiers récents", description: "Supprime la liste des fichiers récemment ouverts.", category: "nettoyage", command: "rm -f ~/.local/share/recently-used.xbel" },
   { id: "clean-bash-history-size", name: "Taille de l'historique bash", description: "Affiche la taille actuelle du fichier d'historique bash.", category: "nettoyage", command: "wc -l ~/.bash_history" },
-  { id: "clean-tmp-user", name: "Taille des fichiers temporaires utilisateur", description: "Espace occupé par les fichiers temporaires de l'utilisateur.", category: "nettoyage", command: "du -sh ~/.cache/*tmp* 2>/dev/null" },
+  { id: "clean-tmp-user", name: "Taille des fichiers temporaires utilisateur", description: "Espace occupé par les fichiers temporaires de l'utilisateur.", category: "nettoyage", command: "du -sh ~/.cache/*tmp* 2>/dev/null || true" },
   { id: "clean-journal-user-size", name: "Taille du journal utilisateur", description: "Espace occupé par les journaux systemd de l'utilisateur.", category: "nettoyage", command: "journalctl --user --disk-usage" },
   { id: "clean-yarn-cache", name: "Vider le cache Yarn", description: "Nettoie le cache du gestionnaire de paquets Yarn (si installé).", category: "nettoyage", command: "yarn cache clean" },
-  { id: "clean-cargo-cache-size", name: "Taille du cache Cargo", description: "Espace occupé par le cache des dépendances Rust.", category: "nettoyage", command: "du -sh ~/.cargo/registry 2>/dev/null" },
+  { id: "clean-cargo-cache-size", name: "Taille du cache Cargo", description: "Espace occupé par le cache des dépendances Rust.", category: "nettoyage", command: "du -sh ~/.cargo/registry 2>/dev/null || true" },
   { id: "clean-go-cache", name: "Vider le cache des modules Go", description: "Nettoie le cache des modules Go téléchargés.", category: "nettoyage", command: "go clean -modcache" },
-  { id: "clean-docker-user-size", name: "Taille des données Docker utilisateur", description: "Espace utilisé par les données Docker rootless (si applicable).", category: "nettoyage", command: "du -sh ~/.local/share/docker 2>/dev/null" },
+  { id: "clean-docker-user-size", name: "Taille des données Docker utilisateur", description: "Espace utilisé par les données Docker rootless (si applicable).", category: "nettoyage", command: "du -sh ~/.local/share/docker 2>/dev/null || true" },
   { id: "clean-flatpak-unused", name: "Lister les runtimes Flatpak inutilisés", description: "Identifie les runtimes Flatpak qui ne sont plus utilisés.", category: "nettoyage", command: "flatpak list --unused" },
   { id: "clean-old-logs-user", name: "Anciens journaux dans le cache", description: "Fichiers .log de plus de 30 jours dans le cache utilisateur.", category: "nettoyage", command: "find ~/.cache -name '*.log' -mtime +30" },
   { id: "clean-empty-dirs-cache", name: "Dossiers vides dans le cache", description: "Liste les répertoires vides du cache utilisateur.", category: "nettoyage", command: "find ~/.cache -type d -empty" },
-  { id: "clean-electron-cache-size", name: "Taille des caches Electron", description: "Espace occupé par les caches d'applications Electron courantes.", category: "nettoyage", command: "du -sh ~/.config/*/Cache 2>/dev/null" },
+  { id: "clean-electron-cache-size", name: "Taille des caches Electron", description: "Espace occupé par les caches d'applications Electron courantes.", category: "nettoyage", command: "du -sh ~/.config/*/Cache 2>/dev/null || true" },
   { id: "clean-vim-swap", name: "Fichiers swap Vim orphelins", description: "Recherche les fichiers .swp laissés par des sessions Vim non fermées.", category: "nettoyage", command: "find ~ -name '*.swp' -mtime +7" },
   { id: "clean-core-dumps", name: "Fichiers core dump dans le home", description: "Recherche des fichiers core générés par des crashs.", category: "nettoyage", command: "find ~ -maxdepth 2 -name 'core' -o -name 'core.*' -maxdepth 2" },
 
   // Stockage (approfondissement)
-  { id: "du-var-cache", name: "Taille de /var/cache", description: "Espace disque occupé par le cache système.", category: "stockage", command: "du -sh /var/cache 2>/dev/null" },
-  { id: "du-opt", name: "Taille de /opt", description: "Espace disque occupé par les applications dans /opt.", category: "stockage", command: "du -sh /opt 2>/dev/null" },
-  { id: "du-usr-share", name: "Taille de /usr/share", description: "Espace disque occupé par les ressources partagées.", category: "stockage", command: "du -sh /usr/share 2>/dev/null" },
+  { id: "du-var-cache", name: "Taille de /var/cache", description: "Espace disque occupé par le cache système.", category: "stockage", command: "du -sh /var/cache 2>/dev/null || true" },
+  { id: "du-opt", name: "Taille de /opt", description: "Espace disque occupé par les applications dans /opt.", category: "stockage", command: "du -sh /opt 2>/dev/null || true" },
+  { id: "du-usr-share", name: "Taille de /usr/share", description: "Espace disque occupé par les ressources partagées.", category: "stockage", command: "du -sh /usr/share 2>/dev/null || true" },
   { id: "biggest-files-root", name: "20 plus gros fichiers accessibles", description: "Recherche des plus gros fichiers dans les emplacements courants.", category: "stockage", command: "find / -xdev -type f -size +100M 2>/dev/null | head -20" },
   { id: "disk-free-summary", name: "Espace disque libre (résumé)", description: "Espace libre sur le système de fichiers racine uniquement.", category: "stockage", command: "df -h /" },
   { id: "lsblk-uuid", name: "UUID des disques", description: "Identifiants UUID de chaque partition.", category: "stockage", command: "lsblk -o NAME,UUID" },
   { id: "swapon-summary", name: "Résumé du swap actif", description: "Espace de swap actuellement utilisé.", category: "stockage", command: "/usr/sbin/swapon --show=NAME,SIZE,USED" },
   { id: "mount-tmpfs", name: "Systèmes de fichiers en mémoire (tmpfs)", description: "Points de montage tmpfs et leur taille.", category: "stockage", command: "mount -t tmpfs" },
   { id: "du-home-hidden", name: "Taille des dossiers cachés du home", description: "Espace occupé par les dossiers de configuration cachés.", category: "stockage", command: "du -sh ~/.[!.]* 2>/dev/null | sort -rh | head -15" },
-  { id: "disk-usage-by-user", name: "Espace utilisé par utilisateur (/home)", description: "Taille de chaque dossier utilisateur dans /home.", category: "stockage", command: "du -sh /home/* 2>/dev/null" },
+  { id: "disk-usage-by-user", name: "Espace utilisé par utilisateur (/home)", description: "Taille de chaque dossier utilisateur dans /home.", category: "stockage", command: "du -sh /home/* 2>/dev/null || true" },
   { id: "inode-usage-home", name: "Utilisation des inodes (home)", description: "Nombre de fichiers dans le dossier personnel.", category: "stockage", command: "find ~ 2>/dev/null | wc -l" },
   { id: "lvs-list", name: "Volumes logiques LVM", description: "Liste des volumes logiques LVM (si utilisé).", category: "stockage", command: "lvs" },
   { id: "vgs-list", name: "Groupes de volumes LVM", description: "Liste des groupes de volumes LVM (si utilisé).", category: "stockage", command: "vgs" },
@@ -436,18 +436,18 @@ export const systemToolsCatalog: SystemTool[] = [
 
   // Fichiers (approfondissement)
   { id: "find-config-files", name: "Fichiers de configuration modifiés récemment", description: "Fichiers de configuration dans ~/.config modifiés récemment.", category: "fichiers", command: "find ~/.config -type f -mtime -7 2>/dev/null | head -30" },
-  { id: "disk-usage-downloads", name: "Taille du dossier Téléchargements", description: "Espace total occupé par le dossier Téléchargements.", category: "fichiers", command: "du -sh ~/Téléchargements ~/Downloads 2>/dev/null" },
-  { id: "disk-usage-documents", name: "Taille du dossier Documents", description: "Espace total occupé par le dossier Documents.", category: "fichiers", command: "du -sh ~/Documents 2>/dev/null" },
-  { id: "disk-usage-pictures", name: "Taille du dossier Images", description: "Espace total occupé par le dossier Images.", category: "fichiers", command: "du -sh ~/Images ~/Pictures 2>/dev/null" },
-  { id: "disk-usage-videos", name: "Taille du dossier Vidéos", description: "Espace total occupé par le dossier Vidéos.", category: "fichiers", command: "du -sh ~/Vidéos ~/Videos 2>/dev/null" },
-  { id: "disk-usage-music", name: "Taille du dossier Musique", description: "Espace total occupé par le dossier Musique.", category: "fichiers", command: "du -sh ~/Musique ~/Music 2>/dev/null" },
+  { id: "disk-usage-downloads", name: "Taille du dossier Téléchargements", description: "Espace total occupé par le dossier Téléchargements.", category: "fichiers", command: "du -sh ~/Téléchargements ~/Downloads 2>/dev/null || true" },
+  { id: "disk-usage-documents", name: "Taille du dossier Documents", description: "Espace total occupé par le dossier Documents.", category: "fichiers", command: "du -sh ~/Documents 2>/dev/null || true" },
+  { id: "disk-usage-pictures", name: "Taille du dossier Images", description: "Espace total occupé par le dossier Images.", category: "fichiers", command: "du -sh ~/Images ~/Pictures 2>/dev/null || true" },
+  { id: "disk-usage-videos", name: "Taille du dossier Vidéos", description: "Espace total occupé par le dossier Vidéos.", category: "fichiers", command: "du -sh ~/Vidéos ~/Videos 2>/dev/null || true" },
+  { id: "disk-usage-music", name: "Taille du dossier Musique", description: "Espace total occupé par le dossier Musique.", category: "fichiers", command: "du -sh ~/Musique ~/Music 2>/dev/null || true" },
   { id: "count-images-home", name: "Nombre d'images dans le home", description: "Compte des fichiers image courants dans le dossier personnel.", category: "fichiers", command: "find ~ -iname '*.jpg' -o -iname '*.png' -o -iname '*.jpeg' 2>/dev/null | wc -l" },
   { id: "count-pdf-home", name: "Nombre de fichiers PDF", description: "Compte des fichiers PDF dans le dossier personnel.", category: "fichiers", command: "find ~ -iname '*.pdf' 2>/dev/null | wc -l" },
   { id: "count-archives-home", name: "Nombre d'archives compressées", description: "Compte des fichiers zip/tar/rar dans le dossier personnel.", category: "fichiers", command: "find ~ \\( -iname '*.zip' -o -iname '*.tar.gz' -o -iname '*.rar' \\) 2>/dev/null | wc -l" },
   { id: "largest-dir-home", name: "Plus gros sous-dossier du home", description: "Identifie le sous-dossier le plus volumineux du home.", category: "fichiers", command: "du -sh ~/*/ 2>/dev/null | sort -rh | head -1" },
   { id: "oldest-files-home", name: "Fichiers les plus anciens du home", description: "10 fichiers dont la date de modification est la plus ancienne.", category: "fichiers", command: "find ~ -type f -printf '%T@ %p\\n' 2>/dev/null | sort -n | head -10" },
   { id: "readonly-files-home", name: "Fichiers en lecture seule", description: "Fichiers du home sans permission d'écriture pour le propriétaire.", category: "fichiers", command: "find ~ -type f ! -perm -u+w 2>/dev/null | head -20" },
-  { id: "disk-usage-desktop-dir", name: "Taille du dossier Bureau", description: "Espace total occupé par le dossier Bureau.", category: "fichiers", command: "du -sh ~/Bureau ~/Desktop 2>/dev/null" },
+  { id: "disk-usage-desktop-dir", name: "Taille du dossier Bureau", description: "Espace total occupé par le dossier Bureau.", category: "fichiers", command: "du -sh ~/Bureau ~/Desktop 2>/dev/null || true" },
 
   // Utilisateurs (approfondissement)
   { id: "getent-group-sudo", name: "Membres du groupe sudo", description: "Utilisateurs autorisés à utiliser sudo.", category: "utilisateurs", command: "getent group sudo" },
@@ -540,8 +540,8 @@ export const systemToolsCatalog: SystemTool[] = [
   { id: "meminfo-slab", name: "Mémoire allouée par le noyau (slab)", description: "Quantité totale de mémoire utilisée par les structures noyau.", category: "performance", command: "grep '^Slab' /proc/meminfo" },
 
   // Stockage (approfondissement 2)
-  { id: "du-etc", name: "Taille de /etc", description: "Espace disque occupé par les fichiers de configuration système.", category: "stockage", command: "du -sh /etc 2>/dev/null" },
-  { id: "du-boot", name: "Taille de /boot", description: "Espace disque occupé par les fichiers de démarrage.", category: "stockage", command: "du -sh /boot 2>/dev/null" },
+  { id: "du-etc", name: "Taille de /etc", description: "Espace disque occupé par les fichiers de configuration système.", category: "stockage", command: "du -sh /etc 2>/dev/null || true" },
+  { id: "du-boot", name: "Taille de /boot", description: "Espace disque occupé par les fichiers de démarrage.", category: "stockage", command: "du -sh /boot 2>/dev/null || true" },
   { id: "df-all-types", name: "Tous les systèmes de fichiers (avec types)", description: "Espace disque avec le type de système de fichiers pour chacun.", category: "stockage", command: "df -hT" },
 
   // Développement (approfondissement 4)
@@ -584,7 +584,7 @@ export const systemToolsCatalog: SystemTool[] = [
   { id: "meminfo-mapped", name: "Mémoire mappée en fichiers", description: "Quantité de mémoire actuellement mappée depuis des fichiers.", category: "performance", command: "grep '^Mapped' /proc/meminfo" },
 
   // Stockage (approfondissement 3)
-  { id: "du-usr-lib", name: "Taille de /usr/lib", description: "Espace disque occupé par les bibliothèques système.", category: "stockage", command: "du -sh /usr/lib 2>/dev/null" },
+  { id: "du-usr-lib", name: "Taille de /usr/lib", description: "Espace disque occupé par les bibliothèques système.", category: "stockage", command: "du -sh /usr/lib 2>/dev/null || true" },
   { id: "lsblk-rota", name: "Type de disque (SSD/HDD)", description: "Indique si chaque disque est rotatif (HDD) ou non (SSD).", category: "stockage", command: "lsblk -o NAME,ROTA" },
 
   // Diagnostics (approfondissement 6)
