@@ -999,3 +999,13 @@ Vérification : `npx vue-tsc --noEmit` 0 erreur, `npx vitest run` sur les 6 page
 Version 0.25.36 → 0.25.37. Commit `391aeb2`, poussé sur `origin/master`.
 
 **Chantier a11y ariaLabel (cycles 127-130) : CLOS.** Bilan : 2 composants partagés modifiés + 15 pages + 2 `<textarea>` natifs, 4 cycles, 0 régression. Prochain chantier à identifier au prochain cycle.
+
+[2026-08-06T19:15:00+02:00] Cycle 131 : recherche d'un nouveau chantier, plusieurs pistes explorées, toutes négatives :
+
+- Boutons icône-seule sans texte visible (complément au fix nav du cycle 88) : `QuickInstallPage.vue`/`InstallProfilesPage.vue` (seules pages avec icônes+boutons) -- icônes toujours accompagnées de texte visible adjacent, pas de bouton icône-seule. Sweep de symboles courants (×/✕/✖/⚙/☰) sur toute l'app : 0. Les 9 fichiers `src/layouts/*.vue` : aucun bouton propre, tous délèguent à `AppNav.vue` (déjà correctement corrigé cycle 88).
+- Visibilité du focus clavier (`outline: none`/`outline: 0` sans remplacement, anti-pattern WCAG courant) : 0 occurrence dans tout le projet.
+- `innerHTML`/`outerHTML`/`document.write` (DOM brut, hors `v-html` déjà vérifié absent cycle 112) : 0 occurrence.
+- `eval()`/`new Function()` : 0 occurrence.
+- Échappement HTML de `report.rs::render_html` (risque d'injection via un champ système malveillant, ex. nom de périphérique/SSID) : relu intégralement -- **chaque** champ texte inséré dans le document passe par `escape_html`, sans exception ; les seuls champs non échappés (`d.loaded_modules.len()`, `wifi_networks.len()`, `listening_ports.len()`, `fw.active` ternaire) sont des entiers/booléens, jamais du texte utilisateur/système.
+
+Aucun changement de code ce cycle. 1er cycle négatif depuis la clôture du chantier a11y -- normal après un chantier productif de 4 cycles, pas un signal d'alarme.
