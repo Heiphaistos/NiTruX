@@ -70,7 +70,7 @@ async function confirmUninstall(name: string) {
     <NxCard v-if="uninstallError" danger>{{ uninstallError }}</NxCard>
     <NxBadge v-if="uninstallResult" status="success">{{ uninstallResult }}</NxBadge>
 
-    <NxInput v-model="searchText" placeholder="Rechercher un paquet..." />
+    <NxInput v-model="searchText" placeholder="Rechercher un paquet..." aria-label="Rechercher un paquet" />
 
     <NxCard v-for="pkg in filteredPackages" :key="pkg.name" class="unin-card">
       <div class="unin-row">
@@ -79,7 +79,7 @@ async function confirmUninstall(name: string) {
         <NxButton v-if="confirmingPackage !== pkg.name" variant="danger" @click="startConfirm(pkg.name)">Désinstaller</NxButton>
       </div>
       <div v-if="confirmingPackage === pkg.name" class="unin-confirm-row">
-        <NxInput v-model="confirmText" :placeholder="`Tapez « ${pkg.name} » pour confirmer`" />
+        <NxInput v-model="confirmText" :placeholder="`Tapez « ${pkg.name} » pour confirmer`" aria-label="Confirmation du nom du paquet à désinstaller" />
         <NxButton
           variant="danger"
           :disabled="uninstalling !== null || confirmText !== pkg.name"

@@ -93,8 +93,8 @@ async function upgradeAll() {
 
     <NxCard class="pkg-install-card">
       <div class="pkg-install-row">
-        <NxSelect v-model="installManager" :options="MANAGER_OPTIONS" />
-        <NxInput v-model="installPackageName" placeholder="Nom du paquet à installer..." />
+        <NxSelect v-model="installManager" :options="MANAGER_OPTIONS" aria-label="Gestionnaire de paquets" />
+        <NxInput v-model="installPackageName" placeholder="Nom du paquet à installer..." aria-label="Nom du paquet à installer" />
         <NxButton :disabled="installing" @click="installOne">{{ installing ? "Installation..." : "Installer" }}</NxButton>
         <NxButton :disabled="upgrading" @click="upgradeAll">{{ upgrading ? "Mise à jour..." : "Tout mettre à jour" }}</NxButton>
       </div>
