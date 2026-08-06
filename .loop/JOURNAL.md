@@ -1250,3 +1250,15 @@ Vérification complète : `npx vitest run src/pages/DataRecoveryPage.spec.ts` 4/
 Version 0.25.49 → 0.25.50. Commit `f36e863`, poussé sur `origin/master`.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). **14 correctifs désormais en attente d'une release publiée** depuis v0.25.24 (47 cycles cumulés 110-156).
+
+[2026-08-06T23:50:00+02:00] Cycle 157 : généralisation du filon "action irréversible mal protégée" du cycle 156 -- recherche d'autres opérations destructrices sans garde-fou suffisant. Écarté : `quarantineFinding` (déplace un fichier vers un dossier de quarantaine, ne détruit rien -- réversibilité différente d'une suppression permanente, pas retenu). `extend-partition` déjà "growing-only, never touches existing data" par conception.
+
+**Vrai bug de perte de données silencieuse trouvé sur `clone_disk`** : la fonction `disk_write.rs::clone_disk` (fonctionnalité de clonage de disque, `DisksPage.vue`) laisse l'utilisateur taper un chemin de destination arbitraire, mais **aucune vérification d'existence préalable** n'était faite ni côté Rust ni côté script pkexec -- `dd if="$source_disk" of="$dest_path" ...` écrase/tronque inconditionnellement le fichier de destination sans le moindre avertissement. Un chemin de destination réutilisé par erreur (clone précédent laissé au même endroit) ou simplement mal tapé (collision avec un fichier existant réel) détruirait silencieusement son contenu.
+
+Corrigé côté Rust non-privilégié, AVANT tout appel pkexec : nouvelle fonction `check_dest_path_available` (lecture `Path::exists()`, aucune privilège requis) appelée dans `clone_disk` avant l'invocation `pkexec`. L'invocation `clone-disk` elle-même reste inchangée -- même raisonnement déjà établi aux cycles 117/153 : pas de re-test VM nécessaire pour une préparation non-privilégiée en amont. 2 nouveaux tests (accepte un chemin qui n'existe pas encore, rejette un chemin où un fichier réel existe déjà avec un message explicite).
+
+Vérification complète : `cargo test --lib disk_write::` 18/18, suite complète 297/297 Rust (295→297, +2), `npm run test -- --run` 318/318 frontend (inchangé, aucun fichier Vue/TS modifié), `npx vue-tsc --noEmit` 0 erreur.
+
+Version 0.25.50 → 0.25.51. Commit `cef66f3`, poussé sur `origin/master`.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine -- correctif chmod distinct, toujours en attente) + `confirmNonDestructiveActions` (cycle 148, décision produit). **15 correctifs désormais en attente d'une release publiée** depuis v0.25.24 (48 cycles cumulés 110-157).
