@@ -289,3 +289,20 @@ Premier classement des modules Rust par fraîcheur (comme fait pour les pages Vu
 **5 correctifs de sécurité maintenant en attente d'une release publiée** (quarantine-file, apt-autoremove, bootstrap symlink, benchmark symlink, permissions backup) -- aucun encore dans un `.deb`/`.rpm`/`.AppImage`. Recommandation de coupure de release maintenant répétée sur 4 cycles consécutifs (114/117/118/119).
 
 **Prochain cycle** : poursuivre l'audit module-par-module Rust (`accounts.rs`/`apt.rs` déjà couverts, `portscan.rs`/`zypper.rs` à vérifier -- 4 mentions chacun) ou repasser aux pages Vue.
+
+## ⚠️ ACTION HUMAINE REQUISE (2026-08-06, cycle 120) — faille trouvée, correctif bloqué par le classificateur de sécurité
+
+**`disk_write.rs::clone_disk` (image disque complète via `dd` dans le script pkexec) : même faille que `backup.rs` (cycle 119), en pire.** Le script `src-tauri/packaging/nitrux-pkexec-helper` (bloc `clone-disk)`) exécute `exec dd if="$source_disk" of="$dest_path" ...` en root, sans jamais restreindre les permissions du fichier de sortie. Vérifié EN DIRECT (sans écriture privilégiée) : `dd` produit du 644 (world-readable) sous l'umask standard 022, et le umask par défaut de root sur Debian est le même (confirmé par lecture de `/etc/login.defs`, pas de `UMASK` custom). Un clone de disque complet peut contenir litéralement tout (SSH, identifiants, l'OS) -- un clone world-readable est une fuite de confidentialité sérieuse.
+
+**Correctif prêt, non appliqué** -- remplacer dans `src-tauri/packaging/nitrux-pkexec-helper`, bloc `clone-disk)` :
+```sh
+exec dd if="$source_disk" of="$dest_path" bs=4M status=progress conv=fsync
+```
+par :
+```sh
+dd if="$source_disk" of="$dest_path" bs=4M status=progress conv=fsync
+chmod 600 "$dest_path"
+```
+(`set -eu` gère l'échec de `dd` exactement comme avant -- abandon immédiat, `chmod` jamais atteint si `dd` échoue.)
+
+**Pourquoi non appliqué** : la tentative d'édition de ce fichier a été bloquée par le classificateur auto mode de cette session (contenu `dd`/clonage de disque jugé sensible même pour une simple modification de fichier source texte, sans exécution). Reculé sans contourner. **Ne pas re-tenter automatiquement dans un futur cycle non-supervisé** -- sera bloqué de la même façon à chaque fois. Nécessite soit que l'utilisateur applique ce correctif lui-même, soit une session où la permission d'édition peut être accordée explicitement.

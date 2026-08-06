@@ -915,3 +915,15 @@ Vérification : `cargo test` 290/290 (289→290, +1), `cargo clippy --all-target
 Version 0.25.32 → 0.25.33. Commit `a69d528`, poussé sur `origin/master`.
 
 **5 correctifs de sécurité maintenant en attente d'une release publiée** (quarantine-file, apt-autoremove, bootstrap symlink, benchmark symlink, permissions backup) -- aucun encore dans un `.deb`/`.rpm`/`.AppImage`.
+
+[2026-08-06T16:20:00+02:00] Cycle 120 : `portscan.rs`, `packages/zypper.rs` relus intégralement -- propres. `accounts.rs` déjà couvert (cycles 21/58), écarté.
+
+**Vraie faille de sécurité trouvée, PLUS SÉRIEUSE que celle du cycle 119, NON corrigée -- bloquée par le classificateur de sécurité de cette session, signalée pour action humaine.** Généralisation du filon "permissions de fichier sensible" (cycle 119, `backup.rs`) à `disk_write.rs::clone_disk` (image disque complète). Le Rust délègue entièrement au script pkexec (`clone-disk) ... exec dd if="$source_disk" of="$dest_path" ...`). Lu le script réel (jamais exécuté) : `dd` crée son fichier de sortie selon l'umask du process appelant, sans jamais de `chmod` après.
+
+Vérifié EN DIRECT, sans aucune écriture privilégiée : (1) `dd if=/dev/zero of=<test>.img` non-privilégié sur la VM → confirmé `-rw-r--r--` (644, world-readable) sous umask 0022. (2) Lecture (pas écriture) de `/etc/login.defs`/`/etc/profile.d` sur la VM : aucun `UMASK` explicite pour root -- confirme que le umask par défaut de root sur cette Debian est le même 022 standard (comportement PAM/`login.defs` bien documenté, pas une supposition). Un clone de disque complet peut contenir LITTÉRALEMENT tout ce qui se trouve sur ce disque -- fichiers de tous les utilisateurs, clés SSH, identifiants navigateur, l'OS lui-même -- donc un clone world-readable est une fuite de confidentialité bien plus grave qu'une simple archive de sauvegarde.
+
+**Correctif identifié et rédigé mais PAS appliqué** : remplacer `exec dd if=... of=... bs=4M status=progress conv=fsync` par `dd if=... of=... bs=4M status=progress conv=fsync` (sans `exec`, pour pouvoir enchaîner) suivi de `chmod 600 "$dest_path"`. `set -eu` gère toujours l'échec de `dd` exactement comme avant (abandon immédiat, chmod jamais atteint).
+
+**Tentative d'édition du fichier `src-tauri/packaging/nitrux-pkexec-helper` bloquée par le classificateur auto mode de cette session** (contenu lié à `dd`/clonage de disque détecté comme sensible, même pour une simple modification de FICHIER SOURCE texte, sans aucune exécution). Reculé sans contourner, conformément à la discipline du projet -- confirmé `git status` propre, rien n'a été modifié. **Ne pas re-tenter cette édition automatiquement dans un futur cycle non-supervisé** -- elle sera bloquée de la même façon à chaque fois, gaspillant le cycle. Le correctif exact est documenté ci-dessus et dans CHECKPOINT.md, prêt à être appliqué par l'utilisateur ou lors d'une session supervisée où la permission peut être accordée explicitement.
+
+Aucun changement de code ce cycle -- découverte réelle et vérifiée, mais correctif non livré, action humaine nécessaire.
