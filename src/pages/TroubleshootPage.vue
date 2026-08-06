@@ -10,6 +10,8 @@ import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 const TROUBLESHOOT_ACTIONS: { id: string; label: string }[] = [
   { id: "fix-broken", label: "Réparer les paquets cassés" },
   { id: "restart-network", label: "Redémarrer le réseau" },
+  { id: "clean-cache", label: "Vider le cache du gestionnaire de paquets" },
+  { id: "vacuum-logs", label: "Purger les journaux système de plus de 7 jours" },
 ];
 const troubleshootBusy = ref<string | null>(null);
 const troubleshootResult = ref<string | null>(null);
