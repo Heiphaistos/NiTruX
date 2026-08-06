@@ -388,3 +388,13 @@ Dernier lot : les 6 pages restantes corrigées (dont `ScriptsPage.vue`'s `<texta
 `cargo tarpaulin` essayé (jamais tenté avant) mais **impraticable dans ce projet** : force une recompilation instrumentée complète de toute l'arborescence Tauri/GTK (~500+ crates) au lieu de réutiliser le cache incrémental -- après 10+ minutes, la compilation n'avait pas atteint le crate `nitrux` lui-même. **Ne pas retenter automatiquement en cycle non-supervisé** -- nécessiterait une session dédiée hors cadence normale de 10 min si un jour souhaité. `cargo llvm-cov` aurait probablement la même limitation (même mécanisme d'instrumentation).
 
 3e cycle négatif consécutif (131-133), mais celui-ci pour une contrainte d'outillage, pas un manque de piste. Aucun changement de code.
+
+## Mise à jour (2026-08-06, v0.25.38, cycle 134) — vrai bug trouvé, retour au module-par-module
+
+Seuil des 3 cycles négatifs atteint → retour à l'audit module-par-module (règle du projet). `themeStore.ts`/`ThemeEditorPage.vue` relus intégralement.
+
+**Vrai bug trouvé** : `ThemeEditorPage.vue::handleSave` (bouton "Sauvegarder" après édition de couleurs) n'appelait que `saveCustomTheme` (ajoute à la liste des thèmes perso) sans jamais activer le thème édité (`setTheme`, seule fonction qui persiste réellement "quel thème est actif"). Les couleurs éditées étaient donc silencieusement perdues au prochain lancement, malgré un message de succès. **Le flux jumeau `importTheme` avait DÉJÀ ce correctif exact** (avec son propre test de régression dédié) -- jamais répercuté sur le bouton "Sauvegarder" de l'éditeur, qui a le même défaut. Corrigé (miroir exact d'`importTheme`), nouveau test de régression. 305/305 frontend (+1), vue-tsc clean. Commit `8b2b3e5`.
+
+**Leçon méthodologique** : quand un bug est corrigé sur UN site d'appel d'une fonction store, vérifier systématiquement les AUTRES sites d'appel de la même fonction pour le même défaut -- ce bug existait probablement depuis la création de `ThemeEditorPage.vue`, non détecté car `importTheme` avait déjà "absorbé" toute l'attention portée à ce pattern.
+
+Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
