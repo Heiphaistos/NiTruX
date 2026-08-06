@@ -852,3 +852,11 @@ Aucun test `cargo`/`npm` ré-exécuté (seul le script de packaging a changé, h
 Version 0.25.28 → 0.25.29. Commit `f350c92`, poussé sur `origin/master`.
 
 **Les deux suspects historiques du CHECKPOINT.md sont maintenant clos côté code source** (quarantine-file cycle 112/113, apt-autoremove ce cycle). Reste seulement le déploiement en production via une vraie release -- aucun des deux correctifs n'est encore dans un `.deb`/`.rpm`/`.AppImage` publié.
+
+[2026-08-06T15:20:00+02:00] Cycle 115 : plus aucun suspect connu, audit page-par-page tenté d'abord (classement par mentions JOURNAL.md) -- toutes les candidates à faible score (BluetoothPage, FirewallPage, BenchmarkPage, DependenciesPage, DiskVisualizerPage, DnsSwitcherPage, DriversPage, OptimizationsPage, PeripheralsPage, TemperaturesPage) se sont révélées déjà auditées en profondeur en relisant le détail de chaque mention (le compte brut de mentions ne reflète pas fidèlement la couverture réelle -- plusieurs pages n'ont que 2-3 mentions mais chacune correspond à un vrai cycle d'audit dédié, pas juste une mention en passant).
+
+**Nouvel angle jamais utilisé sur les ~115 cycles de cette campagne : `cargo clippy --all-targets`.** 8 warnings trouvés, tous stylistiques/efficacité, aucun bug fonctionnel (confirmé par la suite de tests inchangée à 286/286 après correctif) : tabs dans des commentaires de doc (`boot_manager.rs`, `peripherals.rs`), `.trim()` redondant avant `.split_whitespace()` (`hardware_details.rs` -- `split_whitespace` saute déjà les espaces de tête/fin), `sort_by`→`sort_by_key(Reverse)` (`largefiles.rs`), `vec![...]`→littéral de tableau pour 2 fixtures de taille fixe en test (`largefiles.rs`), type 4-uplet complexe extrait en alias `PtyHandles` (`terminal.rs`). Tous corrigés -- 0 warning clippy restant.
+
+`cargo clippy` n'avait jamais été utilisé dans cette campagne jusqu'ici (confirmé par recherche dans ce journal) -- à ajouter à la rotation d'angles transversaux pour les futurs cycles si un audit page-par-page redevient stérile.
+
+Version 0.25.29 → 0.25.30. Commit `55f38b3`, poussé sur `origin/master`.

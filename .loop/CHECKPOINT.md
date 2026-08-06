@@ -247,3 +247,11 @@ VM toujours joignable (172.21.233.222). Suspect `apt-autoremove` (mentionné cyc
 **Les 2 suspects historiques du CHECKPOINT (quarantine-file, apt-autoremove) sont maintenant clos côté code source.** Aucun des deux n'est encore dans une release publiée -- **recommandation forte : couper une nouvelle release (.deb/.rpm/.AppImage) bientôt** pour livrer ces deux correctifs (le premier a une sévérité réelle : tentative `mv /` en root).
 
 **Plus aucun suspect connu en attente.** Prochains cycles : reprendre l'audit page-par-page (méthode établie cycle 111-112, classement par mentions JOURNAL.md) ou un nouveau sweep transversal si une piste se présente.
+
+## Mise à jour (2026-08-06, v0.25.30, cycle 115)
+
+Audit page-par-page retenté : toutes les candidates à faible score de mentions se sont révélées déjà auditées en profondeur (le compte de mentions ne reflète pas fidèlement la couverture -- vérifié en relisant chaque mention). **Nouvel angle jamais essayé sur toute la campagne : `cargo clippy --all-targets`.** 8 warnings, tous stylistiques (tabs doc comments, `.trim()` redondant, `sort_by`→`sort_by_key`, `vec!`→littéral tableau en test, type complexe extrait en alias) -- 0 bug fonctionnel, tous corrigés, 0 warning restant, 286/286 tests inchangé. Commit `55f38b3`.
+
+**`cargo clippy` à ajouter à la rotation d'angles transversaux** pour les prochains cycles si l'audit page-par-page redevient stérile -- jamais utilisé avant ce cycle en ~115 cycles de campagne.
+
+**Rappel non résolu depuis cycle 113/114** : les 2 correctifs pkexec (quarantine-file racine, apt-autoremove exit-code) sont committés mais PAS encore dans une release publiée -- recommandation toujours active de couper une nouvelle release bientôt.
