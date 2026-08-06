@@ -1009,3 +1009,5 @@ Version 0.25.36 → 0.25.37. Commit `391aeb2`, poussé sur `origin/master`.
 - Échappement HTML de `report.rs::render_html` (risque d'injection via un champ système malveillant, ex. nom de périphérique/SSID) : relu intégralement -- **chaque** champ texte inséré dans le document passe par `escape_html`, sans exception ; les seuls champs non échappés (`d.loaded_modules.len()`, `wifi_networks.len()`, `listening_ports.len()`, `fw.active` ternaire) sont des entiers/booléens, jamais du texte utilisateur/système.
 
 Aucun changement de code ce cycle. 1er cycle négatif depuis la clôture du chantier a11y -- normal après un chantier productif de 4 cycles, pas un signal d'alarme.
+
+[2026-08-06T19:25:00+02:00] Cycle 132 : `main.rs` (1 mention, jamais lu) -- boilerplate Tauri trivial, rien à trouver. `network_write.rs` déjà relu intégralement au cycle 105 (validations + deadlock stdin déjà confirmés sains). Re-exécution `npm audit`/`cargo audit` (dernière fois cycle 116, bases de vulnérabilités évoluent avec le temps) : toujours 0 vraie vulnérabilité des deux côtés. 2e cycle négatif consécutif, noté brièvement.
