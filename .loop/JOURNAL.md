@@ -1316,3 +1316,14 @@ Version 0.25.54 → 0.25.55. Commit `63de277`, poussé sur `origin/master`.
 **Filon "locale sans LC_ALL=C" : 2 bugs réels trouvés sur 2 candidats examinés (apt cycle 160, ufw cycle 161)** -- taux de succès élevé, mérite d'être poursuivi. Candidats restants les plus plausibles pour un prochain cycle : `systemctl is-enabled`/`list-unit-files` (optimizations.rs/processes.rs, états "enabled"/"disabled" potentiellement traduits par systemd), `bluetoothctl show` (bluetooth.rs, noms de propriétés). `smartctl`/`nmcli -t`/`ss`/`lsblk -J` jugés à faible risque (formats machine-readable dédiés ou binaires ne traduisant historiquement pas leur sortie) mais pas formellement vérifiés.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). **18 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (52 cycles cumulés 110-161).
+
+[2026-08-07T01:42:00+02:00] Cycle 162 : clôture rigoureuse du filon "locale sans LC_ALL=C" (cycles 160-161), les 3 candidats restants identifiés vérifiés systématiquement, aucun n'est un bug -- **tous les 3 vérifiés par preuve, pas par supposition** :
+- `systemctl is-enabled`/`list-unit-files --state=enabled` : sortie "enabled" identique avec et sans `LC_ALL=C` sur la VM française -- confirmé EN DIRECT (systemd garde volontairement ses mots-clés d'état non traduits pour la stabilité des scripts).
+- `bluetoothctl show` (bluetooth.rs) : aucun contrôleur Bluetooth sur cette VM (Hyper-V), donc pas de vraie ligne `Powered:` observable en direct -- contourné en vérifiant `dpkg -L bluez` : **0 fichier `.mo`** dans tout le paquet (143 fichiers listés, aucune trace de gettext), donc `bluetoothctl` n'a structurellement aucune traduction à appliquer, quelle que soit la locale.
+- `smartctl` (smart.rs) : `smartmontools` absent de la VM -- téléchargé via `apt-get download`/`dpkg-deb -x` (sans root, sans installation) et vérifié : **0 fichier `.mo`** également.
+
+**Filon "locale sans LC_ALL=C" désormais clos avec un bilan de 2 bugs réels sur 5 candidats examinés au total (apt cycle 160, ufw cycle 161 ; systemctl/bluetoothctl/smartctl cycle 162 tous confirmés sûrs)** -- un taux de réussite honorable pour un pattern transversal, mais épuisé sur les commandes du projet qui parsent du texte en langage naturel plutôt que des formats machine-readable dédiés (JSON, `-t`/terse, positions fixes).
+
+Aucun changement de code ce cycle. Artefacts temporaires nettoyés de la VM après vérification.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). 18 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (53 cycles cumulés 110-162).
