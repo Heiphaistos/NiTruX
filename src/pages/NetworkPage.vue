@@ -154,7 +154,7 @@ async function runScan() {
 
       <NxCard>
         <NxSectionHeader title="Wi-Fi" />
-        <div v-for="w in snapshot.wifi_networks" :key="w.ssid" class="net-row">
+        <div v-for="(w, wi) in snapshot.wifi_networks" :key="`${w.ssid}-${wi}`" class="net-row">
           <span>{{ w.ssid }}{{ w.connected ? " (connecté)" : "" }}</span>
           <span>{{ w.security }} · {{ w.signal_percent }}%</span>
         </div>
@@ -162,7 +162,7 @@ async function runScan() {
 
       <NxCard>
         <NxSectionHeader title="Ports en écoute" />
-        <div v-for="p in snapshot.listening_ports" :key="p.port" class="net-row">
+        <div v-for="(p, pi) in snapshot.listening_ports" :key="`${p.port}-${pi}`" class="net-row">
           <span>{{ p.port }}</span>
           <span>{{ p.process ?? "?" }}</span>
         </div>
@@ -203,7 +203,7 @@ async function runScan() {
         <NxButton :disabled="scanning" @click="runScan">{{ scanning ? "Scan..." : "Scanner" }}</NxButton>
       </div>
       <NxCard v-if="scanError" danger>{{ scanError }}</NxCard>
-      <div v-for="r in scanResults" :key="r.port" class="net-row">
+      <div v-for="(r, ri) in scanResults" :key="`${r.port}-${ri}`" class="net-row">
         <span>{{ r.port }}</span>
         <span :class="r.open ? 'net-open' : 'net-closed'">{{ r.open ? "ouvert" : "fermé" }}</span>
       </div>
