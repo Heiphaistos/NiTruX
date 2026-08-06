@@ -1214,3 +1214,15 @@ Vérification complète : `cargo test --lib disk_write::` 16/16, suite complète
 Version 0.25.48 → 0.25.49. Commit `7f0f50e`, poussé sur `origin/master`.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). **13 correctifs désormais en attente d'une release publiée** depuis v0.25.24 (44 cycles cumulés 110-153).
+
+[2026-08-06T23:18:00+02:00] Cycle 154 : lecture intégrale du script `nitrux-pkexec-helper` (415 lignes, lecture seule, aucune modification -- donc aucun re-test VM nécessaire) à la recherche d'autres bugs de logique du même type que le correctif `extend-partition` du cycle précédent. Deux pistes envisagées puis infirmées par analyse rigoureuse plutôt qu'un pattern-matching superficiel :
+
+1. **`upgrade-all` (lignes 283-299)** : structure similaire en apparence à l'ancien bug `apt-autoremove` (chaînes de `if command -v X; then ...; fi` sans capture explicite du code de sortie) -- mais **différence structurelle clé** : `apt-autoremove` avait le défaut car la commande potentiellement échouante était en réalité `command -v` (la CONDITION du if), alors que dans `upgrade-all` les commandes potentiellement échouantes (`apt-get upgrade -y` etc.) sont des instructions ORDINAIRES à l'intérieur du corps du if, donc pleinement soumises à `set -eu` déjà actif en tête de script -- un échec réel interromprait immédiatement le script avec le bon code de sortie. Pas un bug.
+
+2. **`write-hosts`/`set-dns` (lignes 301-323)** : chemin temporaire prévisible (`/etc/hosts.nitrux-tmp`) avant `mv` atomique -- ressemble superficiellement aux failles CWE-377 déjà corrigées (`pkexec_bootstrap.rs` cycle 117, `benchmark.rs` cycle 118), mais **modèle de menace différent** : ces correctifs précédents concernaient `/tmp` (répertoire world-writable, où n'importe quel utilisateur non-privilégié peut pré-positionner un symlink). `/etc/` n'est PAS world-writable -- un attaquant sans accès root ne peut pas y écrire de symlink en amont. Pas exploitable, pas un bug.
+
+Sweep complémentaire : `InstalledSoftwarePage.vue` (filtre insensible à la casse correct des deux côtés) et `UninstallerPage.vue` (confirmation par saisie exacte du nom du paquet déjà en place pour la désinstallation -- mécanisme de confirmation robuste indépendant du réglage mort `confirmNonDestructiveActions` cycle 148, contexte utile : les actions vraiment destructrices de ce projet ont déjà leur propre garde-fou dédié).
+
+Aucun changement de code ce cycle -- audit honnête et rigoureux, deux fausses pistes explicitement infirmées par le raisonnement plutôt que corrigées par précaution.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). 13 correctifs toujours en attente d'une release publiée.
