@@ -1,5 +1,17 @@
+# Repo-wide: force LF for every file git detects as text, regardless of a
+# given machine's core.autocrlf. Without this, `core.autocrlf=true` (Git for
+# Windows' default) re-materializes the whole working tree as CRLF on every
+# fresh checkout -- confirmed live 2026-08-06: 207 files showed as "modified"
+# after a plain `git checkout`/session restart on Windows, 100% whitespace
+# noise (`git diff --stat -w` was empty), not real changes. The previous rule
+# below only covered packaging scripts, so this same churn kept recurring on
+# every other file in the repo.
+* text=auto eol=lf
+
 # Force LF line endings for Linux polkit packaging assets, regardless of the
 # platform's core.autocrlf setting. These files are bundled verbatim into the
 # .deb/.rpm packages and executed on Linux at package-install/runtime; a CRLF
 # shebang (`#!/bin/sh\r`) breaks execution with "bad interpreter" errors.
+# (Redundant with the repo-wide rule above now, kept for the specific
+# rationale documented here.)
 src-tauri/packaging/* text eol=lf
