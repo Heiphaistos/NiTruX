@@ -36,7 +36,7 @@ function securityStatus(security: string): "success" | "warning" | "danger" {
 
     <NxCard v-if="error" danger>{{ error }}</NxCard>
 
-    <NxCard v-for="net in sortedNetworks" :key="net.ssid" class="wifi-row">
+    <NxCard v-for="(net, i) in sortedNetworks" :key="`${net.ssid}-${i}`" class="wifi-row">
       <div class="wifi-info">
         <span class="wifi-ssid">{{ net.ssid }}</span>
         <span v-if="net.connected" class="wifi-connected">(connecté)</span>
