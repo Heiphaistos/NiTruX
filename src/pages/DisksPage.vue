@@ -159,13 +159,14 @@ function bytesToGb(bytes: number): string {
     <NxCard danger>
       <NxSectionHeader title="Formater une partition" description="Cette action efface DÉFINITIVEMENT toutes les données de la partition. Aucune récupération possible." />
       <div class="disks-form-row">
-        <NxInput v-model="formatDevice" placeholder="Périphérique (ex: /dev/sda1)" />
-        <NxSelect v-model="formatFstype" :options="FSTYPE_OPTIONS" />
+        <NxInput v-model="formatDevice" placeholder="Périphérique (ex: /dev/sda1)" aria-label="Périphérique à formater" />
+        <NxSelect v-model="formatFstype" :options="FSTYPE_OPTIONS" aria-label="Système de fichiers" />
       </div>
       <div class="disks-form-row">
         <NxInput
           v-model="formatConfirmText"
           :placeholder="`Tapez « ${formatDevice} » pour confirmer`"
+          aria-label="Confirmation du périphérique à formater"
         />
         <NxButton
           variant="danger"
@@ -182,9 +183,9 @@ function bytesToGb(bytes: number): string {
     <NxCard>
       <NxSectionHeader title="Étendre une partition" />
       <div class="disks-form-row">
-        <NxInput v-model="extendDevice" placeholder="Partition (ex: /dev/sda1)" />
-        <NxInput v-model="extendDisk" placeholder="Disque (ex: /dev/sda)" />
-        <NxInput v-model="extendPartNumber" placeholder="N° (ex: 1)" />
+        <NxInput v-model="extendDevice" placeholder="Partition (ex: /dev/sda1)" aria-label="Partition à étendre" />
+        <NxInput v-model="extendDisk" placeholder="Disque (ex: /dev/sda)" aria-label="Disque contenant la partition" />
+        <NxInput v-model="extendPartNumber" placeholder="N° (ex: 1)" aria-label="Numéro de la partition" />
         <NxButton :disabled="extendBusy" @click="runExtend">{{ extendBusy ? "Extension..." : "Étendre" }}</NxButton>
       </div>
       <NxCard v-if="extendError" danger>{{ extendError }}</NxCard>
@@ -194,8 +195,8 @@ function bytesToGb(bytes: number): string {
     <NxCard>
       <NxSectionHeader title="Cloner un disque" />
       <div class="disks-form-row">
-        <NxInput v-model="cloneSourceDisk" placeholder="Disque source (ex: /dev/sda)" />
-        <NxInput v-model="cloneDestPath" placeholder="Fichier image de destination" />
+        <NxInput v-model="cloneSourceDisk" placeholder="Disque source (ex: /dev/sda)" aria-label="Disque source à cloner" />
+        <NxInput v-model="cloneDestPath" placeholder="Fichier image de destination" aria-label="Chemin du fichier image de destination" />
         <NxButton :disabled="cloneBusy" @click="runClone">{{ cloneBusy ? "Clonage..." : "Cloner" }}</NxButton>
       </div>
       <NxCard v-if="cloneError" danger>{{ cloneError }}</NxCard>

@@ -1,5 +1,9 @@
 <script setup lang="ts">
-defineProps<{ modelValue: string; options: { value: string; label: string }[] }>();
+// See NxInput.vue's identical note: a bare <select> with no visible,
+// associated label has no accessible name at all for assistive
+// technology (worse than NxInput -- there isn't even a placeholder
+// fallback). `ariaLabel` is optional and backward-compatible.
+defineProps<{ modelValue: string; options: { value: string; label: string }[]; ariaLabel?: string }>();
 defineEmits<{ "update:modelValue": [string] }>();
 </script>
 
@@ -7,6 +11,7 @@ defineEmits<{ "update:modelValue": [string] }>();
   <select
     class="nx-select"
     :value="modelValue"
+    :aria-label="ariaLabel"
     @change="$emit('update:modelValue', ($event.target as HTMLSelectElement).value)"
   >
     <option v-for="opt in options" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
