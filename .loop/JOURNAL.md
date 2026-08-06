@@ -1082,3 +1082,11 @@ Aucun changement de code ce cycle -- confirme que le filon catalogue est bien cl
 [2026-08-06T21:00:00+02:00] Cycle 141 : nouvel angle -- cohérence croisée données/implémentation pour les 3 systèmes de personnalisation (thèmes/styles/dispositions). `builtinThemes` (13 thèmes) déjà testé de façon exhaustive (id uniques, toutes les clés couleur requises, format hex valide) -- rien à ajouter. `styleRegistry` (12 styles) : `diff` entre les id du registre et les sélecteurs `[data-nx-style="..."]` de `style-tokens.css` = vide, aucun style orphelin sans CSS ni sélecteur CSS mort. `layoutRegistry` (8 dispositions) : `LayoutShell.vue` utilise `Record<LayoutId, Component>` -- TypeScript lui-même garantit qu'aucun id de layout ne peut manquer de composant (déjà vérifié à chaque cycle via `vue-tsc --noEmit`), plus un garde-fou explicite en commentaire pour une valeur `current` invalide (localStorage modifié à la main, ou id renommé/retiré dans une future version) : repli sur `SidebarClassicLayout` plutôt que rendu silencieusement vide.
 
 Aucun changement de code ce cycle -- 3 vérifications de cohérence croisée distinctes, toutes propres.
+
+[2026-08-06T21:10:00+02:00] Cycle 142 : `appCatalog.spec.ts` vérifié déjà exhaustif (ids uniques, champs requis, `installMethod` valide). Mais `installProfiles.ts` (data/`InstallProfilesPage.vue`) **n'avait aucun fichier de test dédié du tout** -- l'invariant "chaque `appId` référencé existe dans `appCatalog`" n'avait été vérifié qu'une fois, manuellement, en lisant le code (cycle 136), jamais codifié. Un futur typo dans un nouveau profil, ou un id retiré/renommé d'`appCatalog.ts`, échouerait SILENCIEUSEMENT : `InstallProfilesPage.vue::selectedEntries` filtre déjà les id non résolus sans erreur, donc le bouton de profil continuerait d'afficher son compte d'origine ("N applications") tout en sélectionnant moins d'apps en réalité, sans aucune indication nulle part.
+
+Nouveau `installProfiles.spec.ts` (n'existait pas) : ids de profil uniques, champs requis non vides, chaque `appId` référencé résout bien vers une entrée `appCatalog` réelle, aucun `appId` dupliqué au sein d'un même profil.
+
+Vérification : `npx vitest run` 4/4, suite complète 313/313 (309→313, +4), `npx vue-tsc --noEmit` 0 erreur.
+
+Version 0.25.40 → 0.25.41. Commit `a71878e`, poussé sur `origin/master`.
