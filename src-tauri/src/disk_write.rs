@@ -153,6 +153,31 @@ pub fn validate_partition_number(n: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// The pkexec helper's `extend-partition` subcommand unconditionally runs
+/// `resize2fs` after growing the partition table entry -- ext2/3/4 only.
+/// This app explicitly supports formatting a partition as btrfs/xfs/vfat
+/// too (see `validate_fstype`), and the Extend form takes any partition
+/// path with no filesystem awareness at all, so a user could easily point
+/// it at a non-ext4 partition and get a confusing native `resize2fs`
+/// error ("Bad magic number in super-block") instead of an actionable
+/// one. Checked here, before the privileged call is ever made -- the
+/// `extend-partition` pkexec invocation itself is unchanged by this, so
+/// this does not require a live VM re-test.
+pub fn validate_fstype_for_extend(fstype: &str) -> Result<(), String> {
+    match fstype.trim() {
+        "ext2" | "ext3" | "ext4" => Ok(()),
+        "" => Err("impossible de déterminer le système de fichiers de cette partition".to_string()),
+        other => Err(format!(
+            "extension non prise en charge pour le système de fichiers '{other}' -- seuls ext2, ext3 et ext4 sont actuellement pris en charge par cette fonctionnalité"
+        )),
+    }
+}
+
+fn check_extendable_filesystem(device: &str) -> Result<(), String> {
+    let fstype = subprocess::run_with_timeout("lsblk", &["-no", "FSTYPE", device], Duration::from_secs(5))?;
+    validate_fstype_for_extend(&fstype)
+}
+
 /// Mirrors the helper script's own `validate_image_dest_path`.
 pub fn validate_image_dest_path(path: &str) -> Result<(), String> {
     if path.is_empty() {
@@ -197,6 +222,7 @@ pub fn extend_partition(device: String, disk: String, part_number: String) -> Re
     validate_partition_device(&device)?;
     validate_disk_device(&disk)?;
     validate_partition_number(&part_number)?;
+    check_extendable_filesystem(&device)?;
     subprocess::run_with_timeout(
         "pkexec",
         &[PKEXEC_EXTEND_PARTITION, "extend-partition", &device, &disk, &part_number],
@@ -260,6 +286,36 @@ mod tests {
         assert!(validate_fstype("ntfs").is_err());
         assert!(validate_fstype("").is_err());
         assert!(validate_fstype("ext4; rm -rf /").is_err());
+    }
+
+    #[test]
+    fn extend_accepts_every_ext_family_filesystem() {
+        assert!(validate_fstype_for_extend("ext2").is_ok());
+        assert!(validate_fstype_for_extend("ext3").is_ok());
+        assert!(validate_fstype_for_extend("ext4").is_ok());
+        // lsblk's real output can have trailing whitespace/newline.
+        assert!(validate_fstype_for_extend("ext4\n").is_ok());
+    }
+
+    #[test]
+    fn extend_rejects_a_filesystem_this_app_can_format_but_cannot_yet_extend() {
+        // Regression guard for the actual bug: the pkexec helper's
+        // `extend-partition` unconditionally runs `resize2fs` (ext-only)
+        // regardless of the partition's real filesystem -- btrfs and xfs
+        // are both filesystems this same app explicitly supports
+        // formatting (`validate_fstype`), so a user extending one of
+        // those must get a clear, actionable error instead of a
+        // confusing native resize2fs failure.
+        let btrfs_err = validate_fstype_for_extend("btrfs").expect_err("btrfs should be rejected");
+        assert!(btrfs_err.contains("btrfs"), "error should name the actual filesystem: {btrfs_err}");
+        assert!(validate_fstype_for_extend("xfs").is_err());
+        assert!(validate_fstype_for_extend("vfat").is_err());
+    }
+
+    #[test]
+    fn extend_rejects_an_undetectable_filesystem_with_a_distinct_message() {
+        let err = validate_fstype_for_extend("").expect_err("empty fstype should be rejected");
+        assert!(err.contains("impossible de déterminer"), "unexpected message: {err}");
     }
 
     #[test]
