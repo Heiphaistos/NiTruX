@@ -312,3 +312,11 @@ chmod 600 "$dest_path"
 Note "ne pas re-tenter" respectée -- portion cherchée ailleurs. 8 vérifications distinctes, toutes propres/hors de portée : `portscan.rs`/`packages/zypper.rs` (relus intégralement), `ReportGeneratorPage.vue` (téléchargement navigateur natif, pas le même risque que backup/clone-disk), sweep exhaustif de tous les `File::create`/`OpenOptions`/`fs::write` du code Rust hors tests (rien en production restant), ID de session terminal (non pertinent, app desktop mono-utilisateur), `trash.rs::copy_recursive` (hypothèse de perte de permissions sur repli cross-FS **infirmée** par un vrai test Rust compilé : `std::fs::copy` préserve bien le mode 0600→0600).
 
 Aucun changement de code ce cycle. Le seul élément en attente reste `clone-disk` (cycle 120, ci-dessus) -- toujours action humaine requise.
+
+## Mise à jour (2026-08-06, v0.25.33, cycle 122) — 2e cycle propre consécutif
+
+Nouvel angle : fuite de données frontend (`console.log`/`localStorage`) -- 0 occurrence de log, `localStorage` utilisé uniquement pour des données non-sensibles attendues. `NxSparkline.vue`/`preferencesStore.ts` relus intégralement -- déjà défensifs, rien trouvé.
+
+**2e cycle consécutif sans correctif (121+122)** -- pas encore 3 (règle du projet), mais si le prochain cycle est négatif aussi, repasser à un sweep de pattern transversal plutôt que module-par-module (qui montre des signes d'épuisement après 122 cycles de campagne).
+
+Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
