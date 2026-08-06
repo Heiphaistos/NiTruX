@@ -1174,3 +1174,19 @@ Vérification complète : `npx vitest run src/pages/WiFiAnalyzerPage.spec.ts` 4/
 Version 0.25.45 → 0.25.46. Commit `c33ec03`, poussé sur `origin/master`.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). 10 correctifs désormais en attente d'une release publiée.
+
+[2026-08-06T22:52:00+02:00] Cycle 151 : généralisation directe du correctif de clé `v-for` du cycle 150 -- grep de tous les bindings `:key="champ.unique?"` sur `src/pages/*.vue`, chaque candidat évalué contre la plausibilité réelle d'une collision (PCI slot/hash de dédoublonnage/nom de paquet installé = uniques par construction, écartés).
+
+**`NetworkPage.vue` : le MÊME bug exact que `WiFiAnalyzerPage.vue` (cycle 150), non corrigé ici** -- `w.ssid` sur sa propre liste `snapshot.wifi_networks` (même source `nmcli`, même risque mesh/SSID masqué).
+
+**2 bugs supplémentaires confirmés, plus certains encore** : `listening_ports` clée sur `p.port` seul -- la vraie source (`ss -tulnp`) liste UNE LIGNE PAR SOCKET, pas par port unique : n'importe quel service double-lié tcp+udp (`systemd-resolved` sur le port 53, cas quasi-universel) ou lié à la fois en IPv4 et IPv6 (comportement par défaut de la plupart des services modernes) produit deux lignes partageant le même numéro de port -- collision garantie sur un système normal, pas un cas limite théorique comme pour le WiFi mesh. `scanResults` (scanner de ports) clé sur `r.port` seul -- collision si l'utilisateur saisit un port en double dans la liste séparée par virgules (cas limite de saisie, moins critique mais même correctif trivial à appliquer tant que le fichier est ouvert).
+
+Reproduction tentée comme au cycle 150 (test avec deux ports `53` dupliqués, `systemd-resolved` sur tcp et udp) -- confirmé que le rendu produit bien 2 lignes correctement même avant correctif (même limite déjà documentée : montage initial 0→N emprunte le chemin rapide de Vue, ne déclenche jamais la vérification de clé dupliquée de `patchKeyedChildren`). Corrigé quand même par cohérence défensive, les 3 bindings de ce fichier passés en clé composite `valeur-index`.
+
+Vérification complète : `npx vitest run src/pages/NetworkPage.spec.ts` 8/8, suite complète 316/316 frontend (315→316, +1), `npx vue-tsc --noEmit` 0 erreur, `cargo test --lib` 292/292 Rust (sanity check, aucun fichier Rust modifié).
+
+Version 0.25.46 → 0.25.47. Commit `71787fe`, poussé sur `origin/master`.
+
+**Filon "clé `v-for` non-unique" : les candidats les plus plausibles (structures backend produisant naturellement des doublons) sont désormais traités sur 2 pages (WiFiAnalyzerPage, NetworkPage).** Reste théoriquement `UpdateHistoryPage.vue::e.start_date` (collision seulement si deux commandes apt démarrent la même seconde, très improbable) -- non traité, jugé trop marginal pour justifier le changement sans signal plus fort.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). 11 correctifs désormais en attente d'une release publiée depuis v0.25.24 -- recommandation de coupure de release toujours active, désormais après 42 cycles cumulés (110-151) et 11 correctifs réels non livrés.
