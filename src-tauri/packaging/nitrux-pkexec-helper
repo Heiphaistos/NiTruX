@@ -222,9 +222,23 @@ case "$cmd" in
     action="${2:-}"
     case "$action" in
       apt-autoremove)
-        if command -v apt-get >/dev/null 2>&1; then apt-get autoremove -y; fi
-        if command -v dnf >/dev/null 2>&1; then dnf autoremove -y; fi
-        if command -v zypper >/dev/null 2>&1; then zypper --non-interactive remove --clean-deps; fi
+        # Confirmed live (2026-08-06, isolated reproduction with a fake
+        # apt-get standing in via PATH, never the real one): with the
+        # naive `if cmd; then ...; fi` sequence below, on any system with
+        # only ONE of these three managers (the normal case -- this is
+        # the target distro's own apt on Debian), the LAST `if` in the
+        # chain tests a manager that ISN'T installed, and `if false; then
+        # ...; fi` with no `else` exits 0 by POSIX definition -- so the
+        # script's real exit code was ALWAYS 0 (success) regardless of
+        # whether the one manager that DID run actually succeeded or
+        # failed. A real `apt-get autoremove` failure was silently
+        # reported as success to the user 100% of the time. Capture the
+        # actual exit code of whichever manager(s) actually ran instead.
+        status=0
+        if command -v apt-get >/dev/null 2>&1; then apt-get autoremove -y || status=$?; fi
+        if command -v dnf >/dev/null 2>&1; then dnf autoremove -y || status=$?; fi
+        if command -v zypper >/dev/null 2>&1; then zypper --non-interactive remove --clean-deps || status=$?; fi
+        exit "$status"
         ;;
       journal-vacuum-size)
         exec journalctl --vacuum-size=200M
