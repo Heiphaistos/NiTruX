@@ -836,3 +836,19 @@ Aucun test `cargo`/`npm` ré-exécuté ce cycle -- seul un script shell de packa
 Version 0.25.27 → 0.25.28. Commit `74a3d96`, poussé sur `origin/master`.
 
 **Les deux moitiés du correctif quarantine-file sont maintenant faites** (Rust cycle 112 + script pkexec ce cycle) -- le suspect est clos côté code source. Reste : embarquer ce correctif dans la prochaine vraie release publiée (le script packagé actuellement en prod sur les machines utilisateur a toujours le trou), à signaler à l'utilisateur comme prioritaire pour la prochaine coupure de release étant donné la sévérité (tentative de `mv /` en root).
+
+[2026-08-06T15:05:00+02:00] Cycle 114 : VM Debian re-testée (172.21.233.222:22, TCP direct) -- toujours joignable, même session que le cycle précédent. Reprise du 2e suspect noté en CHECKPOINT.md : `apt-autoremove` exit-code masqué.
+
+Relecture du code réel (`system-tool apt-autoremove` dans `nitrux-pkexec-helper`) : la branche vérifiait les 3 gestionnaires (`apt-get`/`dnf`/`zypper`) via `if command -v X; then X autoremove; fi` répété 3 fois, sans `exec` (contrairement à toutes les autres branches du script). Hypothèse formée : sur un système réel avec un seul gestionnaire présent (le cas normal -- Debian, la cible, n'a jamais que `apt-get`), le DERNIER `if` de la chaîne teste un gestionnaire absent, et `if false; then ...; fi` sans `else` retourne 0 par définition POSIX -- donc le code de sortie final du bloc serait TOUJOURS 0, indépendamment du résultat réel d'`apt-get autoremove`.
+
+Reproduit EN DIRECT (localement sous WSL2, aucun besoin de VM pour ce test précis -- sémantique shell pure, identique partout) : script isolé avec un faux `apt-get` substitué via `PATH` (jamais le vrai, jamais de vraie suppression de paquet), `dnf`/`zypper` absents. Confirmé : code de sortie simulé 0/1/100 → le bloc d'origine rapporte TOUJOURS 0, quel que soit le résultat réel. Pire que l'hypothèse initiale (pas juste "code trompeur", mais "succès systématiquement rapporté même en cas d'échec réel").
+
+**Impact utilisateur réel confirmé côté Rust** : `run_with_timeout` (subprocess.rs) traite tout exit non-zéro comme `Err`. Le bouton "nettoyer les paquets orphelins" (`SystemToolsPage.vue`/`run_system_tool`) affichait donc TOUJOURS un succès, même sur un vrai échec `apt-get` (dépendances cassées, réseau, disque plein).
+
+Corrigé : capture du vrai code de sortie de quelque gestionnaire ait réellement tourné (`|| status=$?`), `exit "$status"` explicite au lieu de tomber en fin de bloc. Re-testé avec le même harnais isolé après correctif : 0/1/100 simulés → 0/1/100 rapportés correctement. Syntaxe vérifiée `dash -n`.
+
+Aucun test `cargo`/`npm` ré-exécuté (seul le script de packaging a changé, hors build Rust/frontend).
+
+Version 0.25.28 → 0.25.29. Commit `f350c92`, poussé sur `origin/master`.
+
+**Les deux suspects historiques du CHECKPOINT.md sont maintenant clos côté code source** (quarantine-file cycle 112/113, apt-autoremove ce cycle). Reste seulement le déploiement en production via une vraie release -- aucun des deux correctifs n'est encore dans un `.deb`/`.rpm`/`.AppImage` publié.
