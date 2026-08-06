@@ -73,19 +73,21 @@ async function upgradeAll() {
     </div>
 
     <NxCard v-else>
-      <table class="upd-table">
-        <thead>
-          <tr><th>Source</th><th>Paquet</th><th>Version actuelle</th><th>Nouvelle version</th></tr>
-        </thead>
-        <tbody>
-          <tr v-for="u in updates" :key="`${u.source}-${u.name}`">
-            <td><NxBadge status="info">{{ u.source }}</NxBadge></td>
-            <td>{{ u.name }}</td>
-            <td>{{ u.current_version || "—" }}</td>
-            <td>{{ u.new_version }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="upd-table-scroll">
+        <table class="upd-table">
+          <thead>
+            <tr><th>Source</th><th>Paquet</th><th>Version actuelle</th><th>Nouvelle version</th></tr>
+          </thead>
+          <tbody>
+            <tr v-for="u in updates" :key="`${u.source}-${u.name}`">
+              <td><NxBadge status="info">{{ u.source }}</NxBadge></td>
+              <td>{{ u.name }}</td>
+              <td>{{ u.current_version || "—" }}</td>
+              <td>{{ u.new_version }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </NxCard>
   </div>
 </template>
@@ -95,7 +97,8 @@ async function upgradeAll() {
 .upd-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
 .upd-actions { display: flex; gap: 10px; }
 .upd-empty { color: var(--nx-text-secondary); }
-.upd-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.upd-table-scroll { overflow-x: auto; }
+.upd-table { width: 100%; min-width: 480px; border-collapse: collapse; font-size: 13px; }
 .upd-table th { text-align: left; color: var(--nx-text-secondary); border-bottom: 1px solid var(--nx-style-border-color); padding: 8px; }
 .upd-table td { padding: 8px; border-bottom: 1px solid var(--nx-style-border-color); }
 </style>
