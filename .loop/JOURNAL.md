@@ -1055,3 +1055,20 @@ Nouveau fichier `systemToolsCatalog.spec.ts` (n'existait pas) : unicité des id,
 Vérification : `npx vitest run src/data/systemToolsCatalog.spec.ts` 3/3, suite complète 308/308 (305→308, +3), `npx vue-tsc --noEmit` 0 erreur.
 
 Version 0.25.38 → 0.25.39. Commit `2dc84e9`, poussé sur `origin/master`.
+
+[2026-08-06T20:35:00+02:00] Cycle 139 : généralisation directe du cycle 138 -- même défaut structurel (`run_script` jette tout sur code de sortie non-nul), mais côté `grep`/`pgrep` cette fois : "aucune correspondance" (exit 1) est une réponse VALIDE et routinière pour certaines entrées (pas juste un cas limite comme pour `du`), que le frontend gère déjà proprement (`SystemToolsPage.vue` affiche "(terminé, aucune sortie)" sur un succès vide -- confirmé en lisant le code avant de corriger, pour ne pas juste remplacer une erreur par un blanc confus).
+
+Recherche des `grep`/`pgrep` non pipés du catalogue (31 au total) ; la plupart ciblent des champs kernel/proc universellement présents (`/proc/meminfo`, `/proc/cpuinfo`) où un échec serait une vraie anomalie à signaler -- laissés intacts. 8 entrées identifiées par raisonnement comme "absence de résultat = réponse normale pour une part réelle des utilisateurs", vérifiées EN DIRECT sur la vraie VM (Hyper-V Gen2) :
+- `lspci | grep -i vga`/`-i audio` (gpu-info/audio-devices) : **CONFIRMÉS CASSÉS**, EXIT=1 sur cette VM -- le chemin VMBus synthétique n'est classé PCI ni "VGA" ni "audio" (cohérent avec un piège Hyper-V Gen2 déjà documenté ailleurs dans ce projet).
+- `pgrep -a openvpn`/`env | grep -i proxy` (openvpn-status-check/curl-check-proxy) : **CONFIRMÉS CASSÉS**, cas normal (pas de VPN/proxy configuré) pour la majorité des utilisateurs, pas un cas limite.
+- `curl --version | grep -i http3` (curl-check-http3) : échoue différemment (curl absent sur cette VM minimale) mais même issue UX cassée.
+- `grep nameserver /etc/resolv.conf`/`mount | grep '(ro'` (cat-resolv-conf-dup/mount-readonly) : pas reproduits comme cassés sur CETTE VM, mais même profil de risque (stub resolv.conf systemd-resolved sans ligne littérale "nameserver", système tout lecture-écriture sans montage snap) -- corrigés par cohérence défensive.
+- `busctl --user list | grep portal` (xdg-desktop-portal-check) : pas cassé sur cette VM (session graphique active), mais même profil sur système minimal/headless -- corrigé par cohérence.
+
+Corrigé : `|| true` sur les 8 entrées. Re-vérifié en direct après correctif : `lspci|grep vga`, `pgrep openvpn`, `env|grep proxy` tous confirmés EXIT=0 désormais. Contrairement au cas `du`, cet ensemble n'est pas identifiable mécaniquement depuis la chaîne de commande seule (la plupart des `grep` restent sains) -- nouveau test dédié qui verrouille cette liste précise de 8 id.
+
+Vérification : `npx vitest run` 4/4, suite complète 309/309 (308→309, +1), `npx vue-tsc --noEmit` 0 erreur.
+
+Version 0.25.39 → 0.25.40. Commit `427d3db`, poussé sur `origin/master`.
+
+**Le filon "commande catalogue dont le code de sortie masque un résultat valide" semble maintenant largement épuisé** après 2 cycles consécutifs productifs (du puis grep/pgrep) -- prochain cycle : reprendre un audit page/module classique ou un tout nouveau pattern.

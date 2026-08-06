@@ -406,3 +406,11 @@ Seuil des 3 cycles négatifs atteint → retour à l'audit module-par-module (r�
 **Leçon méthodologique** : l'échantillonnage aléatoire du catalogue (cycle 137, technique VM live) a payé au 2e essai -- creuser un `EXIT=1` inattendu même quand la sortie affichée semblait correcte a révélé un bug bien plus large que l'échantillon initial ne le laissait supposer (19 entrées, pas 1).
 
 Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
+
+## Mise à jour (2026-08-06, v0.25.40, cycle 139) — même filon, tool shape différent (grep/pgrep)
+
+Généralisation directe du cycle 138 : 8 entrées `grep`/`pgrep` du catalogue où "aucune correspondance" (exit 1) est une réponse VALIDE et routinière, pas un échec -- confirmé que `SystemToolsPage.vue` gère déjà proprement un succès vide ("(terminé, aucune sortie)") avant de corriger. Vérifié EN DIRECT sur la vraie VM : `lspci | grep vga`/`audio` **confirmés cassés** (VMBus Hyper-V Gen2, aucun device classé PCI VGA/audio), `pgrep openvpn`/`env | grep proxy` **confirmés cassés** (cas normal sans VPN/proxy, pas un cas limite). 3 autres corrigées défensivement (mêmes profil de risque, pas reproduits comme cassés sur cette VM précise). `|| true` sur les 8, nouveau test dédié (liste non mécanisable contrairement au cas `du`, la plupart des `grep` du catalogue ciblent des champs kernel toujours présents). 309/309 frontend (+1), vue-tsc clean. Commit `427d3db`.
+
+**Le filon "code de sortie de commande catalogue masque un résultat valide" semble épuisé** après 2 cycles productifs consécutifs (138 du, 139 grep/pgrep). Prochain cycle : reprendre un audit page/module classique ou chercher un nouveau pattern transversal.
+
+Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
