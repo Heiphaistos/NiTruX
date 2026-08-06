@@ -382,3 +382,9 @@ Dernier lot : les 6 pages restantes corrigées (dont `ScriptsPage.vue`'s `<texta
 **Aucun chantier multi-cycle actif pour le moment.** Prochain cycle : identifier une nouvelle portion (page-par-page/module Rust) ou un nouveau pattern transversal.
 
 Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise, toujours pas livré en production. De nombreux correctifs (sécurité + a11y) se sont accumulés depuis le cycle 110 sans jamais être publiés dans une release -- recommandation toujours active de couper une nouvelle release bientôt.
+
+## Mise à jour (2026-08-06, v0.25.37, cycle 133) — outil abandonné pour raison pratique
+
+`cargo tarpaulin` essayé (jamais tenté avant) mais **impraticable dans ce projet** : force une recompilation instrumentée complète de toute l'arborescence Tauri/GTK (~500+ crates) au lieu de réutiliser le cache incrémental -- après 10+ minutes, la compilation n'avait pas atteint le crate `nitrux` lui-même. **Ne pas retenter automatiquement en cycle non-supervisé** -- nécessiterait une session dédiée hors cadence normale de 10 min si un jour souhaité. `cargo llvm-cov` aurait probablement la même limitation (même mécanisme d'instrumentation).
+
+3e cycle négatif consécutif (131-133), mais celui-ci pour une contrainte d'outillage, pas un manque de piste. Aucun changement de code.
