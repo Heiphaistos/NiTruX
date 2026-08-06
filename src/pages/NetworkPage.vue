@@ -178,7 +178,7 @@ async function runScan() {
 
       <NxCard>
         <NxSectionHeader title="Modifier les serveurs DNS" />
-        <textarea v-model="dnsEditable" class="net-textarea" rows="4" placeholder="nameserver 1.1.1.1"></textarea>
+        <textarea v-model="dnsEditable" class="net-textarea" rows="4" placeholder="nameserver 1.1.1.1" aria-label="Serveurs DNS"></textarea>
         <NxButton :disabled="dnsSaving" @click="saveDns">{{ dnsSaving ? "Enregistrement..." : "Enregistrer" }}</NxButton>
         <NxCard v-if="dnsSaveError" danger>{{ dnsSaveError }}</NxCard>
         <div v-if="dnsSaveSuccess" class="net-success">Configuration DNS mise à jour.</div>
@@ -187,7 +187,7 @@ async function runScan() {
       <NxCard>
         <NxSectionHeader title="Règle de pare-feu" />
         <div class="net-form-row">
-          <NxInput v-model="firewallPortProto" placeholder="ex: 8080/tcp" />
+          <NxInput v-model="firewallPortProto" placeholder="ex: 8080/tcp" aria-label="Port et protocole" />
           <NxButton :disabled="firewallBusy" @click="addFirewallRule">Autoriser</NxButton>
           <NxButton :disabled="firewallBusy" @click="removeFirewallRule">Supprimer</NxButton>
         </div>
@@ -198,8 +198,8 @@ async function runScan() {
 
     <NxCard v-else-if="activeTab === 'portscan'">
       <div class="net-form-row">
-        <NxInput v-model="scanHost" placeholder="Hôte (ex: 127.0.0.1)" />
-        <NxInput v-model="scanPortsInput" placeholder="Ports, séparés par virgule" />
+        <NxInput v-model="scanHost" placeholder="Hôte (ex: 127.0.0.1)" aria-label="Hôte à scanner" />
+        <NxInput v-model="scanPortsInput" placeholder="Ports, séparés par virgule" aria-label="Ports à scanner" />
         <NxButton :disabled="scanning" @click="runScan">{{ scanning ? "Scan..." : "Scanner" }}</NxButton>
       </div>
       <NxCard v-if="scanError" danger>{{ scanError }}</NxCard>
