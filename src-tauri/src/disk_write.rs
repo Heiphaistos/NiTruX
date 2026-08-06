@@ -230,6 +230,24 @@ pub fn extend_partition(device: String, disk: String, part_number: String) -> Re
     )
 }
 
+/// A destination file that already exists at `dest_path` would be
+/// silently truncated and overwritten by `dd` with zero warning -- the
+/// pkexec helper's `clone-disk` subcommand has no such check (and
+/// shouldn't try to be clever about it while running as root; a
+/// leftover/stale file at that exact path is common, e.g. re-running a
+/// clone into the same path from a previous session). Checked here,
+/// non-privileged, before pkexec is ever invoked -- the privileged
+/// `clone-disk` invocation itself is unchanged, so this does not require
+/// a live VM re-test.
+fn check_dest_path_available(dest_path: &str) -> Result<(), String> {
+    if std::path::Path::new(dest_path).exists() {
+        return Err(format!(
+            "le fichier de destination existe déjà : {dest_path} -- choisissez un autre chemin ou supprimez-le d'abord pour éviter d'écraser silencieusement son contenu"
+        ));
+    }
+    Ok(())
+}
+
 /// Clones `source_disk` to the image file at `dest_path`. Non-destructive
 /// to the source; a large, slow, real disk-read operation, hence the very
 /// generous timeout (a full disk clone can take a long time depending on
@@ -239,6 +257,7 @@ pub fn extend_partition(device: String, disk: String, part_number: String) -> Re
 pub fn clone_disk(source_disk: String, dest_path: String) -> Result<String, String> {
     validate_disk_device(&source_disk)?;
     validate_image_dest_path(&dest_path)?;
+    check_dest_path_available(&dest_path)?;
     subprocess::run_with_timeout(
         "pkexec",
         &[PKEXEC_CLONE_DISK, "clone-disk", &source_disk, &dest_path],
@@ -364,6 +383,29 @@ mod tests {
         assert!(validate_image_dest_path("relative.img").is_err());
         assert!(validate_image_dest_path("/tmp/../etc/shadow").is_err());
         assert!(validate_image_dest_path("/tmp/evil;rm -rf /").is_err());
+    }
+
+    #[test]
+    fn accepts_a_dest_path_that_does_not_exist_yet() {
+        let path = std::env::temp_dir().join(format!("nitrux-clone-dest-missing-{}.img", std::process::id()));
+        assert!(check_dest_path_available(path.to_str().unwrap()).is_ok());
+    }
+
+    #[test]
+    fn rejects_a_dest_path_that_would_silently_overwrite_an_existing_file() {
+        // Regression guard for the actual bug: `dd` (the real command the
+        // pkexec helper's clone-disk subcommand runs) truncates and
+        // overwrites its output file unconditionally, with no prompt --
+        // a leftover file from a previous clone, or simply a mistyped
+        // path colliding with something real, would be destroyed with
+        // zero warning.
+        let path = std::env::temp_dir().join(format!("nitrux-clone-dest-exists-{}.img", std::process::id()));
+        std::fs::write(&path, b"pre-existing content that must not be silently destroyed").unwrap();
+
+        let err = check_dest_path_available(path.to_str().unwrap()).expect_err("an existing destination must be rejected");
+        std::fs::remove_file(&path).ok();
+
+        assert!(err.contains("existe déjà"), "unexpected message: {err}");
     }
 
     #[test]
