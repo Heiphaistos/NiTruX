@@ -1027,3 +1027,9 @@ Corrigé : `handleSave` appelle maintenant aussi `themeStore.setTheme(theme)` ap
 Vérification : `npx vitest run` sur `ThemeEditorPage.spec.ts`/`themeStore.spec.ts` 14/14, suite complète 305/305 (304→305, +1), `npx vue-tsc --noEmit` 0 erreur.
 
 Version 0.25.37 → 0.25.38. Commit `8b2b3e5`, poussé sur `origin/master`.
+
+[2026-08-06T19:50:00+02:00] Cycle 135 : généralisation de la technique du cycle 134 ("vérifier les autres sites d'appel/stores voisins pour le même défaut"). `layoutStore.ts`/`styleStore.ts`/`scriptsStore.ts` relus intégralement -- tous structurellement plus simples que `themeStore.ts` (un seul setter qui persiste toujours correctement, pas de dualité "liste + élément actif" qui avait créé l'opportunité du bug précédent). Les 5 stores Pinia de l'app sont maintenant tous couverts par une lecture complète.
+
+Sweep complémentaire "action réussie → état affiché cohérent" sur les pages avec listes rafraîchies après action : `DisksPage.vue` (clone ne rafraîchit pas la liste des disques -- correct, cloner ne change pas la liste), `UninstallerPage.vue` (retire le paquet désinstallé de la liste locale -- correct), `PackagesPage.vue` (`installOne` ne rafraîchit pas `updates` -- correct, installer un nouveau paquet n'affecte pas la liste des mises à jour disponibles d'un paquet déjà installé). Aucune incohérence trouvée.
+
+Aucun changement de code ce cycle -- 1er cycle négatif après le correctif du cycle 134, plusieurs pistes réelles explorées.
