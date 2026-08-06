@@ -1126,3 +1126,15 @@ Version 0.25.42 → 0.25.43. Commit `a7ed2bd`, poussé sur `origin/master`.
 Aucun changement de code ce cycle. 2e cycle négatif consécutif (144, 146 -- le 145 a été positif entre les deux). **Constat honnête** : la quasi-totalité des modules Rust de petite/moyenne taille du projet (parsers non-privilégiés) sont désormais couverts par cet audit module-par-module répété sur plusieurs cycles -- les prochains cycles négatifs consécutifs sur ce même angle deviennent probables. Si le prochain cycle est également négatif (3e consécutif), repasser explicitement à un audit page-par-page Vue (dernier fait au cycle 130 pour le chantier a11y) ou un nouveau pattern transversal, conformément à la règle du projet.
 
 Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
+
+[2026-08-06T22:12:00+02:00] Cycle 147 : pivot vers l'audit page-par-page Vue comme prévu au cycle 146. Cible initiale `DriversPage.vue` (fraîchement en tête après la lecture de `drivers.rs` au cycle précédent).
+
+**Vrai bug de régression responsive trouvé** : `DriversPage.vue` rend un vrai `<table>` HTML sans aucun conteneur `overflow-x`. Recherche généralisée (`grep -rln "<table" src/pages/*.vue`) : 4 pages au total utilisent un `<table>` brut (`DiagnosticPage.vue`, `DriversPage.vue`, `PackagesPage.vue`, `UpdatesPage.vue`), mais une seule (`PackagesPage.vue`) a le conteneur `.pkg-table-scroll { overflow-x: auto; }` déjà appliqué -- le même correctif que le CHECKPOINT R14 avait pourtant décrit comme couvrant "le seul vrai `<table>` de l'app". Sur une fenêtre étroite ou avec un contenu long (descriptions PCI, noms/versions de paquets longs), les 3 autres tables peuvent déborder de leur carte et forcer un défilement horizontal de toute la page au lieu du seul tableau -- régression directe par rapport à l'exigence "tout responsive" établie en R14.
+
+Vérification par raisonnement CSS direct (comportement de plateforme web déterministe, pas un comportement propre à l'app -- même méthodologie que les corrections `overflow`/`min-width` déjà appliquées en R14 sans VM) : les 3 pages n'ont ni conteneur `overflow-x` ni `min-width:0` compensatoire. Corrigé en miroir exact du pattern `PackagesPage.vue` : chaque `<table>` enveloppé dans un `div.X-table-scroll { overflow-x: auto; }`, `min-width: 480px` ajouté à la table elle-même.
+
+Vérification complète : `npx vue-tsc --noEmit` 0 erreur, `npm run test -- --run` 313/313 frontend (inchangé, wrapper CSS pur, aucune classe/structure testée n'a changé), `cargo test --lib` 292/292 Rust (sanity check, aucun fichier Rust modifié ce cycle).
+
+Version 0.25.43 → 0.25.44. Commit `1c3bb13`, poussé sur `origin/master`.
+
+Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise. 7 correctifs désormais en attente d'une release publiée.
