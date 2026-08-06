@@ -1100,3 +1100,11 @@ Vérification complète : `cargo test --lib` 291/291 Rust (290→291, +1), `npm 
 Version 0.25.41 → 0.25.42. Commit `a7c820b`, poussé sur `origin/master`.
 
 Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise, toujours pas livré en production.
+
+[2026-08-06T21:42:00+02:00] Cycle 144 : poursuite de l'audit module-par-module Rust, cible initiale `update_history.rs` -- hypothèse formulée à la lecture du code (apt écrit-il des lignes `Install:`/`Purge:` très longues sur plusieurs lignes de continuation indentées, comme documenté pour d'autres outils apt ? le parseur ne reconnaît que les lignes commençant exactement par un préfixe connu). VM re-testée joignable (172.21.233.222, IP inchangée depuis cycle 113). **Hypothèse INFIRMÉE en direct** : `wc -L /var/log/apt/history.log` = 96287 (une seule ligne `Install:` réelle de ~96 Ko), `grep -c '^ '` = 0 -- apt écrit bien toute la liste de paquets sur une seule ligne physique, jamais wrappée. Pas de bug, code déjà correct.
+
+6 modules Rust relus intégralement ce cycle (`scripts.rs`, `hardware.rs`, `update_history.rs`, `dependencies.rs`, `system.rs`, `logs.rs`, `network_write.rs`) -- tous propres. Seul point notable non actionnable : `network_write.rs::run_pkexec_with_stdin` a un commentaire existant reconnaissant l'absence de timeout kill-on-expiry (contrairement à `subprocess::run_with_timeout`) -- dette déjà documentée et explicitement différée dans le code lui-même, pas un bug nouvellement découvert, non retenue comme correctif spéculatif ce cycle.
+
+Aucun changement de code ce cycle. 1er cycle négatif après le correctif du cycle 143 (`disks.rs`).
+
+Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
