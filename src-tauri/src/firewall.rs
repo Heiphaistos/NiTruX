@@ -45,7 +45,19 @@ pub fn parse_ufw_output(output: &str) -> Result<FirewallStatus, String> {
 
 #[tauri::command]
 pub fn get_firewall_status() -> Result<FirewallStatus, String> {
-    let output = subprocess::run_with_timeout("ufw", &["status"], Duration::from_secs(5))?;
+    // `ufw` ships gettext .mo translations (confirmed live: the real
+    // package's French catalog translates "Status: inactive" to "État :
+    // inactif", the exact same class of locale-dependent parsing bug
+    // already found and fixed for apt.rs's "[upgradable from:" text).
+    // `get_firewall_status` is currently always invoked unprivileged (see
+    // parse_ufw_output's own doc comment: that path hits an empty-stdout
+    // permission error before ever reaching the "Status: ..." lines at
+    // all), so this specific locale gap isn't reachable through this
+    // app's current invocation pattern -- but forcing LC_ALL=C costs
+    // nothing and closes the gap for e.g. the app being run as root,
+    // mirroring the defensive-fix-even-if-not-currently-exploitable
+    // precedent already established in this codebase.
+    let output = subprocess::run_with_timeout_env("ufw", &["status"], &[("LC_ALL", "C")], Duration::from_secs(5))?;
     parse_ufw_output(&output)
 }
 
@@ -92,5 +104,20 @@ mod tests {
     fn unrecognized_first_line_is_a_real_error_not_silently_reported_as_inactive() {
         let result = parse_ufw_output("ERROR: You need to be root to run this script\n");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn does_not_match_the_localized_status_text_this_command_relies_on_lc_all_c_to_avoid() {
+        // ufw ships real gettext .mo translations -- extracted and queried
+        // live from the actual French catalog in the real `ufw` package
+        // (via `python3 gettext.GNUTranslations`, no live ufw invocation
+        // needed since this only exercises the parser): under fr_FR,
+        // "Status: inactive" becomes "État\u{a0}: inactif" (with the
+        // French-typography non-breaking space before the colon). Without
+        // get_firewall_status forcing LC_ALL=C, this line would hit the
+        // catch-all "unexpected ufw response" error instead of being
+        // recognized as a real, valid "inactive" status.
+        let output = "État\u{a0}: inactif\n";
+        assert!(parse_ufw_output(output).is_err(), "the parser must stay English-only; LC_ALL=C at the call site is the real fix");
     }
 }
