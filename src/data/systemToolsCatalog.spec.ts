@@ -39,4 +39,39 @@ describe("systemToolsCatalog", () => {
       expect(tool.command.trimEnd().endsWith("|| true"), `${tool.id}: "${tool.command}"`).toBe(true);
     }
   });
+
+  // Same root cause as the `du` case above, different tool shape: a
+  // grep/pgrep command whose "no match" (exit 1, empty stdout) is a
+  // routine, expected answer for a real chunk of users -- not a failure.
+  // Reproduced live (2026-08-06, real Debian VM, a Hyper-V Gen2 guest):
+  // `lspci | grep -i vga`/`-i audio` both exit 1 with empty output on
+  // this VM (its synthetic VMBus display/audio path isn't PCI-classified
+  // as VGA/audio at all -- a real, live case, not a hypothetical one, and
+  // consistent with this same VMBus quirk already documented elsewhere in
+  // this project's history); `pgrep -a openvpn`/`env | grep -i proxy`
+  // both exit 1 with empty output for the ordinary case of a user with no
+  // VPN running / no proxy configured, which is most users. Unlike the
+  // `du` list above, this set isn't mechanically identifiable from the
+  // command string alone (most grep-based entries target universally
+  // present kernel/proc fields, like /proc/meminfo's MemAvailable, where
+  // a match failing would be a genuine anomaly worth surfacing as an
+  // error, not something to paper over) -- curated by id instead.
+  const NO_MATCH_IS_A_VALID_ANSWER_IDS = [
+    "gpu-info",
+    "audio-devices",
+    "cat-resolv-conf-dup",
+    "curl-check-proxy",
+    "mount-readonly",
+    "xdg-desktop-portal-check",
+    "openvpn-status-check",
+    "curl-check-http3",
+  ];
+
+  it("keeps `|| true` on every catalog entry where a grep/pgrep 'no match' is a routine, valid answer", () => {
+    for (const id of NO_MATCH_IS_A_VALID_ANSWER_IDS) {
+      const tool = systemToolsCatalog.find((t) => t.id === id);
+      expect(tool, `entry "${id}" should still exist in the catalog`).toBeDefined();
+      expect(tool!.command?.trimEnd().endsWith("|| true"), `${id}: "${tool!.command}"`).toBe(true);
+    }
+  });
 });
