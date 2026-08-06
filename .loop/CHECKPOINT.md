@@ -320,3 +320,13 @@ Nouvel angle : fuite de données frontend (`console.log`/`localStorage`) -- 0 oc
 **2e cycle consécutif sans correctif (121+122)** -- pas encore 3 (règle du projet), mais si le prochain cycle est négatif aussi, repasser à un sweep de pattern transversal plutôt que module-par-module (qui montre des signes d'épuisement après 122 cycles de campagne).
 
 Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
+
+## Mise à jour (2026-08-06, v0.25.33, cycle 123) — 3e cycle propre consécutif, seuil de la règle atteint
+
+Vérification exhaustive du câblage des commandes Tauri : 69 commandes `generate_handler!` == 69 `#[tauri::command]` définis == 69 noms `invoke(...)` distincts côté frontend, `diff` des deux listes vide -- correspondance parfaite, aucune commande orpheline. Échantillon de cohérence des noms de paramètres (`disk_write.rs`) correct. Sweep chaînes anglaises résiduelles UI : 0.
+
+**3e cycle consécutif sans correctif (121, 122, 123)** -- seuil de la règle du projet atteint, mais les trois cycles ont exploré des angles réellement distincts (permissions/sécurité, fuite frontend, câblage IPC), pas des sweeps redondants. Signal probable : la surface facilement accessible du projet est maintenant très largement saine après 123 cycles cumulés.
+
+**Stratégie pour le prochain cycle** : revenir à un sweep de pattern transversal simple plutôt qu'un audit fichier-par-fichier (qui s'épuise), ou attendre un nouveau signal externe (retour utilisateur/testeur, déblocage `clone-disk`).
+
+Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
