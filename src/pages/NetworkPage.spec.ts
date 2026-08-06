@@ -148,4 +148,32 @@ describe("NetworkPage", () => {
     expect(wrapper.text()).toContain("wlan0");
     expect(wrapper.text()).toContain("MAC inconnue");
   });
+
+  it("renders every listening-port row even when the same port appears twice (tcp+udp, or IPv4+IPv6)", async () => {
+    // network.rs's real source (`ss -tulnp`) lists one row per socket, not
+    // per unique port -- any service dual-bound on tcp+udp (systemd-resolved
+    // on 53) or on both IPv4 and IPv6 (the common default for most modern
+    // services) produces two lines sharing the same port number. Keying the
+    // v-for on `p.port` alone is not guaranteed unique against this shape.
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") {
+        return Promise.resolve({
+          wifi_networks: [],
+          listening_ports: [
+            { port: 53, process: "systemd-resolved" },
+            { port: 53, process: "systemd-resolved" },
+          ],
+          dns_servers: [],
+          hosts_file: "127.0.0.1 localhost\n",
+        });
+      }
+      if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("systemd-resolved"));
+    const portRows = wrapper.findAll(".net-row").filter((r) => r.text().includes("systemd-resolved"));
+    expect(portRows.length).toBe(2);
+  });
 });
