@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, type Component } from "vue";
 import { useThemeStore } from "@/stores/themeStore";
 import { useLayoutStore } from "@/stores/layoutStore";
+import { useStyleStore } from "@/stores/styleStore";
 import type { LayoutId } from "@/types/layout";
 import LayoutShell from "@/layouts/LayoutShell.vue";
 import AppNav from "@/components/nav/AppNav.vue";
@@ -50,6 +51,18 @@ import TerminalPage from "@/pages/TerminalPage.vue";
 
 const themeStore = useThemeStore();
 onMounted(() => themeStore.setTheme(themeStore.active));
+
+// styleStore.ts's applyToDom (sets the `data-nx-style` attribute the app's
+// style CSS selectors key off of) only ever runs inside setStyle() -- the
+// store's own state initializer reads the persisted style into `current`
+// but never applies it to the DOM. useStyleStore is otherwise instantiated
+// nowhere except ThemeEditorPage.vue, so without this, a saved non-default
+// style (e.g. picked once in a previous session) silently reverted to the
+// unstyled default on every fresh app launch until the user happened to
+// revisit the Style tab. Mirrors the identical fix already in place for
+// themeStore just above.
+const styleStore = useStyleStore();
+onMounted(() => styleStore.setStyle(styleStore.current));
 
 const layoutStore = useLayoutStore();
 

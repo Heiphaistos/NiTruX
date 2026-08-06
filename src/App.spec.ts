@@ -327,4 +327,21 @@ describe("App", () => {
     const closeCallsAfterReturning = vi.mocked(invoke).mock.calls.filter((c) => c[0] === "close_terminal").length - closeCallsBefore;
     expect(closeCallsAfterReturning).toBe(0);
   });
+
+  it("re-applies a persisted non-default style to the DOM on mount, not just the default", () => {
+    // Regression guard for the actual bug: styleStore.ts's applyToDom only
+    // ever ran inside setStyle() -- the store's state initializer read the
+    // persisted style into `current` but never touched the DOM, and
+    // useStyleStore was otherwise instantiated nowhere except
+    // ThemeEditorPage.vue. A user who picked a non-default style in a
+    // previous session would see it silently revert to the unstyled
+    // default (no data-nx-style attribute at all) on every fresh launch,
+    // exactly the same class of bug themeStore already had a fix for
+    // (onMounted(() => themeStore.setTheme(themeStore.active)), right next
+    // to this).
+    document.documentElement.removeAttribute("data-nx-style");
+    localStorage.setItem("nitrux-style", "brutalism");
+    mount(App);
+    expect(document.documentElement.dataset.nxStyle).toBe("brutalism");
+  });
 });
