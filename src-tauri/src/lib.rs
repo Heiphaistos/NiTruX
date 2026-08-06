@@ -31,6 +31,7 @@ mod portscan;
 mod processes;
 mod report;
 mod scripts;
+mod secure_temp;
 mod security_write;
 mod sensors;
 mod smart;

@@ -16,9 +16,8 @@
 //! see `tauri.conf.json`'s `bundle.resources`), and offers a one-time,
 //! user-triggered `pkexec`-gated copy of them into place.
 
+use crate::secure_temp::write_exclusively_owner_only;
 use crate::subprocess;
-use std::io::Write as _;
-use std::os::unix::fs::OpenOptionsExt;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tauri::Manager;
@@ -137,38 +136,12 @@ pub fn install_pkexec_integration(app: tauri::AppHandle) -> Result<String, Strin
     result.map(|_| "Intégration système installée avec succès.".to_string())
 }
 
-/// Writes `content` to `path`, but never via a plain overwrite:
-/// `create_new` makes the open fail if ANYTHING already exists at that
-/// path (including a symlink an attacker planted there in advance,
-/// pointing wherever they like) instead of silently following it, and
-/// `mode(0o600)` makes the file readable and writable only by the user
-/// running the app -- root (the identity that will actually read and
-/// execute this file once the caller below hands its path to `pkexec sh`)
-/// bypasses Unix file permissions entirely regardless, but no OTHER
-/// unprivileged user on the system can read or tamper with it while it
-/// exists. A plain `std::fs::write` (the previous implementation) has
-/// neither guard: predictable name plus default (world-readable)
-/// permissions plus silent symlink-following is the textbook
-/// CWE-377/CWE-367 shape for a temp file that ends up executed with
-/// elevated privileges. The best-effort `remove_file` first clears both a
-/// stale leftover from a prior run that never reached its own cleanup,
-/// and any attacker-planted symlink -- either way `create_new` right
-/// after only proceeds if the path is genuinely clear at that instant.
-fn write_exclusively_owner_only(path: &Path, content: &str) -> Result<(), String> {
-    let _ = std::fs::remove_file(path);
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .mode(0o600)
-        .open(path)
-        .map_err(|e| format!("impossible d'écrire le script d'installation : {e}"))?;
-    file.write_all(content.as_bytes())
-        .map_err(|e| format!("impossible d'écrire le script d'installation : {e}"))
-}
-
+/// The script is executed as root moments later via `pkexec sh <path>` --
+/// see `secure_temp::write_exclusively_owner_only` for why this can't be a
+/// plain `std::fs::write` to a predictable path.
 fn write_bootstrap_script_to_temp() -> Result<PathBuf, String> {
     let script_path = std::env::temp_dir().join(format!("nitrux-pkexec-bootstrap-{}.sh", std::process::id()));
-    write_exclusively_owner_only(&script_path, &build_bootstrap_script())?;
+    write_exclusively_owner_only(&script_path, build_bootstrap_script().as_bytes())?;
     Ok(script_path)
 }
 
@@ -243,41 +216,8 @@ mod tests {
         assert!(content.starts_with("#!/bin/sh"));
     }
 
-    #[test]
-    fn script_file_is_created_with_owner_only_permissions() {
-        use std::os::unix::fs::PermissionsExt;
-        let path = std::env::temp_dir().join(format!("nitrux-pkexec-bootstrap-test-perms-{}.sh", std::process::id()));
-        write_exclusively_owner_only(&path, "#!/bin/sh\necho hi\n").expect("should write");
-        let mode = std::fs::metadata(&path).expect("should stat the file").permissions().mode() & 0o777;
-        std::fs::remove_file(&path).ok();
-        assert_eq!(mode, 0o600, "script file must be readable/writable only by its owner, not world-readable like a plain fs::write would leave it");
-    }
-
-    #[test]
-    fn a_preexisting_symlink_at_the_target_path_is_cleared_not_followed() {
-        // Simulates an attacker (or a stale leftover from a prior crashed
-        // run) having planted a symlink at the exact predictable path
-        // before this runs, pointing at some file the calling user can
-        // write to -- a plain `fs::write` would follow it and clobber
-        // that file's content with the bootstrap script instead of
-        // writing a fresh, independent file at the intended path.
-        let canary_dir = std::env::temp_dir().join(format!("nitrux-pkexec-bootstrap-test-canary-{}", std::process::id()));
-        std::fs::create_dir_all(&canary_dir).unwrap();
-        let canary = canary_dir.join("canary.txt");
-        std::fs::write(&canary, "untouched").unwrap();
-
-        let target_path = std::env::temp_dir().join(format!("nitrux-pkexec-bootstrap-test-symlink-{}.sh", std::process::id()));
-        std::os::unix::fs::symlink(&canary, &target_path).expect("should create the pre-positioned symlink");
-
-        let result = write_exclusively_owner_only(&target_path, "#!/bin/sh\necho hi\n");
-
-        let canary_content = std::fs::read_to_string(&canary).unwrap();
-        let target_is_symlink = std::fs::symlink_metadata(&target_path).map(|m| m.file_type().is_symlink()).unwrap_or(false);
-        std::fs::remove_file(&target_path).ok();
-        std::fs::remove_dir_all(&canary_dir).ok();
-
-        result.expect("should succeed despite the pre-positioned symlink");
-        assert_eq!(canary_content, "untouched", "the canary file must never receive the bootstrap script content");
-        assert!(!target_is_symlink, "the resulting path must be a real file, not still a symlink");
-    }
+    // Exclusive-create/owner-only-permissions/symlink-preemption behavior
+    // is generic and now covered once in secure_temp.rs's own tests
+    // (shared by every caller of write_exclusively_owner_only) -- no
+    // need to duplicate that coverage here.
 }
