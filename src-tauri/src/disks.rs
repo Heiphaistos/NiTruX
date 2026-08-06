@@ -66,16 +66,24 @@ pub fn parse_lsblk_json(json: &str) -> Option<Vec<Disk>> {
 /// Parses one line of `df --output=source,size,used,avail,pcent,target` output
 /// (POSIX `-P` block-size defaults to 1K blocks), e.g.:
 /// "/dev/sda1  536870912  214748364  322122548  40%  /"
+///
+/// The mountpoint (last column) may itself contain spaces (e.g. removable
+/// media mounted by volume label, "/media/user/My Passport") -- it is taken
+/// as everything remaining after the first 5 fixed-width columns, not a
+/// single whitespace-delimited token.
 pub fn parse_df_line(line: &str) -> Option<UsageEntry> {
-    let fields: Vec<&str> = line.split_whitespace().collect();
-    if fields.len() != 6 || fields[1].parse::<u64>().is_err() {
+    let mut fields = line.split_whitespace();
+    let _source = fields.next()?;
+    let total_kb: u64 = fields.next()?.parse().ok()?;
+    let used_kb: u64 = fields.next()?.parse().ok()?;
+    let _avail = fields.next()?;
+    let used_percent: u8 = fields.next()?.trim_end_matches('%').parse().ok()?;
+    let mountpoint: String = fields.collect::<Vec<_>>().join(" ");
+    if mountpoint.is_empty() {
         return None;
     }
-    let total_kb: u64 = fields[1].parse().ok()?;
-    let used_kb: u64 = fields[2].parse().ok()?;
-    let used_percent: u8 = fields[4].trim_end_matches('%').parse().ok()?;
     Some(UsageEntry {
-        mountpoint: fields[5].to_string(),
+        mountpoint,
         total_bytes: total_kb * 1024,
         used_bytes: used_kb * 1024,
         used_percent,
@@ -141,5 +149,12 @@ mod tests {
     #[test]
     fn skips_df_header_line() {
         assert!(parse_df_line("Filesystem  1K-blocks  Used  Available  Use%  Mounted on").is_none());
+    }
+
+    #[test]
+    fn parses_df_line_with_space_in_mountpoint() {
+        let line = "/dev/sdb1  1000000  500000  500000  50%  /media/dev/My Passport";
+        let entry = parse_df_line(line).expect("should parse mountpoint containing a space");
+        assert_eq!(entry.mountpoint, "/media/dev/My Passport");
     }
 }
