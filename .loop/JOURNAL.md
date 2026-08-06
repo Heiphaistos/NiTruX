@@ -1108,3 +1108,15 @@ Version 0.25.41 → 0.25.42. Commit `a7c820b`, poussé sur `origin/master`.
 Aucun changement de code ce cycle. 1er cycle négatif après le correctif du cycle 143 (`disks.rs`).
 
 Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
+
+[2026-08-06T21:50:00+02:00] Cycle 145 : poursuite de l'audit module-par-module Rust. `sensors.rs`/`accounts.rs`/`peripherals.rs` relus intégralement -- propres (le filtre `contains(" connected")` de `get_monitors` s'est avéré correctement immunisé contre `disconnected` par construction : l'espace exigé juste avant "connected" n'existe jamais dans "disconnected", vérifié par raisonnement direct sur la chaîne, pas de bug).
+
+**Vrai bug trouvé dans `hashcheck.rs::verify_hash`** : comparait la chaîne `expected` entière (juste trimée) au hash calculé. Mais l'UI (`FileToolsPage.vue`, placeholder "Hash attendu (ex : publié par l'éditeur)...") invite explicitement à coller un hash tel que publié par un éditeur -- et de très nombreuses pages de téléchargement affichent (ou les outils `sha256sum`/`md5sum` produisent) la ligne complète `<hash>  <nom-de-fichier>`, pas le hash seul. Coller cette ligne entière telle quelle échouait silencieusement à correspondre même pour un téléchargement parfaitement intact, ressemblant à une fausse alerte de corruption.
+
+Reproduit AVANT correctif : nouveau test avec un hash attendu au format `sha256sum` complet -- échec confirmé (`test result: FAILED. 3 passed; 1 failed`). Corrigé : le hash est désormais extrait comme le premier token délimité par un espace blanc avant comparaison (`extract_hash_token`). Re-exécuté après correctif : 4/4 sur `hashcheck::`.
+
+Vérification complète : `cargo test --lib` 292/292 Rust (291→292, +1), `npm run test -- --run` 313/313 frontend (inchangé, correctif Rust pur), `npx vue-tsc --noEmit` 0 erreur.
+
+Version 0.25.42 → 0.25.43. Commit `a7ed2bd`, poussé sur `origin/master`.
+
+Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
