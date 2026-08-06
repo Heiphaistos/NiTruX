@@ -255,3 +255,9 @@ Audit page-par-page retenté : toutes les candidates à faible score de mentions
 **`cargo clippy` à ajouter à la rotation d'angles transversaux** pour les prochains cycles si l'audit page-par-page redevient stérile -- jamais utilisé avant ce cycle en ~115 cycles de campagne.
 
 **Rappel non résolu depuis cycle 113/114** : les 2 correctifs pkexec (quarantine-file racine, apt-autoremove exit-code) sont committés mais PAS encore dans une release publiée -- recommandation toujours active de couper une nouvelle release bientôt.
+
+## Mise à jour (2026-08-06, v0.25.30, cycle 116) — 1er cycle propre depuis la relance
+
+Rotation d'angles jamais essayés, tous négatifs/non-actionnables : `npm audit` (0 vuln), `cargo audit` (0 vraie vuln, 18 warnings "unmaintained" GTK3 transitifs via `tauri`, hors contrôle du projet), ESLint (absent, hors scope d'en configurer un), sweep `TODO`/`FIXME` (0), sweep `#[allow(...)]` (0), `cargo fmt --check` (203 diffs -- divergence cohérente et délibérée du style rustfmt par défaut sur tout le dépôt, PAS appliqué : reformater toucherait quasi chaque fichier pour un changement 100% cosmétique, décision à soumettre à l'utilisateur plutôt qu'unilatérale). Aucun changement de code ce cycle -- consigné honnêtement plutôt que forcer un correctif spéculatif.
+
+**Angles transversaux maintenant épuisés pour cette rotation** : clippy (cycle 115, fait), npm/cargo audit (ce cycle, fait), TODO/allow sweep (ce cycle, fait). Prochain cycle : reprendre l'audit page-par-page module Rust (pas seulement pages Vue -- aucun module `src-tauri/src/*.rs` n'a été classé par fraîcheur comme les pages Vue jusqu'ici) ou attendre un nouveau retour utilisateur/testeur.

@@ -860,3 +860,14 @@ Version 0.25.28 → 0.25.29. Commit `f350c92`, poussé sur `origin/master`.
 `cargo clippy` n'avait jamais été utilisé dans cette campagne jusqu'ici (confirmé par recherche dans ce journal) -- à ajouter à la rotation d'angles transversaux pour les futurs cycles si un audit page-par-page redevient stérile.
 
 Version 0.25.29 → 0.25.30. Commit `55f38b3`, poussé sur `origin/master`.
+
+[2026-08-06T15:35:00+02:00] Cycle 116 : suite de la rotation d'angles transversaux jamais essayés jusqu'ici. Tous négatifs cette fois -- consigné honnêtement plutôt que de forcer un correctif spéculatif :
+
+- `npm audit --json` : 0 vulnérabilité (238 dépendances, prod+dev+optional+peer).
+- `cargo audit` (installé ce cycle, jamais présent avant) : 0 vraie vulnérabilité. 18 avertissements "unmaintained"/"unsound" sur la famille `atk`/`gdk`/`glib`/`gtk` (bindings GTK3 de gtk-rs, dépréciés au profit de GTK4) -- **non actionnable côté NiTruX** : ce sont des dépendances TRANSITIVES de `tauri` lui-même (webview Linux), pas des entrées du `Cargo.toml` du projet ; le vrai correctif dépend d'une migration GTK4 côté écosystème Tauri, hors du contrôle de ce dépôt.
+- ESLint : aucune config présente dans le projet -- en ajouter une de zéro sortirait du cadre d'un cycle d'audit ciblé (surface de warnings potentiellement énorme et non triée).
+- Sweep `TODO`/`FIXME`/`XXX`/`HACK` sur tout `src-tauri/src` + `src` : 0 occurrence.
+- Sweep `#[allow(...)]` sur tout `src-tauri/src` : 0 occurrence -- confirme qu'aucun warning n'est actuellement suppressé/caché.
+- `cargo fmt --check` : 203 blocs de diff sur la quasi-totalité du dépôt (aucun `rustfmt.toml`) -- le code entier diverge du style rustfmt par défaut (structs/format! courts gardés sur une ligne plutôt que systématiquement éclatés), mais de façon COHÉRENTE sur toute la campagne (choix de style délibéré et uniforme, pas une dérive). Reformater en masse toucherait pratiquement chaque fichier pour un changement 100% cosmétique -- jugé hors du cadre "une portion ciblée par cycle", et une décision de ce type mérite l'aval explicite de l'utilisateur plutôt qu'une action unilatérale sur l'ensemble du dépôt. Non appliqué, signalé pour décision future si souhaité.
+
+Aucun changement de code ce cycle. 1er cycle "propre" depuis la relance de la boucle (2026-08-06) -- cohérent avec le précédent établi (cycle 79 avant l'arrêt) : ce n'est pas une preuve d'absence de bug, seulement que les angles explorés ce cycle se sont avérés déjà sains ou hors de portée.
