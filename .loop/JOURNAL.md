@@ -1327,3 +1327,17 @@ Version 0.25.54 → 0.25.55. Commit `63de277`, poussé sur `origin/master`.
 Aucun changement de code ce cycle. Artefacts temporaires nettoyés de la VM après vérification.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). 18 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (53 cycles cumulés 110-162).
+
+[2026-08-07T01:44:00+02:00] Cycle 163 : pivot vers un nouveau module suite à la clôture du filon locale. `styleStore.ts` examiné -- `applyToDom` (pose l'attribut `data-nx-style` sur lequel s'appuient tous les sélecteurs CSS de style de l'app) n'est appelé QUE depuis `setStyle()`, jamais à l'initialisation du store.
+
+**Vrai bug de bootstrap confirmé, même famille que le bug thème déjà corrigé (cycle 134)** : `grep -rln "useStyleStore" src/` révèle qu'il n'est instancié NULLE PART sauf dans `ThemeEditorPage.vue` -- et `App.vue` (comparé directement) contient déjà `onMounted(() => themeStore.setTheme(themeStore.active))` pour réappliquer le thème persisté au montage, mais aucun appel équivalent pour `styleStore`. Résultat : un utilisateur ayant choisi un style non-défaut (ex. "brutalism" au lieu de "glass-glow") lors d'une session précédente voyait ce choix silencieusement revenir au style par défaut à chaque relancement de l'app, jusqu'à ce qu'il revisite l'onglet Style et re-clique dessus -- le style choisi n'était en réalité JAMAIS appliqué au premier rendu, aucune exception.
+
+Corrigé en miroir exact du pattern déjà en place pour `themeStore` juste à côté dans le même fichier : import de `useStyleStore` + `onMounted(() => styleStore.setStyle(styleStore.current))`. Nouveau test de régression dans `App.spec.ts` : seed `localStorage` avec un style non-défaut avant montage, vérifie que `document.documentElement.dataset.nxStyle` correspond après montage sans jamais appeler `setStyle` manuellement.
+
+Vérification complète : `npx vitest run src/App.spec.ts` 30/30, suite complète 319/319 frontend (318→319, +1), `npx vue-tsc --noEmit` 0 erreur, `cargo test --lib` 299/299 Rust (sanity check, aucun fichier Rust modifié).
+
+Version 0.25.55 → 0.25.56. Commit `007c864`, poussé sur `origin/master`.
+
+**Piste à vérifier au prochain cycle** : `layoutStore.ts` n'a pas d'équivalent `applyToDom` (le layout est appliqué via la réactivité Vue directe, pas un attribut DOM+CSS), donc pas concerné par ce même défaut -- confirmé par lecture, pas un oubli à corriger.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). **19 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (54 cycles cumulés 110-163).
