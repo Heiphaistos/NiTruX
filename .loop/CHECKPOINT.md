@@ -414,3 +414,13 @@ Généralisation directe du cycle 138 : 8 entrées `grep`/`pgrep` du catalogue o
 **Le filon "code de sortie de commande catalogue masque un résultat valide" semble épuisé** après 2 cycles productifs consécutifs (138 du, 139 grep/pgrep). Prochain cycle : reprendre un audit page/module classique ou chercher un nouveau pattern transversal.
 
 Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
+
+## Mise à jour (2026-08-06, v0.25.44, cycle 147-148) — bug responsive corrigé, nouveau point produit en attente
+
+**Cycle 147** : `DriversPage.vue`/`DiagnosticPage.vue`/`UpdatesPage.vue` rendaient un `<table>` brut sans conteneur `overflow-x` -- seule `PackagesPage.vue` avait ce correctif (appliqué en R14, dont les notes la décrivaient à tort comme "le seul vrai tableau de l'app"). Corrigé en miroir exact du pattern `PackagesPage.vue`. Commit `1c3bb13`.
+
+**Cycle 148** : audit page-par-page étendu (Benchmark/Dependencies/Temperatures/Optimizations/Peripherals/DnsSwitcher/blocs `<pre>`/cohérence try-catch `onMounted`) -- tout propre, aucune régression trouvée.
+
+**Nouveau point en attente de décision produit (pas un blocage classificateur comme `clone-disk`)** : `preferencesStore.ts::confirmNonDestructiveActions` (bascule "Demander confirmation pour les actions non-destructives" dans Préférences) est persisté et testé au niveau du store, mais n'est lu NULLE PART ailleurs dans l'app -- confirmé par `grep` qu'aucun mécanisme de dialogue de confirmation (`confirm(`/`NxDialog`/`NxModal`) n'existe même dans le code. Le bascule n'a donc aucun effet observable. **Volontairement non corrigé automatiquement** : implémenter correctement nécessiterait de concevoir et câbler un vrai système de confirmation à travers de nombreuses actions destructrices sur de nombreuses pages -- une fonctionnalité complète, hors périmètre d'un cycle de 10 minutes, et un bricolage partiel serait pire que rien. Nécessite une décision utilisateur sur le périmètre voulu avant implémentation.
+
+Éléments en attente : `clone-disk` (cycle 120, action humaine requise) + `confirmNonDestructiveActions` (cycle 148, décision de périmètre requise). **8 correctifs de code désormais en attente d'une release publiée** depuis la reprise de la boucle au cycle 110 (aucune release cut depuis v0.25.24).
