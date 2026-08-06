@@ -1120,3 +1120,9 @@ Vérification complète : `cargo test --lib` 292/292 Rust (291→292, +1), `npm 
 Version 0.25.42 → 0.25.43. Commit `a7ed2bd`, poussé sur `origin/master`.
 
 Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
+
+[2026-08-06T22:00:00+02:00] Cycle 146 : poursuite intensive de l'audit module-par-module Rust. 11 modules relus intégralement (`duplicates.rs`, `largefiles.rs`, `malwarescan.rs`, `optimizations.rs`, `smart.rs`, `cache_size.rs`, `drivers.rs`, `processes.rs`, `boot_manager.rs`, `terminal.rs`) -- tous propres, déjà très bien testés (plusieurs ont leur propre historique de bug déjà corrigé et regression-testé, ex. `smart.rs` bitmask exit-code, `terminal.rs` fuite de process sur id réutilisé). Aucun nouveau bug trouvé malgré un examen ligne par ligne systématique de chaque module.
+
+Aucun changement de code ce cycle. 2e cycle négatif consécutif (144, 146 -- le 145 a été positif entre les deux). **Constat honnête** : la quasi-totalité des modules Rust de petite/moyenne taille du projet (parsers non-privilégiés) sont désormais couverts par cet audit module-par-module répété sur plusieurs cycles -- les prochains cycles négatifs consécutifs sur ce même angle deviennent probables. Si le prochain cycle est également négatif (3e consécutif), repasser explicitement à un audit page-par-page Vue (dernier fait au cycle 130 pour le chantier a11y) ou un nouveau pattern transversal, conformément à la règle du projet.
+
+Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
