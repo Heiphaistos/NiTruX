@@ -973,3 +973,11 @@ Corrigé au niveau des composants partagés : prop optionnelle `ariaLabel` ajout
 Vérification : `npx vitest run` NxInput/NxSelect 6/6, suite complète 304/304 (302→304, +2), `npx vue-tsc --noEmit` 0 erreur. Aucun fichier Rust touché.
 
 Version 0.25.33 → 0.25.34. Commit `8fa7ff8`, poussé sur `origin/master`.
+
+[2026-08-06T17:35:00+02:00] Cycle 128 : suite du déploiement `ariaLabel` (cycle 127), priorité aux pages liées à des actions privilégiées/pkexec comme noté en CHECKPOINT.md. `BackupPage.vue` (`create_backup`), `NetworkPage.vue` (`write_hosts_file`/`set_dns_servers`/`add_firewall_rule`/`remove_firewall_rule`, tous pkexec, + le scanner de ports), `AntivirusPage.vue` (`quarantine_file`), `SystemToolsPage.vue` (`run_system_tool`) -- 4 pages, 6 champs au total. Découverte annexe : le sélecteur DNS de `NetworkPage.vue` est un `<textarea>` natif (pas `NxInput`), même lacune, corrigée directement sur l'élément (pas besoin de passer par le composant partagé).
+
+Vérification : `npx vue-tsc --noEmit` 0 erreur, `npx vitest run` sur les 5 pages concernées (Backup/Network/Antivirus/SystemTools/Disks) 26/26, suite complète 304/304 (inchangé -- aucun nouveau test nécessaire, les specs existantes ne vérifient pas l'absence d'`aria-label`).
+
+Version 0.25.34 → 0.25.35. Commit `07a85b4`, poussé sur `origin/master`.
+
+**Pages restantes pour le déploiement `ariaLabel`** (prochains cycles) : `DiskVisualizerPage.vue`, `FileToolsPage.vue`, `InstalledSoftwarePage.vue`, `PackagesPage.vue`, `ProcessesPage.vue`, `ReportGeneratorPage.vue`, `ScriptsPage.vue`, `SettingsPreferencesPage.vue`, `UninstallerPage.vue`.

@@ -356,3 +356,11 @@ Dernière piste (messages d'erreur Rust encore en anglais) : négative, les 2 se
 **Nouveau chantier multi-cycle ouvert : déploiement `ariaLabel` sur les pages restantes.** La capacité existe maintenant sur les composants -- reste à l'appliquer page par page aux ~13 autres usages de `NxInput`/`NxSelect` (`grep -rn "<NxInput\|<NxSelect" src/pages/*.vue` pour les lister). Même pattern incrémental qu'utilisé pour "liste vide sans message" (cycles 1-32) -- traiter quelques pages par cycle plutôt que tout d'un coup, prioriser les pages avec actions destructrices/pkexec en premier (déjà fait pour Disques ; `security_write`/`network_write`/`backup`/`troubleshoot` sont les prochaines candidates logiques).
 
 Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
+
+## Mise à jour (2026-08-06, v0.25.35, cycle 128) — chantier ariaLabel : lot 2
+
+`BackupPage.vue`/`NetworkPage.vue` (+ son `<textarea>` DNS natif, même lacune)/`AntivirusPage.vue`/`SystemToolsPage.vue` corrigées (6 champs). 304/304 frontend, vue-tsc clean. Commit `07a85b4`.
+
+**Pages `ariaLabel` restantes** : `DiskVisualizerPage.vue`, `FileToolsPage.vue`, `InstalledSoftwarePage.vue`, `PackagesPage.vue`, `ProcessesPage.vue`, `ReportGeneratorPage.vue`, `ScriptsPage.vue`, `SettingsPreferencesPage.vue`, `UninstallerPage.vue` -- 9 pages, à traiter par lots de 2-4 sur les prochains cycles.
+
+Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
