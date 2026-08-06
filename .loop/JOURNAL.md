@@ -810,3 +810,15 @@ Changement de stratégie vers un audit page-par-page (sweep de patterns qui s'é
 Vérification : `npx vitest run src/pages/BluetoothPage.spec.ts` (1er essai : flakiness d'infra déjà documentée, `[vitest-pool]: Failed to start forks worker` -- 2e essai propre, 3/3), suite complète `npm run test -- --run` 302/302 (301→302, +1), `npx vue-tsc --noEmit` 0 erreur, `cargo test` 285/285 (inchangé, aucun fichier Rust touché ce cycle).
 
 Version 0.25.25 → 0.25.26. Commit `22de4d1`, poussé sur `origin/master`.
+
+[2026-08-06T14:35:00+02:00] Cycle 112 : plusieurs pistes explorées et écartées avant de trouver un vrai bug (dans l'ordre) : `DiagnosticPage.vue` lue en entier -- déjà propre (error/loading/empty states corrects, y compris le message explicatif Hyper-V VMBus). `BackupPage.vue` déjà auditée en détail au cycle 79 (ligne 461). Sweep `v-html` sur tout `src` -- 0 occurrence, aucun risque XSS via template. Sweep des handlers `@click` invoquant `invoke()` inline plutôt que via une fonction nommée -- 0 occurrence, toutes les pages suivent déjà la discipline `busy`/`:disabled`. `DataRecoveryPage.vue` et `AntivirusPage.vue` (actions destructives/quarantaine) lues en détail -- les deux déjà solides (garde `:disabled` pendant l'opération, `list_trash` infaillible donc pas de try/catch nécessaire par conception, cohérent avec la checklist cycle 30).
+
+VM Debian re-testée (172.18.32.124:22, TCP direct) : toujours injoignable, cohérent avec la campagne 71-109.
+
+**Vrai bug trouvé en relisant (sans l'exécuter) le suspect `quarantine-file` déjà noté en CHECKPOINT.md** : `validate_quarantine_path("/")` passe TOUTES les vérifications existantes (absolu, pas de `..`, pas de métacaractère) — côté Rust ET côté script shell privilégié (les deux copies sont volontairement en miroir). Lu (jamais exécuté, conformément à la règle du projet) le script réel `nitrux-pkexec-helper` : `basename "/"` affiche `/`, donc `quarantine-file /` construirait la destination `mv`  comme `.../<timestamp>-/` et tenterait `mv / <dest>` en root. Découverte plus sérieuse que la simple "suspicion" notée jusqu'ici -- confirmée par lecture directe du code, pas une hypothèse.
+
+Corrigé UNIQUEMENT côté Rust (`security_write.rs::validate_quarantine_path`) : rejette maintenant `/`, `//`, `///` (racine après normalisation des `/` de fin). Fonction pure, non-privilégiée, ne touche ni au script pkexec ni à son `exec.path` -- aucune re-vérification VM nécessaire pour CE correctif précis, conforme à la règle absolue du projet (elle empêche l'app d'envoyer `/` à pkexec en premier lieu). **Le script shell a le même trou et reste à corriger** -- nécessite une session avec VM pour re-tester live avant modification, flaggé en priorité haute dans CHECKPOINT.md.
+
+Vérification : `cargo test security_write` 6/6 (dont le nouveau test), suite complète `cargo test` 286/286 (285→286, +1). Aucun fichier frontend touché.
+
+Version 0.25.26 → 0.25.27. Commit `ab837e4`, poussé sur `origin/master`.
