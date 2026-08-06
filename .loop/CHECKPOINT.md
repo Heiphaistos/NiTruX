@@ -364,3 +364,11 @@ Dernière piste (messages d'erreur Rust encore en anglais) : négative, les 2 se
 **Pages `ariaLabel` restantes** : `DiskVisualizerPage.vue`, `FileToolsPage.vue`, `InstalledSoftwarePage.vue`, `PackagesPage.vue`, `ProcessesPage.vue`, `ReportGeneratorPage.vue`, `ScriptsPage.vue`, `SettingsPreferencesPage.vue`, `UninstallerPage.vue` -- 9 pages, à traiter par lots de 2-4 sur les prochains cycles.
 
 Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
+
+## Mise à jour (2026-08-06, v0.25.36, cycle 129) — chantier ariaLabel : lot 3
+
+`FileToolsPage.vue` (6 champs)/`PackagesPage.vue`/`UninstallerPage.vue` corrigées (10 champs au total). 304/304 frontend, vue-tsc clean. Commit `d40df0f`.
+
+**Pages `ariaLabel` restantes** : `DiskVisualizerPage.vue`, `InstalledSoftwarePage.vue`, `ProcessesPage.vue`, `ReportGeneratorPage.vue`, `ScriptsPage.vue`, `SettingsPreferencesPage.vue` -- 6 pages.
+
+Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.

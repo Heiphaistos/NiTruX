@@ -981,3 +981,11 @@ Vérification : `npx vue-tsc --noEmit` 0 erreur, `npx vitest run` sur les 5 page
 Version 0.25.34 → 0.25.35. Commit `07a85b4`, poussé sur `origin/master`.
 
 **Pages restantes pour le déploiement `ariaLabel`** (prochains cycles) : `DiskVisualizerPage.vue`, `FileToolsPage.vue`, `InstalledSoftwarePage.vue`, `PackagesPage.vue`, `ProcessesPage.vue`, `ReportGeneratorPage.vue`, `ScriptsPage.vue`, `SettingsPreferencesPage.vue`, `UninstallerPage.vue`.
+
+[2026-08-06T17:45:00+02:00] Cycle 129 : lot 3 du déploiement `ariaLabel`. `FileToolsPage.vue` (3 onglets : doublons/gros fichiers/vérif. hash, 6 champs), `PackagesPage.vue` (`install_package`, pkexec), `UninstallerPage.vue` (recherche + champ de confirmation destructive, `uninstall_package`, pkexec) -- 3 pages, 10 champs au total.
+
+Vérification : `npx vue-tsc --noEmit` 0 erreur, `npx vitest run` sur les 3 pages concernées 16/16, suite complète 304/304 (inchangé).
+
+Version 0.25.35 → 0.25.36. Commit `d40df0f`, poussé sur `origin/master`.
+
+**Pages restantes** : `DiskVisualizerPage.vue`, `InstalledSoftwarePage.vue`, `ProcessesPage.vue`, `ReportGeneratorPage.vue`, `ScriptsPage.vue`, `SettingsPreferencesPage.vue` (6 pages).
