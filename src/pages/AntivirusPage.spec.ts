@@ -38,14 +38,29 @@ describe("AntivirusPage", () => {
     expect(invoke).toHaveBeenCalledWith("scan_for_malware", { directory: "/tmp" });
   });
 
-  it("quarantines a finding and removes it from the list", async () => {
+  it("requires typing the file's path before quarantine is possible", async () => {
+    // Regression guard for the actual gap: quarantine moves a file out
+    // of its original location with no "restore from quarantine" path
+    // back in this app -- effectively as irreversible as a permanent
+    // delete, and a scanner false positive on a real file is a genuine
+    // risk. This used to fire on a single click with zero confirmation,
+    // unlike every other comparably irreversible action in this app.
     const { invoke } = await import("@tauri-apps/api/core");
     const wrapper = mount(AntivirusPage);
     await wrapper.find("input").setValue("/tmp");
     await wrapper.findAll("button").find((b) => b.text() === "Scanner")!.trigger("click");
     await vi.waitFor(() => expect(wrapper.text()).toContain("/tmp/evil.sh"));
-    const quarantineButton = wrapper.findAll("button").find((b) => b.text().includes("quarantaine"))!;
-    await quarantineButton.trigger("click");
+
+    const startButton = wrapper.findAll("button").find((b) => b.text() === "Mettre en quarantaine")!;
+    await startButton.trigger("click");
+
+    expect(invoke).not.toHaveBeenCalledWith("quarantine_file", expect.anything());
+    const confirmButton = wrapper.findAll("button").find((b) => b.text() === "Confirmer la mise en quarantaine")!;
+    expect(confirmButton.attributes("disabled")).toBeDefined();
+
+    const confirmInputs = wrapper.findAll("input");
+    await confirmInputs[confirmInputs.length - 1].setValue("/tmp/evil.sh");
+    await confirmButton.trigger("click");
     await vi.waitFor(() => expect(wrapper.text()).not.toContain("/tmp/evil.sh"));
     expect(invoke).toHaveBeenCalledWith("quarantine_file", { path: "/tmp/evil.sh" });
   });
