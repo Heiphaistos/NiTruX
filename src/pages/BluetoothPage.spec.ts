@@ -23,4 +23,11 @@ describe("BluetoothPage", () => {
     const wrapper = mount(BluetoothPage);
     await vi.waitFor(() => expect(wrapper.text()).toContain("Aucun adaptateur"));
   });
+
+  it("shows a clear message when the adapter is present but no device is paired", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ adapter_present: true, powered: true, devices: [] });
+    const wrapper = mount(BluetoothPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Aucun périphérique Bluetooth appairé"));
+  });
 });

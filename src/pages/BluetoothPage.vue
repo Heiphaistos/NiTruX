@@ -27,6 +27,8 @@ onMounted(async () => {
         <NxBadge :status="status.powered ? 'success' : 'warning'">{{ status.powered ? "activé" : "désactivé" }}</NxBadge>
       </NxCard>
 
+      <NxCard v-if="status.devices.length === 0" class="bt-empty">Aucun périphérique Bluetooth appairé.</NxCard>
+
       <NxCard v-for="d in status.devices" :key="d.address" class="bt-row">
         <span>{{ d.name }}</span>
         <span class="bt-address">{{ d.address }}</span>
