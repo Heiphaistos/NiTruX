@@ -281,3 +281,11 @@ Premier classement des modules Rust par fraîcheur (comme fait pour les pages Vu
 **Rappel toujours actif** : 4 correctifs maintenant en attente d'une release publiée (quarantine-file, apt-autoremove, bootstrap symlink, benchmark symlink) -- aucun encore dans un `.deb`/`.rpm`/`.AppImage`.
 
 **Prochain cycle** : soit reprendre l'audit module-par-module Rust (candidats suivants par fraîcheur : `bluetooth.rs`/`universal.rs`, 2 mentions), soit re-balayer les pages Vue avec la même discipline "lecture complète, pas juste grep de pattern connu" qui a payé ce cycle-ci et le précédent.
+
+## Mise à jour (2026-08-06, v0.25.33, cycle 119)
+
+`bluetooth.rs`/`packages/universal.rs` relus intégralement -- propres (déjà audités par le passé). **Nouvel angle de sécurité, variante différente (confidentialité des permissions, pas TOCTOU/symlink)** : `create_backup`/`backup.rs` écrit une archive `.tar.gz` dans `$HOME` via `tar -czf`, qui hérite du umask du process -- confirmé en direct : `-rw-r--r--` (644, world-readable), alors que l'archive peut contenir des clés SSH/identifiants navigateur/documents, et que `$HOME` est traversable par d'autres utilisateurs locaux sur une install Debian par défaut. Corrigé : `chmod 0600` après succès de `tar`, échec du chmod remonté comme vraie erreur (pas best-effort silencieux). Vérifié que `report.rs` (sauvegarde via dialogue natif utilisateur) et `snapshots.rs` (délégué à `timeshift`, chemins root) n'ont pas le même risque. 290/290 Rust, clippy 0 warning. Commit `a69d528`.
+
+**5 correctifs de sécurité maintenant en attente d'une release publiée** (quarantine-file, apt-autoremove, bootstrap symlink, benchmark symlink, permissions backup) -- aucun encore dans un `.deb`/`.rpm`/`.AppImage`. Recommandation de coupure de release maintenant répétée sur 4 cycles consécutifs (114/117/118/119).
+
+**Prochain cycle** : poursuivre l'audit module-par-module Rust (`accounts.rs`/`apt.rs` déjà couverts, `portscan.rs`/`zypper.rs` à vérifier -- 4 mentions chacun) ou repasser aux pages Vue.

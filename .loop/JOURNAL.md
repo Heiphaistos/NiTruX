@@ -897,3 +897,21 @@ Vérification : `cargo test` 289/289 (288→289 net : -2 tests dupliqués retir�
 Version 0.25.31 → 0.25.32. Commit `405215d`, poussé sur `origin/master`.
 
 **Angle "chercher toutes les autres instances du même pattern qu'un bug déjà trouvé" confirmé productif** -- à réutiliser systématiquement après chaque découverte de bug réel, avant de passer à autre chose.
+
+[2026-08-06T16:10:00+02:00] Cycle 119 : reprise du classement module Rust par fraîcheur -- `bluetooth.rs`/`packages/universal.rs` relus intégralement, tous deux confirmés propres (déjà audités par le passé, rien de nouveau). `apt.rs` déjà creusé cycle 51, écarté.
+
+**Nouvel angle, variante de sécurité différente de celle des cycles 117/118 (pas TOCTOU/symlink, mais confidentialité des permissions de fichier)** : `create_backup`/`backup.rs` écrit une archive `.tar.gz` du dossier choisi par l'utilisateur directement dans `$HOME` via `tar -czf`. Question posée : cette archive peut contenir des données très sensibles (clés SSH, profils navigateur avec identifiants, documents), quelles sont ses permissions ?
+
+Reproduit en direct (script isolé, `umask` + `tar -czf` sur un vrai dossier de test) : confirmé `-rw-r--r--` (644, world-readable) sous l'umask 0022 de cet environnement. `$HOME` lui-même est traversable par les autres utilisateurs locaux sur une install Debian par défaut (`DEFAULT_HOME_PERMS` d'`adduser` = 0755) -- donc une vraie fuite de confidentialité multi-utilisateur, pas hypothétique.
+
+Corrigé : `chmod 0600` de l'archive juste après le succès de `tar`, avant de retourner le chemin à l'appelant. Un échec du chmod remonte comme une VRAIE erreur (pas juste best-effort ignoré) -- le but même de cette étape est la garantie de confidentialité, la faire échouer silencieusement en "succès" serait pire que de ne rien faire.
+
+Vérifié que le même risque ne s'applique PAS ailleurs dans le code : `report.rs` retourne son contenu généré au frontend (dialogue natif "Enregistrer sous", permissions gérées par l'OS/le choix explicite de l'utilisateur, pas un chemin fixe silencieux) ; `snapshots.rs` délègue entièrement à `timeshift` (chemins système root, hors du contrôle direct de NiTruX).
+
+Nouveau test de régression : un fichier 0644 est bien resserré à 0600.
+
+Vérification : `cargo test` 290/290 (289→290, +1), `cargo clippy --all-targets` 0 warning. Aucun fichier frontend touché.
+
+Version 0.25.32 → 0.25.33. Commit `a69d528`, poussé sur `origin/master`.
+
+**5 correctifs de sécurité maintenant en attente d'une release publiée** (quarantine-file, apt-autoremove, bootstrap symlink, benchmark symlink, permissions backup) -- aucun encore dans un `.deb`/`.rpm`/`.AppImage`.
