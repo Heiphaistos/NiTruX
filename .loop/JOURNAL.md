@@ -1262,3 +1262,17 @@ Vérification complète : `cargo test --lib disk_write::` 18/18, suite complète
 Version 0.25.50 → 0.25.51. Commit `cef66f3`, poussé sur `origin/master`.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine -- correctif chmod distinct, toujours en attente) + `confirmNonDestructiveActions` (cycle 148, décision produit). **15 correctifs désormais en attente d'une release publiée** depuis v0.25.24 (48 cycles cumulés 110-157).
+
+[2026-08-07T00:05:00+02:00] Cycle 158 : `QuickInstallPage.vue`/`ThemeEditorPage.vue`/`SystemToolsPage.vue` relues intégralement -- propres, déjà bien construites (course-condition sur la détection de gestionnaire, invalidation correcte de la sortie précédente, etc.). Poursuite du filon "action irréversible mal protégée" (cycles 156-157).
+
+**Vrai gap trouvé, même famille que le cycle 156** : `AntivirusPage.vue::quarantineFinding` déplace un fichier hors de son emplacement d'origine sur un simple clic, sans confirmation. Vérifié qu'aucune fonctionnalité "restaurer depuis la quarantaine" n'existe nulle part dans l'app (`grep -rln "quarantine" src/ --include="*.vue"` : seulement `AntivirusPage.vue` + une bannière sans rapport) -- du point de vue utilisateur, la mise en quarantaine est donc effectivement aussi irréversible qu'une suppression définitive, et un faux positif du scanner sur un fichier réel et nécessaire est un risque concret (heuristiques antivirus).
+
+Corrigé en appliquant le MÊME pattern taper-pour-confirmer déjà établi (cycles 156, et avant : `UninstallerPage.vue`, `DisksPage.vue`) plutôt qu'un nouveau mécanisme -- confirmation sur le chemin complet du fichier (`f.path`, le champ le plus visible/unique affiché). Test existant mis à jour (le clic simple ne suffit plus) + nouveau test de régression vérifiant le bouton de confirmation désactivé sans texte saisi et `quarantine_file` jamais appelé prématurément.
+
+Vérification complète : `npx vitest run src/pages/AntivirusPage.spec.ts` 3/3, suite complète 318/318 frontend (inchangé, un test remplacé pas ajouté), `npx vue-tsc --noEmit` 0 erreur, `cargo test --lib` 297/297 Rust (sanity check, aucun fichier Rust modifié).
+
+Version 0.25.51 → 0.25.52. Commit `861df40`, poussé sur `origin/master`.
+
+**Filon "action irréversible mal protégée" (cycles 156-158) : les 2 candidats trouvés (suppression corbeille, quarantaine antivirus) sont maintenant traités.** Aucun autre candidat identifié sur cette passe (clone-disk n'écrase plus silencieusement mais reste non-destructif à la source ; extend-partition growing-only par conception).
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). **16 correctifs désormais en attente d'une release publiée** depuis v0.25.24 (49 cycles cumulés 110-158) -- recommandation de coupure de release très fortement réitérée : plusieurs de ces correctifs sont des failles de sécurité/UX réelles (mv racine, permissions monde-lisible sur backup/clone, écrasement silencieux, actions irréversibles sans confirmation) qui restent non protégées pour tout utilisateur ayant installé une release existante.
