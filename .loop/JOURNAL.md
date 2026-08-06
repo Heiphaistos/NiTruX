@@ -1148,3 +1148,15 @@ Version 0.25.43 → 0.25.44. Commit `1c3bb13`, poussé sur `origin/master`.
 Aucun changement de code ce cycle. Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
 
 **Nouveau point en attente** : `confirmNonDestructiveActions` (préférence sans aucun effet, cycle 148) -- nécessite une décision utilisateur sur le périmètre voulu (quelles actions confirmer, quel mécanisme de dialogue) avant toute implémentation.
+
+[2026-08-06T22:32:00+02:00] Cycle 149 : poursuite de l'audit page-par-page Vue. `LogsPage.vue` examinée -- piste de débordement `.log-message` dans un flex row sans `min-width:0` envisagée puis jugée déjà correctement contenue localement par `.logs-list { overflow: auto }` (scrollbar horizontale locale au pire cas, pas de casse de mise en page), donc pas retenue comme un vrai bug. `PerfHistoryPage.vue` examinée ensuite.
+
+**Vrai bug responsive trouvé** : `NxSparkline.vue` (composant partagé, graphique CPU/Mémoire de `PerfHistoryPage.vue`, appelé avec `:width="600"`) fixait `width`/`height` en attributs SVG bruts -- un SVG avec des attributs `width`/`height` fixes ne rétrécit jamais en dessous de sa taille intrinsèque, quelle que soit la largeur de son conteneur. `tauri.conf.json` ne définit aucun `minWidth` sur la fenêtre de l'app (seulement `width`/`height` initiaux) -- rien n'empêche l'utilisateur de redimensionner la fenêtre en dessous de ~650px, auquel cas le graphique de 600px déborderait de sa carte. Régression directe par rapport à l'exigence "tout responsive" établie en R14 (même famille de bug que le correctif tables du cycle 147, sur un composant différent).
+
+Corrigé : le SVG utilise désormais un `viewBox` (préserve le système de coordonnées interne pour le tracé des points) + `width: 100%` en CSS, plafonné par un `max-width` inline correspondant à la largeur d'origine du prop `width` -- le graphique rétrécit avec son conteneur au lieu d'en déborder, la hauteur reste fixe via l'attribut SVG `height`. Nouveau test de régression (`NxSparkline.spec.ts`) verrouillant l'absence d'attribut `width` fixe et la présence du `viewBox` correct.
+
+Vérification complète : `npx vitest run src/components/ui/NxSparkline.spec.ts` 3/3, suite complète 314/314 frontend (313→314, +1), `npx vue-tsc --noEmit` 0 erreur, `cargo test --lib` 292/292 Rust (sanity check, aucun fichier Rust modifié).
+
+Version 0.25.44 → 0.25.45. Commit `3a5c951`, poussé sur `origin/master`.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). 9 correctifs désormais en attente d'une release publiée.
