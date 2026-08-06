@@ -55,7 +55,7 @@ fn interpret_list_result(stdout: &str, code: i32) -> Result<Vec<Snapshot>, Strin
 
 #[tauri::command]
 pub fn list_snapshots() -> Result<Vec<Snapshot>, String> {
-    let (stdout, code) = subprocess::run_capturing_exit_code("timeshift", &["--list"], Duration::from_secs(10))?;
+    let (stdout, _stderr, code) = subprocess::run_capturing_exit_code("timeshift", &["--list"], Duration::from_secs(10))?;
     interpret_list_result(&stdout, code)
 }
 

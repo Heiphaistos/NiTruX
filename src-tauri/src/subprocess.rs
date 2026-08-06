@@ -126,16 +126,25 @@ pub fn run_with_timeout_env(
 /// class of tool — this helper exists so callers can inspect the code
 /// themselves and decide what it means.
 ///
-/// - `Ok((stdout, code))` — the process ran to completion, whatever its exit
-///   code; stdout is returned (lossily decoded). The caller decides which
-///   codes are success-like and which are real errors.
+/// - `Ok((stdout, stderr, code))` — the process ran to completion, whatever
+///   its exit code; stdout and stderr are both returned (lossily decoded).
+///   The caller decides which codes are success-like and which are real
+///   errors, and which stream (if either) carries the real explanation for
+///   a given tool — confirmed live (cycles 107-110) that this varies per
+///   tool: timeshift/smartctl put their real error text on stdout, tar puts
+///   it on stderr (reproduced: a permission-denied file inside the backed-up
+///   directory exits 2 with the actionable message ONLY on stderr, stdout
+///   empty). Stderr used to be piped (to avoid the child blocking on a full
+///   pipe if it wrote enough there) but then silently discarded — every
+///   caller was structurally unable to recover a stderr-only error message,
+///   regardless of how its own error-formatting code was written.
 /// - `Err(_)` — the binary could not be spawned (e.g. not installed), or it
 ///   did not finish within `timeout` (the child is sent `SIGKILL` first).
 pub fn run_capturing_exit_code(
     program: &str,
     args: &[&str],
     timeout: Duration,
-) -> Result<(String, i32), String> {
+) -> Result<(String, String, i32), String> {
     let child = Command::new(program)
         .args(args)
         .stdout(Stdio::piped())
@@ -156,7 +165,11 @@ pub fn run_capturing_exit_code(
             // signal rather than exiting normally; -1 is a safe sentinel
             // since real exit codes are always non-negative.
             let code = output.status.code().unwrap_or(-1);
-            Ok((String::from_utf8_lossy(&output.stdout).into_owned(), code))
+            Ok((
+                String::from_utf8_lossy(&output.stdout).into_owned(),
+                String::from_utf8_lossy(&output.stderr).into_owned(),
+                code,
+            ))
         }
         Ok(Err(e)) => Err(format!("erreur en lisant la sortie de {program} : {e}")),
         Err(mpsc::RecvTimeoutError::Timeout) => {
@@ -215,7 +228,7 @@ mod tests {
 
     #[test]
     fn run_capturing_exit_code_returns_stdout_and_code_on_zero_exit() {
-        let (stdout, code) =
+        let (stdout, _stderr, code) =
             run_capturing_exit_code("sh", &["-c", "echo hello; exit 0"], Duration::from_secs(2))
                 .expect("should succeed");
         assert_eq!(stdout.trim(), "hello");
@@ -224,11 +237,28 @@ mod tests {
 
     #[test]
     fn run_capturing_exit_code_captures_stdout_on_nonzero_exit_instead_of_erroring() {
-        let (stdout, code) =
+        let (stdout, _stderr, code) =
             run_capturing_exit_code("sh", &["-c", "echo hello; exit 1"], Duration::from_secs(2))
                 .expect("non-zero exit should still be Ok — caller decides what the code means");
         assert_eq!(stdout.trim(), "hello");
         assert_eq!(code, 1);
+    }
+
+    #[test]
+    fn run_capturing_exit_code_also_captures_stderr_separately_from_stdout() {
+        let (stdout, stderr, code) = run_capturing_exit_code(
+            "sh",
+            &["-c", "echo on_stdout; echo on_stderr >&2; exit 3"],
+            Duration::from_secs(2),
+        )
+        .expect("non-zero exit should still be Ok");
+        assert_eq!(stdout.trim(), "on_stdout");
+        assert_eq!(
+            stderr.trim(),
+            "on_stderr",
+            "stderr must be captured, not silently discarded like before this fix"
+        );
+        assert_eq!(code, 3);
     }
 
     #[test]

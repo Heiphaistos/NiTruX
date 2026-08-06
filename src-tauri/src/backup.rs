@@ -35,10 +35,18 @@ pub fn backup_filename(now_epoch_secs: u64) -> String {
 /// hard `Err`, so backing up a real $HOME (this feature's primary use
 /// case) would very plausibly report "backup failed" to the user even
 /// though a good archive was sitting right there on disk.
-fn interpret_tar_result(dest_path: String, code: i32) -> Result<String, String> {
+///
+/// Fatal errors (code >= 2) include `stderr` in the message: reproduced
+/// live (an unreadable file inside the source directory, chmod 000) that
+/// GNU tar prints its actionable reason ("Cannot open: Permission denied")
+/// to stderr with an EMPTY stdout, so a message built from stdout alone (or
+/// from the code alone, as before this fix) would silently drop the one
+/// piece of information the user actually needs to fix the problem.
+fn interpret_tar_result(dest_path: String, stderr: &str, code: i32) -> Result<String, String> {
     match code {
         0 | 1 => Ok(dest_path),
-        _ => Err(format!("tar a rencontré une erreur (code {code})")),
+        _ if stderr.trim().is_empty() => Err(format!("tar a rencontré une erreur (code {code})")),
+        _ => Err(format!("tar a rencontré une erreur (code {code}) : {}", stderr.trim())),
     }
 }
 
@@ -64,13 +72,13 @@ pub fn create_backup(source_dir: String) -> Result<String, String> {
     // mid-write, which is more robust than relying on however the archive
     // happened to come out this time.
     let exclude_arg = format!("--exclude={filename}");
-    let (_, code) = subprocess::run_capturing_exit_code(
+    let (_, stderr, code) = subprocess::run_capturing_exit_code(
         "tar",
         &["-czf", &dest_path, &exclude_arg, "-C", &source_dir, "."],
         Duration::from_secs(300),
     )?;
 
-    interpret_tar_result(dest_path, code)
+    interpret_tar_result(dest_path, &stderr, code)
 }
 
 #[cfg(test)]
@@ -108,22 +116,39 @@ mod tests {
         // while being archived ("File shrank by N bytes; padding with
         // zeros" on stderr) -- the archive is still written successfully,
         // this must not be reported as a failed backup.
-        let result = interpret_tar_result("/home/dev/nitrux-backup-1.tar.gz".to_string(), 1)
+        let result = interpret_tar_result("/home/dev/nitrux-backup-1.tar.gz".to_string(), "", 1)
             .expect("exit 1 (files changed during archiving) should be Ok, not an error");
         assert_eq!(result, "/home/dev/nitrux-backup-1.tar.gz");
     }
 
     #[test]
     fn exit_code_0_reports_success() {
-        let result = interpret_tar_result("/home/dev/nitrux-backup-1.tar.gz".to_string(), 0)
+        let result = interpret_tar_result("/home/dev/nitrux-backup-1.tar.gz".to_string(), "", 0)
             .expect("exit 0 should be Ok");
         assert_eq!(result, "/home/dev/nitrux-backup-1.tar.gz");
     }
 
     #[test]
     fn exit_code_2_is_a_real_fatal_error() {
-        let err = interpret_tar_result("/home/dev/nitrux-backup-1.tar.gz".to_string(), 2)
+        let err = interpret_tar_result("/home/dev/nitrux-backup-1.tar.gz".to_string(), "", 2)
             .expect_err("exit 2 should be a real error");
         assert!(err.contains('2'), "error should mention the exit code: {err}");
+    }
+
+    #[test]
+    fn fatal_error_includes_the_real_stderr_reason_when_present() {
+        // Reproduced live: an unreadable file (chmod 000) inside the source
+        // directory makes tar exit 2 with its actionable explanation ONLY
+        // on stderr, stdout empty.
+        let err = interpret_tar_result(
+            "/home/dev/nitrux-backup-1.tar.gz".to_string(),
+            "tar: ./f.txt: Cannot open: Permission denied\ntar: Exiting with failure status due to previous errors\n",
+            2,
+        )
+        .expect_err("exit 2 should be a real error");
+        assert!(
+            err.contains("Permission denied"),
+            "the real reason from stderr must not be silently dropped: {err}"
+        );
     }
 }

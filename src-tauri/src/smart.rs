@@ -70,7 +70,7 @@ fn interpret_smartctl_result(output: &str, code: i32) -> Result<Option<String>, 
 /// having the same root requirement), not something this task works around.
 #[tauri::command]
 pub fn get_smart_status(device: String) -> Result<SmartStatus, String> {
-    let (output, code) = subprocess::run_capturing_exit_code("smartctl", &["-H", &device], Duration::from_secs(15))?;
+    let (output, _stderr, code) = subprocess::run_capturing_exit_code("smartctl", &["-H", &device], Duration::from_secs(15))?;
     Ok(SmartStatus {
         device,
         health: interpret_smartctl_result(&output, code)?,

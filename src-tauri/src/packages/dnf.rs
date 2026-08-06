@@ -39,10 +39,17 @@ pub fn parse_dnf_line(line: &str) -> Option<PackageUpdate> {
 /// available update on dnf-based systems (Fedora/RHEL). Fixed by switching
 /// to `run_capturing_exit_code`, which returns stdout regardless of exit
 /// code, mirroring the fix already applied to malwarescan.rs.
-fn interpret_check_update_result(output: &str, code: i32) -> Result<Vec<PackageUpdate>, String> {
+/// Real errors (any code other than 0/100) include `stderr` when present:
+/// `run_capturing_exit_code` now captures it (previously piped but silently
+/// discarded — see `subprocess::run_capturing_exit_code`'s doc comment),
+/// and dnf, like most CLI tools, is expected to print its actionable
+/// explanation (repo unreachable, lock held, etc.) there rather than mixing
+/// it into the structured `check-update` listing on stdout.
+fn interpret_check_update_result(output: &str, stderr: &str, code: i32) -> Result<Vec<PackageUpdate>, String> {
     match code {
         0 | 100 => Ok(output.lines().filter_map(parse_dnf_line).collect()),
-        _ => Err(format!("dnf check-update a rencontré une erreur (code {code})")),
+        _ if stderr.trim().is_empty() => Err(format!("dnf check-update a rencontré une erreur (code {code})")),
+        _ => Err(format!("dnf check-update a rencontré une erreur (code {code}) : {}", stderr.trim())),
     }
 }
 
@@ -52,8 +59,8 @@ impl PackageManager for Dnf {
     }
 
     fn list_upgradable(&self) -> Result<Vec<PackageUpdate>, String> {
-        let (output, code) = subprocess::run_capturing_exit_code("dnf", &["check-update"], Duration::from_secs(20))?;
-        interpret_check_update_result(&output, code)
+        let (output, stderr, code) = subprocess::run_capturing_exit_code("dnf", &["check-update"], Duration::from_secs(20))?;
+        interpret_check_update_result(&output, &stderr, code)
     }
 
     /// Restricted to user-installed packages via `dnf repoquery
@@ -130,7 +137,7 @@ mod tests {
     fn exit_code_100_with_real_output_returns_the_actual_updates_not_an_empty_list() {
         let output = "curl.x86_64                    7.76.1-14.fc35                     updates\n\
                        vim.x86_64                     2:8.2.2637-1.fc35                  updates\n";
-        let result = interpret_check_update_result(output, 100)
+        let result = interpret_check_update_result(output, "", 100)
             .expect("exit 100 (updates available) should be Ok, not an error");
         assert_eq!(result.len(), 2, "exit 100's real update list must be parsed, not discarded as empty");
         assert_eq!(result[0].name, "curl");
@@ -139,13 +146,23 @@ mod tests {
 
     #[test]
     fn exit_code_0_is_a_clean_system_with_no_updates() {
-        let result = interpret_check_update_result("", 0).expect("exit 0 should be Ok");
+        let result = interpret_check_update_result("", "", 0).expect("exit 0 should be Ok");
         assert!(result.is_empty());
     }
 
     #[test]
     fn other_exit_codes_are_real_errors() {
-        let err = interpret_check_update_result("", 1).expect_err("exit 1 should be a real error");
+        let err = interpret_check_update_result("", "", 1).expect_err("exit 1 should be a real error");
         assert!(err.contains('1'), "error should mention the exit code: {err}");
+    }
+
+    #[test]
+    fn real_error_includes_the_stderr_reason_when_present() {
+        let err = interpret_check_update_result("", "Error: Failed to synchronize cache for repo 'updates'\n", 1)
+            .expect_err("should be a real error");
+        assert!(
+            err.contains("Failed to synchronize cache"),
+            "the real reason from stderr must not be silently dropped: {err}"
+        );
     }
 }
