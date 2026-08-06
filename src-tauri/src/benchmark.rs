@@ -100,13 +100,19 @@ pub fn benchmark_memory(duration: Duration) -> f64 {
 /// direction. The file is created under `std::env::temp_dir()` (never a
 /// system path) and removed before returning, including on the error path,
 /// so a failed read never leaves a stray multi-megabyte file behind.
+/// Created via `secure_temp::create_exclusively_owner_only` rather than a
+/// plain `File::create`: this path is predictable (PID-based), and a
+/// plain create would silently follow a symlink an attacker or same-user
+/// process planted there in advance, clobbering whatever it points to
+/// with benchmark filler bytes instead of writing a fresh, independent
+/// file at the intended path.
 pub fn benchmark_disk(size_bytes: usize) -> Result<(f64, f64), String> {
     let path = std::env::temp_dir().join(format!("nitrux-benchmark-{}.tmp", std::process::id()));
     let data = vec![0x5Au8; size_bytes];
 
     let write_result = (|| -> Result<f64, String> {
         let start = Instant::now();
-        let mut file = std::fs::File::create(&path).map_err(|e| format!("création du fichier de test impossible : {e}"))?;
+        let mut file = crate::secure_temp::create_exclusively_owner_only(&path)?;
         file.write_all(&data).map_err(|e| format!("écriture impossible : {e}"))?;
         file.sync_all().map_err(|e| format!("synchronisation disque impossible : {e}"))?;
         let elapsed = start.elapsed().as_secs_f64();
