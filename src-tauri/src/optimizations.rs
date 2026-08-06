@@ -58,7 +58,7 @@ fn run_optimization_diagnostics() -> OptimizationSnapshot {
         &["is-enabled", "fstrim.timer"],
         Duration::from_secs(5),
     )
-    .map(|(stdout, _code)| stdout.trim() == "enabled")
+    .map(|(stdout, _stderr, _code)| stdout.trim() == "enabled")
     .unwrap_or(false);
 
     OptimizationSnapshot { enabled_services, swappiness, zram_active, fstrim_timer_enabled }
