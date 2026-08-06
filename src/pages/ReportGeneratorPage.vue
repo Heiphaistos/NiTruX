@@ -97,7 +97,7 @@ function download() {
 
     <NxCard class="rg-controls">
       <div class="rg-controls-row">
-        <NxSelect v-model="selectedFormat" :options="FORMAT_OPTIONS" />
+        <NxSelect v-model="selectedFormat" :options="FORMAT_OPTIONS" aria-label="Format du rapport" />
         <NxButton :disabled="generating" @click="generate">{{ generating ? "Génération..." : "Générer" }}</NxButton>
         <NxButton :disabled="!reportContent" @click="download">Télécharger</NxButton>
         <NxButton :disabled="pdfGenerating" @click="downloadPdf">{{ pdfGenerating ? "Génération PDF..." : "Télécharger en PDF" }}</NxButton>

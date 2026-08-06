@@ -73,7 +73,7 @@ function maxSize(): number {
 
     <NxCard class="dv-scan">
       <div class="dv-scan-row">
-        <NxInput v-model="scanDir" placeholder="Dossier à analyser (ex: /home/dev)" />
+        <NxInput v-model="scanDir" placeholder="Dossier à analyser (ex: /home/dev)" aria-label="Dossier à analyser" />
         <NxButton :disabled="scanning || scanDir === ''" @click="scan">{{ scanning ? "Analyse..." : "Analyser" }}</NxButton>
       </div>
       <NxCard v-if="scanError" danger>{{ scanError }}</NxCard>

@@ -35,7 +35,7 @@ const filteredPackages = computed(() =>
 
     <NxCard>
       <NxSectionHeader :title="`Paquets (${packages?.length ?? 0})`" />
-      <NxInput v-model="softwareFilter" placeholder="Filtrer par nom..." />
+      <NxInput v-model="softwareFilter" placeholder="Filtrer par nom..." aria-label="Filtrer les logiciels installés par nom" />
       <div v-for="p in filteredPackages" :key="p.name" class="sw-row">
         <span>{{ p.name }}</span><span>{{ p.version }}</span>
       </div>
