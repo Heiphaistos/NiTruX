@@ -348,3 +348,11 @@ Dernière piste (messages d'erreur Rust encore en anglais) : négative, les 2 se
 **Ne pas re-proposer indéfiniment le même diagnostic à chaque cycle négatif futur** -- si un nouveau cycle est aussi négatif, il suffit de le noter brièvement plutôt que de répéter cette analyse en détail à chaque fois.
 
 Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
+
+## Mise à jour (2026-08-06, v0.25.34, cycle 127) — série négative rompue, nouveau chantier a11y ouvert
+
+**Vrai gap systémique trouvé** : `NxInput.vue`/`NxSelect.vue` (composants partagés, 13+ pages) n'avaient aucun mécanisme de nom accessible (WCAG 3.3.2) -- `NxInput` reposait uniquement sur `placeholder` (pas un vrai substitut), `NxSelect` n'avait même pas ça. Corrigé au niveau composant : prop optionnelle `ariaLabel` rétrocompatible sur les deux, appliquée d'abord à `DisksPage.vue` (formater/étendre/cloner -- les actions les plus destructrices du projet). 304/304 frontend (+2), vue-tsc clean. Commit `8fa7ff8`.
+
+**Nouveau chantier multi-cycle ouvert : déploiement `ariaLabel` sur les pages restantes.** La capacité existe maintenant sur les composants -- reste à l'appliquer page par page aux ~13 autres usages de `NxInput`/`NxSelect` (`grep -rn "<NxInput\|<NxSelect" src/pages/*.vue` pour les lister). Même pattern incrémental qu'utilisé pour "liste vide sans message" (cycles 1-32) -- traiter quelques pages par cycle plutôt que tout d'un coup, prioriser les pages avec actions destructrices/pkexec en premier (déjà fait pour Disques ; `security_write`/`network_write`/`backup`/`troubleshoot` sont les prochaines candidates logiques).
+
+Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
