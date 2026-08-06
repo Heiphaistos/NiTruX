@@ -18,4 +18,9 @@ describe("NxSelect", () => {
     await wrapper.find("select").setValue("btrfs");
     expect(wrapper.emitted("update:modelValue")?.[0]).toEqual(["btrfs"]);
   });
+
+  it("forwards the ariaLabel prop as an accessible name for assistive technology", () => {
+    const wrapper = mount(NxSelect, { props: { modelValue: "ext4", options, ariaLabel: "Système de fichiers" } });
+    expect(wrapper.find("select").attributes("aria-label")).toBe("Système de fichiers");
+  });
 });

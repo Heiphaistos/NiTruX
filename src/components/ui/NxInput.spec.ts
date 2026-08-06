@@ -13,4 +13,9 @@ describe("NxInput", () => {
     const wrapper = mount(NxInput, { props: { modelValue: "", placeholder: "Chemin..." } });
     expect(wrapper.find("input").attributes("placeholder")).toBe("Chemin...");
   });
+
+  it("forwards the ariaLabel prop as an accessible name for assistive technology", () => {
+    const wrapper = mount(NxInput, { props: { modelValue: "", ariaLabel: "Chemin source" } });
+    expect(wrapper.find("input").attributes("aria-label")).toBe("Chemin source");
+  });
 });
