@@ -1226,3 +1226,15 @@ Sweep complémentaire : `InstalledSoftwarePage.vue` (filtre insensible à la cas
 Aucun changement de code ce cycle -- audit honnête et rigoureux, deux fausses pistes explicitement infirmées par le raisonnement plutôt que corrigées par précaution.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). 13 correctifs toujours en attente d'une release publiée.
+
+[2026-08-06T23:26:00+02:00] Cycle 155 : `HardwareDetailsPage.vue`/`AntivirusPage.vue` relues intégralement -- propres. Puis `CleanerPage.vue`.
+
+**Correction honnête d'une trouvaille du cycle 152** : `CleanerPage.vue` appelle DÉJÀ `run_troubleshoot_action` avec `clean-cache` ET `vacuum-logs` (boutons "Vider le cache"/"Purger les journaux", avec en prime un rafraîchissement du rapport de taille après succès pour `clean-cache`). Mon affirmation du cycle 152 ("deux actions privilégiées entièrement construites... invisibles pour l'utilisateur, sans aucun moyen de les déclencher") était **factuellement inexacte** -- je n'avais vérifié que la liste `TROUBLESHOOT_ACTIONS` de `TroubleshootPage.vue` sans chercher d'autres appelants de la même commande Tauri (`grep -rn "run_troubleshoot_action" src/pages/*.vue` montre bien 2 appelants, pas 1). Ces deux actions étaient donc déjà pleinement accessibles avant mon "correctif".
+
+**Pas une régression pour autant** : le correctif du cycle 152 (exposer aussi `clean-cache`/`vacuum-logs` sur la page Dépannage) reste un choix UX défendable et sans effet de bord négatif -- consolider les actions de maintenance privilégiées sur la page "Dépannage" dédiée, en plus de leur présence contextuelle sur "Nettoyeur", n'introduit aucune incohérence (même commande backend, même chaîne d'action, comportement idempotent des deux côtés). Aucun changement de code nécessaire ce cycle -- correction du dossier de bord uniquement, pour que le journal reste une source fidèle.
+
+**Leçon méthodologique** : avant de qualifier une action backend d'"orpheline"/"invisible", toujours `grep` TOUS les appelants de la commande Tauri concernée à travers `src/pages/*.vue` (pas seulement la page la plus évidente) -- le filon "action backend orpheline" (cycles 152-153) doit appliquer cette vérification plus large à l'avenir avant de conclure à une lacune.
+
+Aucun changement de code ce cycle.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). 13 correctifs toujours en attente d'une release publiée.
