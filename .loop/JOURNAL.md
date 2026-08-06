@@ -989,3 +989,13 @@ Vérification : `npx vue-tsc --noEmit` 0 erreur, `npx vitest run` sur les 3 page
 Version 0.25.35 → 0.25.36. Commit `d40df0f`, poussé sur `origin/master`.
 
 **Pages restantes** : `DiskVisualizerPage.vue`, `InstalledSoftwarePage.vue`, `ProcessesPage.vue`, `ReportGeneratorPage.vue`, `ScriptsPage.vue`, `SettingsPreferencesPage.vue` (6 pages).
+
+[2026-08-06T19:05:00+02:00] Cycle 130 : lot 4 (final) du déploiement `ariaLabel` -- les 6 pages restantes. `DiskVisualizerPage.vue`/`InstalledSoftwarePage.vue`/`ProcessesPage.vue`/`ReportGeneratorPage.vue` (1 champ chacune) ; `ScriptsPage.vue` (2 champs, dont un `<textarea>` natif pour le contenu du script -- même lacune) ; `SettingsPreferencesPage.vue` (2 champs, cas différent : un `<label>` visible existait déjà juste avant chaque champ mais SANS association programmatique `for`/`id` -- ajouté `aria-label` reprenant le texte visible pour que les lecteurs d'écran l'obtiennent quel que soit le mode de navigation).
+
+**Chantier terminé à 100%** : `grep -n "<NxInput\|<NxSelect" src/pages/*.vue | grep -v aria-label` ne renvoie plus que des faux positifs (balises multi-lignes où l'attribut est sur une ligne suivante, vérifiés individuellement) -- chaque usage de `NxInput`/`NxSelect` dans toute l'application a maintenant un nom accessible.
+
+Vérification : `npx vue-tsc --noEmit` 0 erreur, `npx vitest run` sur les 6 pages concernées 28/28, suite complète 304/304 (inchangé).
+
+Version 0.25.36 → 0.25.37. Commit `391aeb2`, poussé sur `origin/master`.
+
+**Chantier a11y ariaLabel (cycles 127-130) : CLOS.** Bilan : 2 composants partagés modifiés + 15 pages + 2 `<textarea>` natifs, 4 cycles, 0 régression. Prochain chantier à identifier au prochain cycle.

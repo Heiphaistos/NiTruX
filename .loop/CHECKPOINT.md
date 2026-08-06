@@ -372,3 +372,13 @@ Dernière piste (messages d'erreur Rust encore en anglais) : négative, les 2 se
 **Pages `ariaLabel` restantes** : `DiskVisualizerPage.vue`, `InstalledSoftwarePage.vue`, `ProcessesPage.vue`, `ReportGeneratorPage.vue`, `ScriptsPage.vue`, `SettingsPreferencesPage.vue` -- 6 pages.
 
 Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
+
+## Mise à jour (2026-08-06, v0.25.37, cycle 130) — chantier ariaLabel CLOS (100%)
+
+Dernier lot : les 6 pages restantes corrigées (dont `ScriptsPage.vue`'s `<textarea>` natif et `SettingsPreferencesPage.vue` où un `<label>` visible existait mais sans association `for`/`id`). **Confirmé par grep : plus aucun `NxInput`/`NxSelect` sans nom accessible dans toute l'app.** 304/304 frontend, vue-tsc clean. Commit `391aeb2`.
+
+**Bilan chantier a11y (cycles 127-130, 4 cycles)** : 2 composants partagés (`NxInput`/`NxSelect`) + 15 pages + 2 `<textarea>` natifs corrigés, 0 régression sur tout le parcours. Terminé.
+
+**Aucun chantier multi-cycle actif pour le moment.** Prochain cycle : identifier une nouvelle portion (page-par-page/module Rust) ou un nouveau pattern transversal.
+
+Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise, toujours pas livré en production. De nombreux correctifs (sécurité + a11y) se sont accumulés depuis le cycle 110 sans jamais être publiés dans une release -- recommandation toujours active de couper une nouvelle release bientôt.
