@@ -65,4 +65,22 @@ describe("ThemeEditorPage — theme tab custom themes", () => {
     await input.trigger("change");
     await vi.waitFor(() => expect(wrapper.text()).toMatch(/JSON invalide/i));
   });
+
+  it("clicking Sauvegarder activates the saved theme immediately, not just adds it to the unused customThemes list", async () => {
+    const themeStore = useThemeStore();
+    themeStore.setTheme(builtinThemes[0]); // start on a known theme
+
+    const wrapper = mount(ThemeEditorPage);
+    // Edit a color -- mirrors a real user dragging the color picker before saving.
+    const colorInput = wrapper.find('input[type="color"]');
+    await colorInput.setValue("#123456");
+
+    const saveButton = wrapper.findAll(".te-actions button").find((b) => b.text() === "Sauvegarder")!;
+    await saveButton.trigger("click");
+
+    expect(themeStore.active.colors.bgBase).toBe("#123456");
+    // The bug: saveCustomTheme alone persists the swatch-list entry but not
+    // which theme is "active" -- a reload would revert to builtinThemes[0].
+    expect(JSON.parse(localStorage.getItem("nitrux-theme")!).colors.bgBase).toBe("#123456");
+  });
 });

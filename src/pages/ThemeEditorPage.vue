@@ -29,7 +29,19 @@ function handleColorInput(key: keyof Theme["colors"], event: Event) {
 }
 
 function handleSave() {
-  themeStore.saveCustomTheme({ ...themeStore.active, id: `custom-${Date.now()}`, name: themeName.value });
+  // saveCustomTheme alone only adds the entry to the swatch picker's list
+  // (persisted under its own storage key) -- it does NOT make it the
+  // active theme (that's a separate persisted key, updated only by
+  // setTheme). Without this second call, colors edited via
+  // handleColorInput/updateActiveColor stay applied for the current
+  // session only (that path never persists either) and are silently lost
+  // on the next launch: the app would revert to whichever theme was
+  // active before the edits, even though "Sauvegarder" reported success
+  // and the new swatch is visible. importTheme already gets this right
+  // (see its own saveCustomTheme + setTheme pair) -- this mirrors it.
+  const theme = { ...themeStore.active, id: `custom-${Date.now()}`, name: themeName.value };
+  themeStore.saveCustomTheme(theme);
+  themeStore.setTheme(theme);
 }
 
 function handleExport() {
