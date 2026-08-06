@@ -87,7 +87,7 @@ pub fn parse_meminfo(content: &str) -> MemoryDetails {
     let mut swap_total_kb = None;
     for line in content.lines() {
         let Some((key, rest)) = line.split_once(':') else { continue };
-        let value_kb = rest.trim().split_whitespace().next().and_then(|v| v.parse::<u64>().ok());
+        let value_kb = rest.split_whitespace().next().and_then(|v| v.parse::<u64>().ok());
         match key {
             "MemTotal" => total_kb = value_kb,
             "MemAvailable" => available_kb = value_kb,
