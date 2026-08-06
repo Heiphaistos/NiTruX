@@ -38,4 +38,29 @@ describe("DataRecoveryPage", () => {
     const wrapper = mount(DataRecoveryPage);
     await vi.waitFor(() => expect(wrapper.text()).toContain("Corbeille vide"));
   });
+
+  it("requires typing the trashed file's name before permanent deletion is possible", async () => {
+    // Regression guard for the actual gap: "Supprimer définitivement" is
+    // genuinely irreversible (unlike Restaurer), but previously deleted
+    // on a single click with zero confirmation -- unlike every other
+    // comparably irreversible action in this app (uninstall,
+    // format-partition), which all require typing an exact match first.
+    const { invoke } = await import("@tauri-apps/api/core");
+    const wrapper = mount(DataRecoveryPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("report.pdf"));
+
+    const deleteButton = wrapper.findAll("button").find((b) => b.text() === "Supprimer définitivement")!;
+    await deleteButton.trigger("click");
+
+    // No confirm text typed yet: delete_trash_item_permanently must not
+    // have been called, and the confirm button must be disabled.
+    expect(invoke).not.toHaveBeenCalledWith("delete_trash_item_permanently", expect.anything());
+    const confirmButton = wrapper.findAll("button").find((b) => b.text() === "Confirmer la suppression")!;
+    expect(confirmButton.attributes("disabled")).toBeDefined();
+
+    await wrapper.find("input").setValue("report.pdf");
+    await confirmButton.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).not.toContain("report.pdf"));
+    expect(invoke).toHaveBeenCalledWith("delete_trash_item_permanently", { trashedName: "report.pdf" });
+  });
 });
