@@ -1072,3 +1072,9 @@ Vérification : `npx vitest run` 4/4, suite complète 309/309 (308→309, +1), `
 Version 0.25.39 → 0.25.40. Commit `427d3db`, poussé sur `origin/master`.
 
 **Le filon "commande catalogue dont le code de sortie masque un résultat valide" semble maintenant largement épuisé** après 2 cycles consécutifs productifs (du puis grep/pgrep) -- prochain cycle : reprendre un audit page/module classique ou un tout nouveau pattern.
+
+[2026-08-06T20:50:00+02:00] Cycle 140 : confirmation de l'épuisement du filon avant de passer à autre chose. `~/Documents` (seule entrée `du` à un seul chemin localisé) vérifiée intentionnellement correcte -- "Documents" est identique en FR/EN dans les noms de dossiers XDG (contrairement à Bureau/Desktop, Musique/Music, etc.), pas un oubli. 13 commandes `curl` du catalogue : `curl` absent sur cette VM minimale, mais déjà géré proprement (`run_with_timeout` produit un message "curl introuvable..." clair et actionnable sur un binaire manquant -- angle DIFFÉRENT du bug corrigé aux cycles 138/139, pas la même classe de problème).
+
+Échantillon frais de 20 commandes standalone non-`du`/`grep`/`curl` (`nmcli`/`stat`/`ip link`/`lsblk`/`timedatectl`/`dig`/`pactl`/`journalctl`/`nproc`/etc.) testées EN DIRECT sur la vraie VM : 17/20 exit 0 propre, 3/20 exit 127 "commande introuvable" (`wg`/`cabal`/`bootctl`, outils niche absents sur cette VM) -- ce dernier cas déjà correctement géré (message clair), pas le même bug. Aucune nouvelle instance du pattern "résultat valide + code de sortie non-nul masqué" trouvée sur cet échantillon.
+
+Aucun changement de code ce cycle -- confirme que le filon catalogue est bien clos, pas juste supposé. Prochain cycle : repasser à un audit page/module classique ou chercher un nouveau pattern transversal distinct.
