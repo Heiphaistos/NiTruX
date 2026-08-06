@@ -1,4 +1,5 @@
 use crate::subprocess;
+use std::os::unix::fs::PermissionsExt;
 use std::time::Duration;
 
 /// Rejects any source path that is not absolute, or that attempts to
@@ -78,7 +79,25 @@ pub fn create_backup(source_dir: String) -> Result<String, String> {
         Duration::from_secs(300),
     )?;
 
-    interpret_tar_result(dest_path, &stderr, code)
+    let dest_path = interpret_tar_result(dest_path, &stderr, code)?;
+    restrict_backup_to_owner(&dest_path)?;
+    Ok(dest_path)
+}
+
+/// `tar` creates its output file with whatever the process umask leaves
+/// (0022 on this dev host, confirmed live -- the archive comes out
+/// world-readable, `-rw-r--r--`). A backup of a user-chosen directory can
+/// legitimately contain highly sensitive data (SSH private keys, browser
+/// profiles with saved credentials/cookies, documents, mail) -- and
+/// $HOME, where this archive always lands, is traversable by other local
+/// users on a default Debian install (`adduser`'s DEFAULT_HOME_PERMS is
+/// 0755). Restricting to owner-only after the fact closes that gap;
+/// failing to do so is surfaced as an error rather than silently leaving
+/// a sensitive archive world-readable, since the whole point of this step
+/// is the confidentiality guarantee itself.
+fn restrict_backup_to_owner(path: &str) -> Result<(), String> {
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))
+        .map_err(|e| format!("archive créée mais impossible de restreindre ses permissions : {e}"))
 }
 
 #[cfg(test)]
@@ -150,5 +169,22 @@ mod tests {
             err.contains("Permission denied"),
             "the real reason from stderr must not be silently dropped: {err}"
         );
+    }
+
+    #[test]
+    fn restrict_backup_to_owner_removes_group_and_world_access() {
+        // Reproduced live: `tar -czf` leaves its output at the process's
+        // umask (0022 on this host), i.e. world-readable -- exactly what
+        // this function must close for a file that can contain SSH keys,
+        // browser credentials, or other sensitive personal data.
+        let path = std::env::temp_dir().join(format!("nitrux-backup-test-perms-{}.tar.gz", std::process::id()));
+        std::fs::write(&path, b"fake archive content").unwrap();
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644)).unwrap();
+
+        restrict_backup_to_owner(path.to_str().unwrap()).expect("should succeed");
+        let mode = std::fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+        std::fs::remove_file(&path).ok();
+
+        assert_eq!(mode, 0o600, "backup archive must be readable/writable only by its owner");
     }
 }
