@@ -120,7 +120,7 @@ function bytesToMb(bytes: number): string {
 
     <NxCard v-if="activeTab === 'duplicates'">
       <div class="ft-form-row">
-        <NxInput v-model="scanDir" placeholder="Dossier à scanner..." />
+        <NxInput v-model="scanDir" placeholder="Dossier à scanner..." aria-label="Dossier à scanner pour les doublons" />
         <NxButton :disabled="duplicatesLoading" @click="scanDuplicates">{{ duplicatesLoading ? "Analyse..." : "Rechercher" }}</NxButton>
       </div>
       <NxCard v-if="duplicatesError" danger>{{ duplicatesError }}</NxCard>
@@ -132,8 +132,8 @@ function bytesToMb(bytes: number): string {
 
     <NxCard v-else-if="activeTab === 'largefiles'">
       <div class="ft-form-row">
-        <NxInput v-model="largeFileDir" placeholder="Dossier à scanner..." />
-        <NxInput v-model="minSizeMb" placeholder="Mo min" />
+        <NxInput v-model="largeFileDir" placeholder="Dossier à scanner..." aria-label="Dossier à scanner pour les gros fichiers" />
+        <NxInput v-model="minSizeMb" placeholder="Mo min" aria-label="Taille minimum en Mo" />
         <NxButton :disabled="largeFilesLoading" @click="scanLargeFiles">{{ largeFilesLoading ? "Analyse..." : "Rechercher" }}</NxButton>
       </div>
       <NxCard v-if="largeFilesError" danger>{{ largeFilesError }}</NxCard>
@@ -145,12 +145,12 @@ function bytesToMb(bytes: number): string {
 
     <NxCard v-else>
       <div class="ft-form-row">
-        <NxInput v-model="hashPath" placeholder="Chemin du fichier..." />
-        <NxSelect v-model="hashAlgorithm" :options="HASH_OPTIONS" />
+        <NxInput v-model="hashPath" placeholder="Chemin du fichier..." aria-label="Chemin du fichier à hacher" />
+        <NxSelect v-model="hashAlgorithm" :options="HASH_OPTIONS" aria-label="Algorithme de hachage" />
         <NxButton @click="computeHash">Calculer</NxButton>
       </div>
       <div class="ft-form-row">
-        <NxInput v-model="expectedHash" placeholder="Hash attendu (ex: publié par l'éditeur)..." />
+        <NxInput v-model="expectedHash" placeholder="Hash attendu (ex: publié par l'éditeur)..." aria-label="Hash attendu" />
         <NxButton @click="verifyHash">Vérifier</NxButton>
       </div>
       <NxCard v-if="hashError" danger>{{ hashError }}</NxCard>
