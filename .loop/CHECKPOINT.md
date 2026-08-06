@@ -211,3 +211,11 @@ Nouveau cron `c96b445f` (10 min, session-only, expire ~2026-08-13). **Cycle 110*
 **Piste "message d'erreur réel perdu"** : campagne largement traitée maintenant (root-cause fixée dans `run_capturing_exit_code`, tous ses appelants couverts). Reste à vérifier au même angle : callers de `run_with_timeout`/`run_with_timeout_env` qui pourraient avoir un gap symétrique (ces fonctions capturent déjà stderr correctement dans leur propre chemin d'erreur -- moins probable d'avoir le même bug, mais pas formellement re-vérifié).
 
 Prochain cycle : reprendre soit la piste `run_with_timeout` ci-dessus, soit repasser à un audit page-par-page/module-par-module classique (le sweep transversal de patterns connus s'épuise, cf. observation cycle 30).
+
+## Mise à jour (2026-08-06, v0.25.26, cycle 111)
+
+Piste `run_with_timeout`/`run_with_timeout_env` : **vérifiée, aucun gap** (les deux capturent déjà stderr correctement). Sweep `.unwrap()` en code non-test : rien à corriger (tous sûrs par construction ou idiome accepté). Bascule vers audit page-par-page (pages classées par nombre de mentions dans JOURNAL.md, la moins auditée en premier) : `BluetoothPage.vue` -- **vrai bug trouvé**, adaptateur présent + 0 périphérique appairé n'affichait aucun message (pattern "liste vide sans message", jamais appliqué à cette page précise malgré 2 audits antérieurs sur d'autres angles). Corrigé. 302/302 frontend (301→302, +1), 285/285 Rust (inchangé), vue-tsc clean. Version 0.25.25→0.25.26, commit `22de4d1`.
+
+**Méthode retenue pour les prochains cycles d'audit page-par-page** : classer les pages Vue par `grep -c "<NomPage>.vue" .loop/JOURNAL.md`, prendre la moins mentionnée en premier -- `DiagnosticPage.vue`/`FirewallPage.vue` (2 mentions chacune) sont les prochaines candidates les moins auditées après `BluetoothPage.vue`.
+
+**Suspects toujours en attente de VM** (inchangés) : gap validation `quarantine-file` (accepte `/`), exit-code `apt-autoremove` masqué -- pkexec déjà vérifié en VM live, ne pas modifier sans re-test live.
