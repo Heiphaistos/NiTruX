@@ -148,8 +148,8 @@ export const systemToolsCatalog: SystemTool[] = [
   { id: "systemctl-list-sockets", name: "Sockets systemd", description: "Liste des sockets gérés par systemd.", category: "diagnostics", command: "systemctl list-sockets --no-pager" },
   { id: "systemd-cgtop-snapshot", name: "Aperçu des groupes de contrôle", description: "Instantané de la consommation par cgroup.", category: "diagnostics", command: "systemd-cgtop -n 1 -b" },
   { id: "cpuinfo-model", name: "Modèle de processeur exact", description: "Nom commercial exact du processeur.", category: "diagnostics", command: "grep 'model name' /proc/cpuinfo | head -1" },
-  { id: "gpu-info", name: "Contrôleur graphique", description: "Détails du ou des contrôleurs graphiques détectés.", category: "diagnostics", command: "lspci | grep -i vga" },
-  { id: "audio-devices", name: "Périphériques audio PCI", description: "Contrôleurs audio détectés sur le bus PCI.", category: "diagnostics", command: "lspci | grep -i audio" },
+  { id: "gpu-info", name: "Contrôleur graphique", description: "Détails du ou des contrôleurs graphiques détectés.", category: "diagnostics", command: "lspci | grep -i vga || true" },
+  { id: "audio-devices", name: "Périphériques audio PCI", description: "Contrôleurs audio détectés sur le bus PCI.", category: "diagnostics", command: "lspci | grep -i audio || true" },
 
   // Réseau (approfondissement)
   { id: "ip-addr-all", name: "Toutes les adresses IP", description: "Adresses IP de toutes les interfaces, y compris désactivées.", category: "reseau", command: "ip addr" },
@@ -160,7 +160,7 @@ export const systemToolsCatalog: SystemTool[] = [
   { id: "iwconfig", name: "Configuration Wi-Fi (iwconfig)", description: "Paramètres des interfaces sans fil.", category: "reseau", command: "iwconfig" },
   { id: "iw-dev", name: "Périphériques Wi-Fi (iw)", description: "Liste des interfaces sans fil via iw.", category: "reseau", command: "iw dev" },
   { id: "rfkill-list", name: "État des radios (rfkill)", description: "État bloqué/débloqué de chaque radio (Wi-Fi, Bluetooth...).", category: "reseau", command: "rfkill list" },
-  { id: "cat-resolv-conf-dup", name: "Serveurs DNS actifs", description: "Résolveurs DNS actuellement utilisés (résumé court).", category: "reseau", command: "grep nameserver /etc/resolv.conf" },
+  { id: "cat-resolv-conf-dup", name: "Serveurs DNS actifs", description: "Résolveurs DNS actuellement utilisés (résumé court).", category: "reseau", command: "grep nameserver /etc/resolv.conf || true" },
   { id: "getent-hosts", name: "Résolution du nom d'hôte local", description: "Résolution DNS/hosts du nom de machine local.", category: "reseau", command: "getent hosts $(hostname)" },
   { id: "curl-ip-headers", name: "En-têtes HTTP d'un site test", description: "En-têtes de réponse HTTP de example.com.", category: "reseau", command: "curl -sI https://example.com" },
   { id: "curl-dns-time", name: "Temps de résolution DNS", description: "Mesure du temps de résolution et de connexion HTTP.", category: "reseau", command: "curl -s -o /dev/null -w 'DNS: %{time_namelookup}s Connexion: %{time_connect}s Total: %{time_total}s\\n' https://example.com" },
@@ -194,7 +194,7 @@ export const systemToolsCatalog: SystemTool[] = [
   { id: "ip-netns-list", name: "Espaces de noms réseau", description: "Liste des network namespaces configurés.", category: "reseau", command: "ip netns list" },
   { id: "cat-proc-net-route", name: "Table de routage noyau brute", description: "Table de routage IPv4 telle que vue par le noyau.", category: "reseau", command: "cat /proc/net/route" },
   { id: "cat-proc-net-tcp-count", name: "Nombre de connexions TCP actives", description: "Compte des lignes de la table de connexions TCP.", category: "reseau", command: "wc -l /proc/net/tcp" },
-  { id: "curl-check-proxy", name: "Vérifie les variables de proxy", description: "Affiche les variables d'environnement liées au proxy HTTP.", category: "reseau", command: "env | grep -i proxy" },
+  { id: "curl-check-proxy", name: "Vérifie les variables de proxy", description: "Affiche les variables d'environnement liées au proxy HTTP.", category: "reseau", command: "env | grep -i proxy || true" },
 
   // Performance (approfondissement)
   { id: "top-tree", name: "Arborescence des processus par charge", description: "Vue arborescente des processus triée par CPU.", category: "performance", command: "ps aux --sort=-%cpu --forest | head -20" },
@@ -253,7 +253,7 @@ export const systemToolsCatalog: SystemTool[] = [
   { id: "zpool-list", name: "Pools ZFS", description: "Liste des pools de stockage ZFS (si utilisé).", category: "stockage", command: "zpool list" },
   { id: "btrfs-usage", name: "Utilisation Btrfs détaillée", description: "Répartition de l'espace pour un système de fichiers Btrfs.", category: "stockage", command: "btrfs filesystem usage /" },
   { id: "disk-model", name: "Modèle des disques", description: "Modèle et numéro de série de chaque disque détecté.", category: "stockage", command: "lsblk -o NAME,MODEL,SERIAL" },
-  { id: "mount-readonly", name: "Systèmes de fichiers en lecture seule", description: "Détecte les montages actuellement en lecture seule.", category: "stockage", command: "mount | grep '(ro'" },
+  { id: "mount-readonly", name: "Systèmes de fichiers en lecture seule", description: "Détecte les montages actuellement en lecture seule.", category: "stockage", command: "mount | grep '(ro' || true" },
 
   // Développement
   { id: "git-version", name: "Version de Git", description: "Version de Git installée.", category: "developpement", command: "git --version" },
@@ -356,7 +356,7 @@ export const systemToolsCatalog: SystemTool[] = [
   { id: "cat-os-release-full", name: "Métadonnées complètes de la distribution", description: "Contenu complet et brut du fichier os-release.", category: "diagnostics", command: "cat /usr/lib/os-release" },
   { id: "systemd-version", name: "Version de systemd", description: "Version de systemd installée sur le système.", category: "diagnostics", command: "systemctl --version" },
   { id: "polkit-version", name: "Version de PolicyKit", description: "Version de polkit installée.", category: "diagnostics", command: "pkexec --version" },
-  { id: "xdg-desktop-portal-check", name: "Portails de bureau disponibles", description: "Services xdg-desktop-portal actifs.", category: "diagnostics", command: "busctl --user list | grep portal" },
+  { id: "xdg-desktop-portal-check", name: "Portails de bureau disponibles", description: "Services xdg-desktop-portal actifs.", category: "diagnostics", command: "busctl --user list | grep portal || true" },
   { id: "dbus-session-check", name: "Bus DBus de session actif", description: "Adresse du bus DBus de session courant.", category: "diagnostics", command: "echo $DBUS_SESSION_BUS_ADDRESS" },
   { id: "desktop-session-var", name: "Session de bureau actuelle", description: "Type de session de bureau détecté (X11/Wayland).", category: "diagnostics", command: "echo $XDG_SESSION_TYPE" },
   { id: "desktop-current-var", name: "Environnement de bureau actuel", description: "Nom de l'environnement de bureau courant.", category: "diagnostics", command: "echo $XDG_CURRENT_DESKTOP" },
@@ -397,7 +397,7 @@ export const systemToolsCatalog: SystemTool[] = [
   { id: "netstat-i", name: "Statistiques par interface (netstat)", description: "Compteurs de paquets par interface réseau.", category: "reseau", command: "netstat -i" },
   { id: "ip-tunnel-list", name: "Tunnels réseau configurés", description: "Liste des interfaces tunnel (VPN, GRE...).", category: "reseau", command: "ip tunnel show" },
   { id: "wg-show", name: "État WireGuard", description: "État des interfaces WireGuard actives.", category: "reseau", command: "wg show" },
-  { id: "openvpn-status-check", name: "Processus OpenVPN actifs", description: "Vérifie si un client/serveur OpenVPN tourne actuellement.", category: "reseau", command: "pgrep -a openvpn" },
+  { id: "openvpn-status-check", name: "Processus OpenVPN actifs", description: "Vérifie si un client/serveur OpenVPN tourne actuellement.", category: "reseau", command: "pgrep -a openvpn || true" },
   { id: "curl-check-external-dns", name: "Test résolveur DNS public", description: "Résout un domaine via le DNS public Cloudflare.", category: "reseau", command: "dig @1.1.1.1 example.com +short" },
 
   // Performance (approfondissement 2)
@@ -488,7 +488,7 @@ export const systemToolsCatalog: SystemTool[] = [
   { id: "networkmanager-logs", name: "Journal NetworkManager récent", description: "20 derniers messages du service NetworkManager.", category: "reseau", command: "journalctl -u NetworkManager --no-pager -n 20" },
   { id: "dhclient-lease", name: "Bail DHCP actuel", description: "Informations du bail DHCP obtenu (si dhclient utilisé).", category: "reseau", command: "cat /var/lib/dhcp/dhclient.leases" },
   { id: "nmcli-device-show", name: "Détails complets d'une interface", description: "Toutes les propriétés de l'interface réseau active.", category: "reseau", command: "nmcli device show" },
-  { id: "curl-check-http3", name: "Support HTTP/3", description: "Vérifie si curl supporte la négociation HTTP/3.", category: "reseau", command: "curl --version | grep -i http3" },
+  { id: "curl-check-http3", name: "Support HTTP/3", description: "Vérifie si curl supporte la négociation HTTP/3.", category: "reseau", command: "curl --version | grep -i http3 || true" },
 
   // Performance (approfondissement 3)
   { id: "free-total-swap", name: "Swap total configuré", description: "Quantité totale de swap configurée sur le système.", category: "performance", command: "grep SwapTotal /proc/meminfo" },
