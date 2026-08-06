@@ -24,12 +24,25 @@ pub fn validate_troubleshoot_action(action: &str) -> Result<(), String> {
 /// Mirrors the helper script's own `validate_quarantine_path`, checked
 /// here too so obviously-malformed input gets a clear error from the app
 /// itself rather than an opaque failure from `pkexec`/the helper.
+///
+/// Rejects the root directory itself (`/`, `//`, ...) on top of what the
+/// helper script's own copy of this check does: read there (never run --
+/// modifying a pkexec-backed script requires live VM re-verification per
+/// this project's standing rule, unavailable this cycle), `/` passes ALL
+/// of its checks (absolute, no `..`, no metacharacters) exactly like it
+/// does here, then `basename "/"` prints `/`, so `quarantine-file /` would
+/// build a destination of `.../<timestamp>-/` and attempt `mv / <dest>` as
+/// root -- a "quarantine one file" feature has no legitimate reason to
+/// ever target the filesystem root. Confirmed by reading, not exploited.
 pub fn validate_quarantine_path(path: &str) -> Result<(), String> {
     if path.is_empty() {
         return Err("chemin de quarantaine vide".to_string());
     }
     if !path.starts_with('/') {
         return Err(format!("le chemin doit être absolu : {path}"));
+    }
+    if path.trim_end_matches('/').is_empty() {
+        return Err("impossible de mettre en quarantaine la racine du système de fichiers".to_string());
     }
     if path.contains("..") {
         return Err(format!("le chemin ne doit pas contenir '..' : {path}"));
@@ -100,6 +113,18 @@ mod tests {
         assert!(validate_quarantine_path("").is_err());
         assert!(validate_quarantine_path("relative/path.txt").is_err());
         assert!(validate_quarantine_path("../etc/passwd").is_err());
+    }
+
+    #[test]
+    fn rejects_the_filesystem_root() {
+        // "/" passes every other check here (absolute, no "..", no
+        // metacharacters) and, read (not run) in the pkexec helper script,
+        // `basename "/"` is "/" too -- would build mv's destination as
+        // ".../<timestamp>-/" and attempt to mv the whole root as root.
+        let err = validate_quarantine_path("/").expect_err("root must be rejected");
+        assert!(err.contains("racine"), "error should explain why: {err}");
+        assert!(validate_quarantine_path("//").is_err(), "repeated slashes must also collapse to root");
+        assert!(validate_quarantine_path("///").is_err());
     }
 
     #[test]
