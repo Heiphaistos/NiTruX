@@ -398,3 +398,11 @@ Seuil des 3 cycles négatifs atteint → retour à l'audit module-par-module (r�
 **Leçon méthodologique** : quand un bug est corrigé sur UN site d'appel d'une fonction store, vérifier systématiquement les AUTRES sites d'appel de la même fonction pour le même défaut -- ce bug existait probablement depuis la création de `ThemeEditorPage.vue`, non détecté car `importTheme` avait déjà "absorbé" toute l'attention portée à ce pattern.
 
 Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
+
+## Mise à jour (2026-08-06, v0.25.39, cycle 138) — vrai bug systémique trouvé et corrigé
+
+**`scripts.rs::run_script` jette tout stdout dès qu'un code de sortie est non-nul** -- correct en général, mais faux pour 19 entrées `du -sh <chemin>` (non pipées) du catalogue `systemToolsCatalog.ts` : `du` sort en 1 sur sous-dossier root-only ou chemin manquant (routine sous `/var/log`/`/home/*`/entrées à double chemin localisé type `~/Téléchargements ~/Downloads`) tout en affichant un résultat réel utile. Reproduit EN DIRECT sur la vraie VM (2 cas, dont un touchant quasi tous les utilisateurs francophones : `~/Downloads` n'existe jamais sur un système FR). Corrigé : `|| true` ajouté aux 19 entrées non-pipées (3 déjà pipées `| sort | head` étaient déjà sûres). Nouveau `systemToolsCatalog.spec.ts` (n'existait pas) : unicité id, invariant XOR command/privilegedAction, garde-fou anti-régression sur le pattern `du || true`. 308/308 frontend (+3), vue-tsc clean. Commit `2dc84e9`.
+
+**Leçon méthodologique** : l'échantillonnage aléatoire du catalogue (cycle 137, technique VM live) a payé au 2e essai -- creuser un `EXIT=1` inattendu même quand la sortie affichée semblait correcte a révélé un bug bien plus large que l'échantillon initial ne le laissait supposer (19 entrées, pas 1).
+
+Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.

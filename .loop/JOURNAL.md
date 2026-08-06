@@ -1041,3 +1041,17 @@ Aucun changement de code ce cycle -- 2e cycle négatif consécutif, plusieurs v�
 [2026-08-06T20:10:00+02:00] Cycle 137 : maintenance périodique du catalogue applicatif, technique déjà établie (`apt-cache policy` + `LC_ALL=C` sur la vraie VM Debian, jamais WSL2 Ubuntu -- piège déjà documenté). Seule entrée `installMethod:"snap"` restante (`spotify`, Portainer retiré depuis longtemps) : `snap info spotify` sur la VM confirme le paquet réel, publisher vérifié, toujours disponible. Échantillon aléatoire de 15 `packageId` `apt` sur les 506 (`gdb`/`okular`/`shotwell`/`firefox-esr`/`gnome-music`/`figlet`/`htop`/`krita`/`openboard`/`netcat-openbsd`/`graphviz`/`digikam`/`evolution`/`mypaint`/`ledger`) : 15/15 ont un candidat réel et installable sur cette Debian 13 -- catalogue toujours à jour sur cet échantillon.
 
 Aucun changement de code ce cycle -- 3e cycle négatif consécutif (135-137), mais chacun avec une vraie vérification concrète et distincte (stores Pinia, InstallProfilesPage+intégrité catalogue, échantillon live apt/snap).
+
+[2026-08-06T20:20:00+02:00] Cycle 138 : suite de l'échantillonnage `systemToolsCatalog.ts` (cycle 137). En testant 12 `command` (pas `packageId`) au hasard, un exit code suspect sur `du -sh /var/log 2>/dev/null` (EXIT=1 malgré un résultat réel affiché : "498M /var/log", dû aux sous-dossiers root-only).
+
+**Vrai bug systémique confirmé** : `scripts.rs::run_script` (via `run_with_timeout`) jette le stdout et renvoie une erreur sur TOUT code de sortie non-nul -- correct pour un script générique, mais faux pour les 19 entrées du catalogue basées sur `du -sh <chemin>` en commande unique (pas pipée) : `du` sort en 1 dès qu'il touche un sous-dossier root-only (routine sous `/var/log`/`/etc`/`/home/*`) ou quand un chemin sur plusieurs n'existe pas (routine pour les entrées à double chemin localisé, ex. `~/Téléchargements ~/Downloads` -- un seul des deux existe jamais sur un vrai système) -- dans les deux cas `du` affiche quand même un résultat réel et utile sur stdout.
+
+Reproduit EN DIRECT sur la vraie VM Debian, deux cas : (1) `/var/log` confirmé ci-dessus. (2) `du -sh ~/Téléchargements ~/Downloads 2>/dev/null` -- ce système est en locale française, `~/Downloads` n'existe pas, mais `du` affiche bien "4,2M /home/dev/Téléchargements" et sort quand même en 1. **Cas le plus probable de toute la campagne** : quasi tous les utilisateurs francophones auraient perdu ce résultat.
+
+Identifié les 19 entrées `du` NON pipées (3 autres sont déjà pipées `| sort -rh | head -N`, structurellement sûres puisque le code de sortie du pipeline est celui de la DERNIÈRE commande, pas celui de `du`). Corrigé en ajoutant `|| true` aux 19 (script Node ciblé par id, appliqué en une fois). Re-vérifié en direct après correctif : même résultat valide, code de sortie maintenant 0.
+
+Nouveau fichier `systemToolsCatalog.spec.ts` (n'existait pas) : unicité des id, invariant XOR `command`/`privilegedAction` documenté dans le type mais jamais testé, et un test dédié qui vérifie que TOUTE entrée `du` non-pipée se termine par `|| true` -- empêche la réintroduction de ce bug par un futur ajout au catalogue.
+
+Vérification : `npx vitest run src/data/systemToolsCatalog.spec.ts` 3/3, suite complète 308/308 (305→308, +3), `npx vue-tsc --noEmit` 0 erreur.
+
+Version 0.25.38 → 0.25.39. Commit `2dc84e9`, poussé sur `origin/master`.
