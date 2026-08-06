@@ -338,3 +338,13 @@ Sweeps arithmétiques/typage (soustraction non signée, troncature `as u16/u32/u
 **4e cycle consécutif sans correctif (121-124)**, mais chaque cycle a exploré un angle distinct et réel. Recommandation pour le prochain cycle : si un 5e cycle est aussi négatif, envisager d'attendre un signal externe (retour utilisateur/testeur) plutôt que de continuer à chercher sans piste concrète -- la base de code a probablement atteint un plateau de maturité pour ce type d'audit automatisé.
 
 Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise, toujours pas livré en production.
+
+## Mise à jour (2026-08-06, v0.25.33, cycle 125) — 5e cycle propre consécutif, plateau probable atteint
+
+Dernière piste (messages d'erreur Rust encore en anglais) : négative, les 2 seules correspondances sont des citations verbatim légitimes d'outils tiers, pas des messages NiTruX.
+
+**5e cycle consécutif sans correctif (121-125).** Recommandation appliquée : la boucle continue de tourner normalement (aucune action d'arrêt prise), mais signalé clairement à l'utilisateur en fin de cycle que la prochaine vraie avancée viendra probablement d'un signal externe (retour utilisateur/testeur réel, déblocage `clone-disk`) plutôt que d'une nouvelle recherche automatique -- la surface facilement auditable par lecture de code semble épuisée après 125 cycles cumulés.
+
+**Ne pas re-proposer indéfiniment le même diagnostic à chaque cycle négatif futur** -- si un nouveau cycle est aussi négatif, il suffit de le noter brièvement plutôt que de répéter cette analyse en détail à chaque fois.
+
+Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
