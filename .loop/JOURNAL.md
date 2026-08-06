@@ -885,3 +885,15 @@ Corrigé : création exclusive (`create_new`, échoue plutôt que de suivre quoi
 Vérification : `cargo test` 288/288 (286→288, +2), `cargo clippy --all-targets` toujours 0 warning (pas de régression sur le nettoyage du cycle 115). Aucun fichier frontend touché.
 
 Version 0.25.30 → 0.25.31. Commit `9572b1d`, poussé sur `origin/master`.
+
+[2026-08-06T16:00:00+02:00] Cycle 118 : généralisation de la découverte du cycle 117 -- recherche de tous les usages de `temp_dir()` dans le code Rust hors tests (`grep -rn "temp_dir()\|::write("`) pour voir si le même pattern (chemin prévisible + création non-exclusive) existe ailleurs. Un seul candidat production trouvé : `benchmark.rs::benchmark_disk` (`std::fs::File::create(&path)` sur un chemin `nitrux-benchmark-<pid>.tmp`).
+
+**Même classe de faille (CWE-377), sévérité moindre ici** : ce fichier n'est jamais exécuté avec des privilèges élevés (contrairement au script pkexec du cycle 117) -- l'impact d'un symlink pré-positionné serait qu'un processus même-utilisateur (ou un autre utilisateur selon les droits) verrait sa cible écrasée par des octets de remplissage du benchmark, pas une escalade de privilège. Reste une vraie faille de la même famille, corrigée par cohérence avec le standard maintenant établi au projet.
+
+**Refactor DRY** : extraction d'un nouveau module `secure_temp.rs` (2 fonctions : `create_exclusively_owner_only` qui retourne le `File` ouvert pour les appelants ayant besoin de faire eux-mêmes write/sync/chronométrage comme `benchmark_disk`, et `write_exclusively_owner_only` pour le cas "écrire ce contenu d'un coup" utilisé par `pkexec_bootstrap.rs`). La copie locale de cette logique dans `pkexec_bootstrap.rs` supprimée au profit du module partagé ; ses 2 tests couvrant le comportement générique (permissions/symlink) supprimés aussi, maintenant couverts une seule fois dans `secure_temp.rs` (partagés par tous les appelants).
+
+Vérification : `cargo test` 289/289 (288→289 net : -2 tests dupliqués retirés de `pkexec_bootstrap.rs` +3 nouveaux dans `secure_temp.rs`), `cargo clippy --all-targets` 0 warning. Aucun fichier frontend touché.
+
+Version 0.25.31 → 0.25.32. Commit `405215d`, poussé sur `origin/master`.
+
+**Angle "chercher toutes les autres instances du même pattern qu'un bug déjà trouvé" confirmé productif** -- à réutiliser systématiquement après chaque découverte de bug réel, avant de passer à autre chose.

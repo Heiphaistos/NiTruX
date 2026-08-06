@@ -273,3 +273,11 @@ Premier classement des modules Rust par fraîcheur (comme fait pour les pages Vu
 2 nouveaux tests (permissions 0600, symlink pré-positionné nettoyé pas suivi). 288/288 Rust (286→288), clippy toujours 0 warning. Commit `9572b1d`.
 
 **Rappel toujours actif** : 3 correctifs pkexec maintenant en attente d'une release publiée (quarantine-file, apt-autoremove, bootstrap symlink) -- aucun encore dans un `.deb`/`.rpm`/`.AppImage`.
+
+## Mise à jour (2026-08-06, v0.25.32, cycle 118)
+
+**Angle productif identifié : après avoir trouvé un vrai bug, chercher systématiquement toutes les autres instances du MÊME pattern avant de changer de portion.** Appliqué au symlink/temp-file du cycle 117 (`grep -rn "temp_dir()\|::write("` hors tests) : un seul autre candidat production, `benchmark.rs::benchmark_disk`, même faille CWE-377 mais sévérité moindre (pas de root derrière). Corrigé par cohérence. Refactor DRY : nouveau module `secure_temp.rs` partagé par `pkexec_bootstrap.rs` et `benchmark.rs` (2 fonctions : `create_exclusively_owner_only` pour les besoins avancés type chronométrage, `write_exclusively_owner_only` pour le cas simple). 289/289 Rust, clippy 0 warning. Commit `405215d`.
+
+**Rappel toujours actif** : 4 correctifs maintenant en attente d'une release publiée (quarantine-file, apt-autoremove, bootstrap symlink, benchmark symlink) -- aucun encore dans un `.deb`/`.rpm`/`.AppImage`.
+
+**Prochain cycle** : soit reprendre l'audit module-par-module Rust (candidats suivants par fraîcheur : `bluetooth.rs`/`universal.rs`, 2 mentions), soit re-balayer les pages Vue avec la même discipline "lecture complète, pas juste grep de pattern connu" qui a payé ce cycle-ci et le précédent.
