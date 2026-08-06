@@ -44,21 +44,23 @@ onMounted(async () => {
 
       <NxCard>
         <NxSectionHeader title="Périphériques & pilotes" />
-        <table class="drv-table">
-          <thead>
-            <tr><th>Emplacement</th><th>Périphérique</th><th>Pilote</th></tr>
-          </thead>
-          <tbody>
-            <tr v-for="d in snapshot.devices" :key="d.slot">
-              <td>{{ d.slot }}</td>
-              <td>{{ d.description }}</td>
-              <td>
-                <NxBadge v-if="d.driver" status="success">{{ d.driver }}</NxBadge>
-                <NxBadge v-else status="warning">aucun</NxBadge>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="drv-table-scroll">
+          <table class="drv-table">
+            <thead>
+              <tr><th>Emplacement</th><th>Périphérique</th><th>Pilote</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="d in snapshot.devices" :key="d.slot">
+                <td>{{ d.slot }}</td>
+                <td>{{ d.description }}</td>
+                <td>
+                  <NxBadge v-if="d.driver" status="success">{{ d.driver }}</NxBadge>
+                  <NxBadge v-else status="warning">aucun</NxBadge>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </NxCard>
 
       <NxCard>
@@ -75,7 +77,8 @@ onMounted(async () => {
 .drv-page { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
 .drv-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
 .drv-note p { margin: 0; font-size: 13px; color: var(--nx-text-secondary); line-height: 1.5; }
-.drv-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.drv-table-scroll { overflow-x: auto; }
+.drv-table { width: 100%; min-width: 480px; border-collapse: collapse; font-size: 13px; }
 .drv-table th { text-align: left; color: var(--nx-text-secondary); border-bottom: 1px solid var(--nx-style-border-color); padding: 8px; }
 .drv-table td { padding: 8px; border-bottom: 1px solid var(--nx-style-border-color); }
 .drv-modules { display: flex; flex-wrap: wrap; gap: 6px; }

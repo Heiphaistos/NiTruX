@@ -30,18 +30,20 @@ onMounted(async () => {
       Impossible de récupérer les composants matériels : {{ error }}
     </NxCard>
     <NxCard v-if="devices.length">
-      <table class="diag-table">
-        <thead>
-          <tr><th>Slot</th><th>Classe</th><th>Description</th></tr>
-        </thead>
-        <tbody>
-          <tr v-for="d in devices" :key="d.slot">
-            <td>{{ d.slot }}</td>
-            <td>{{ d.class }}</td>
-            <td>{{ d.description }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="diag-table-scroll">
+        <table class="diag-table">
+          <thead>
+            <tr><th>Slot</th><th>Classe</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr v-for="d in devices" :key="d.slot">
+              <td>{{ d.slot }}</td>
+              <td>{{ d.class }}</td>
+              <td>{{ d.description }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </NxCard>
     <NxCard v-else-if="!loading && !error" class="diag-empty">
       Aucun composant PCI détecté sur ce système. Sur certaines machines virtuelles
@@ -55,7 +57,8 @@ onMounted(async () => {
 <style scoped>
 .diag-page { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
 .diag-empty { color: var(--nx-text-secondary); font-size: 13px; line-height: 1.5; }
-.diag-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.diag-table-scroll { overflow-x: auto; }
+.diag-table { width: 100%; min-width: 480px; border-collapse: collapse; font-size: 13px; }
 .diag-table th { text-align: left; color: var(--nx-text-secondary); border-bottom: 1px solid var(--nx-style-border-color); padding: 8px; }
 .diag-table td { padding: 8px; border-bottom: 1px solid var(--nx-style-border-color); }
 </style>
