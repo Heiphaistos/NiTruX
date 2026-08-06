@@ -1238,3 +1238,15 @@ Aucun changement de code ce cycle -- audit honnête et rigoureux, deux fausses p
 Aucun changement de code ce cycle.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). 13 correctifs toujours en attente d'une release publiée.
+
+[2026-08-06T23:40:00+02:00] Cycle 156 : `BackupPage.vue` (aucune fonctionnalité de restauration, ni côté frontend ni backend -- création uniquement, par conception, pas une lacune), `DataRecoveryPage.vue` audités.
+
+**Vrai gap de sécurité UX trouvé, cohérent avec le pattern déjà établi dans ce projet** : "Supprimer définitivement" (corbeille) est une action véritablement irréversible (contrairement à "Restaurer"), mais partait sur un simple clic sans AUCUNE confirmation -- alors que ce même projet a un pattern déjà établi et éprouvé pour les actions comparables (`UninstallerPage.vue::confirmUninstall`, `DisksPage.vue::runFormat` pour format-partition) : taper le nom exact avant que le bouton de confirmation ne s'active. Ce n'est pas la même ambiguïté de périmètre que `confirmNonDestructiveActions` (cycle 148, dont l'implémentation complète aurait nécessité d'inventer tout un système de dialogue de confirmation) -- ici il s'agit simplement d'appliquer un pattern DÉJÀ construit et testé, à une seule action supplémentaire du même fichier.
+
+Corrigé : nouveau flux `confirmingDelete`/`confirmDeleteText` (mêmes noms de variables que `UninstallerPage.vue` par cohérence), le bouton "Confirmer la suppression" reste désactivé tant que le texte saisi ne correspond pas exactement à `item.trashed_name`. Restructuration du template nécessaire (`.dr-row` passé en `flex-direction: column` avec un nouveau `.dr-row-top` pour la ligne info+actions, afin d'accueillir la ligne de confirmation conditionnelle en dessous sans casser le layout `space-between` existant). Nouveau test de régression vérifiant : bouton de confirmation désactivé sans texte saisi, `delete_trash_item_permanently` jamais appelé prématurément, suppression effective seulement après saisie exacte du nom.
+
+Vérification complète : `npx vitest run src/pages/DataRecoveryPage.spec.ts` 4/4, suite complète 318/318 frontend (317→318, +1), `npx vue-tsc --noEmit` 0 erreur, `cargo test --lib` 295/295 Rust (sanity check, aucun fichier Rust modifié).
+
+Version 0.25.49 → 0.25.50. Commit `f36e863`, poussé sur `origin/master`.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). **14 correctifs désormais en attente d'une release publiée** depuis v0.25.24 (47 cycles cumulés 110-156).
