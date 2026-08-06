@@ -18,6 +18,8 @@ pub struct TerminalSession {
     child: Box<dyn Child + Send + Sync>,
 }
 
+type PtyHandles = (Box<dyn MasterPty + Send>, Box<dyn Write + Send>, Box<dyn Read + Send>, Box<dyn Child + Send + Sync>);
+
 #[derive(Default)]
 pub struct TerminalState(pub Mutex<HashMap<String, TerminalSession>>);
 
@@ -26,10 +28,7 @@ pub struct TerminalState(pub Mutex<HashMap<String, TerminalSession>>);
 /// without needing a live Tauri app context (a `Channel` cannot be
 /// constructed outside one) -- this is the actual mechanism under test,
 /// the command wrapper below just plumbs its output into a Channel.
-fn open_shell_pty(
-    rows: u16,
-    cols: u16,
-) -> Result<(Box<dyn MasterPty + Send>, Box<dyn Write + Send>, Box<dyn Read + Send>, Box<dyn Child + Send + Sync>), String> {
+fn open_shell_pty(rows: u16, cols: u16) -> Result<PtyHandles, String> {
     let pty_system = native_pty_system();
     let pair = pty_system
         .openpty(PtySize { rows, cols, pixel_width: 0, pixel_height: 0 })

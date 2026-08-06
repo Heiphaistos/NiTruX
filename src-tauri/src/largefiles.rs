@@ -48,7 +48,7 @@ pub fn find_large_files(dir: &Path, min_size_bytes: u64) -> Result<Vec<LargeFile
         }
     }
 
-    results.sort_by(|a, b| b.size_bytes.cmp(&a.size_bytes));
+    results.sort_by_key(|f| std::cmp::Reverse(f.size_bytes));
     Ok(results)
 }
 
@@ -68,8 +68,8 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
         let small = dir.join("small.txt");
         let big = dir.join("big.txt");
-        std::fs::File::create(&small).unwrap().write_all(&vec![0u8; 10]).unwrap();
-        std::fs::File::create(&big).unwrap().write_all(&vec![0u8; 1000]).unwrap();
+        std::fs::File::create(&small).unwrap().write_all(&[0u8; 10]).unwrap();
+        std::fs::File::create(&big).unwrap().write_all(&[0u8; 1000]).unwrap();
 
         let results = find_large_files(&dir, 100).expect("should scan");
         std::fs::remove_dir_all(&dir).ok();

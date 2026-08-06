@@ -9,7 +9,7 @@ pub struct AudioSink { pub name: String, pub driver: String, pub state: String }
 pub struct PrinterInfo { pub name: String, pub status: String }
 
 /// Parses one `pactl list short sinks` line, e.g.
-/// "35	auto_null	PipeWire	float32le 2ch 48000Hz	SUSPENDED" (tab-separated:
+/// "35    auto_null    PipeWire    float32le 2ch 48000Hz    SUSPENDED" (tab-separated:
 /// index, name, driver, format, state).
 pub fn parse_pactl_sink_line(line: &str) -> Option<AudioSink> {
     let fields: Vec<&str> = line.split('\t').collect();

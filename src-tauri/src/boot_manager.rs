@@ -57,7 +57,7 @@ pub fn parse_grub_defaults(content: &str) -> GrubDefaults {
 }
 
 /// Parses one line of `efibootmgr` output for a boot entry, e.g.
-/// "Boot0004* debian	HD(1,GPT,...)" -> id "0004", label "debian",
+/// "Boot0004* debian    HD(1,GPT,...)" -> id "0004", label "debian",
 /// is_current based on the `*` marker (present = this entry is active in
 /// BootOrder... actually `*` means "active/enabled", not "currently
 /// booted" -- `BootCurrent:` on its own line is the real "what booted"
