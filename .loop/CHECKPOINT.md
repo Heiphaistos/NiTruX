@@ -330,3 +330,11 @@ Vérification exhaustive du câblage des commandes Tauri : 69 commandes `generat
 **Stratégie pour le prochain cycle** : revenir à un sweep de pattern transversal simple plutôt qu'un audit fichier-par-fichier (qui s'épuise), ou attendre un nouveau signal externe (retour utilisateur/testeur, déblocage `clone-disk`).
 
 Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise.
+
+## Mise à jour (2026-08-06, v0.25.33, cycle 124) — 4e cycle propre consécutif
+
+Sweeps arithmétiques/typage (soustraction non signée, troncature `as u16/u32/u8`, indexation directe `fields[N]`) sur tout `src-tauri/src` : tous négatifs. Point notable : les 37 occurrences d'indexation directe dans 10 fichiers sont TOUTES précédées d'une vérification de longueur -- discipline défensive appliquée de façon parfaitement cohérente, aucune exception.
+
+**4e cycle consécutif sans correctif (121-124)**, mais chaque cycle a exploré un angle distinct et réel. Recommandation pour le prochain cycle : si un 5e cycle est aussi négatif, envisager d'attendre un signal externe (retour utilisateur/testeur) plutôt que de continuer à chercher sans piste concrète -- la base de code a probablement atteint un plateau de maturité pour ce type d'audit automatisé.
+
+Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise, toujours pas livré en production.
