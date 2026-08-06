@@ -33,7 +33,7 @@ async function createBackup() {
 
     <NxCard>
       <div class="bkp-form-row">
-        <NxInput v-model="sourceDir" placeholder="Dossier à sauvegarder (ex: /home/dev/documents)" />
+        <NxInput v-model="sourceDir" placeholder="Dossier à sauvegarder (ex: /home/dev/documents)" aria-label="Dossier à sauvegarder" />
         <NxButton :disabled="creating || sourceDir === ''" @click="createBackup">{{ creating ? "Sauvegarde en cours..." : "Créer la sauvegarde" }}</NxButton>
       </div>
       <NxCard v-if="error" danger>{{ error }}</NxCard>

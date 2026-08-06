@@ -54,7 +54,7 @@ async function quarantineFinding(path: string) {
 
     <NxCard>
       <div class="av-form-row">
-        <NxInput v-model="scanDir" placeholder="Dossier à scanner..." />
+        <NxInput v-model="scanDir" placeholder="Dossier à scanner..." aria-label="Dossier à scanner" />
         <NxButton :disabled="scanning" @click="runScan">{{ scanning ? "Scan en cours..." : "Scanner" }}</NxButton>
       </div>
       <NxCard v-if="scanError" danger>{{ scanError }}</NxCard>

@@ -75,7 +75,7 @@ async function runTool(tool: SystemTool) {
       </button>
     </div>
 
-    <NxInput v-model="search" placeholder="Rechercher un outil..." />
+    <NxInput v-model="search" placeholder="Rechercher un outil..." aria-label="Rechercher un outil" />
 
     <div class="st-grid">
       <NxCard v-for="tool in filteredCatalog" :key="tool.id" class="st-card">
