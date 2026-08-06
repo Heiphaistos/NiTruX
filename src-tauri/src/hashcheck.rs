@@ -53,7 +53,10 @@ pub fn compute_hash(path: &Path, algorithm: HashAlgorithm) -> Result<String, Str
 /// would reject a genuinely matching hash just because a filename tagged
 /// along. The hash itself is always the first whitespace-delimited token.
 fn extract_hash_token(expected: &str) -> &str {
-    expected.trim().split_whitespace().next().unwrap_or("")
+    // `split_whitespace` already skips leading/trailing whitespace on its
+    // own, so a preceding `.trim()` is redundant (caught by clippy's
+    // `trim_split_whitespace` lint).
+    expected.split_whitespace().next().unwrap_or("")
 }
 
 pub fn verify_hash(path: &Path, algorithm: HashAlgorithm, expected: &str) -> Result<bool, String> {
