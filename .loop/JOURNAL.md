@@ -1160,3 +1160,17 @@ Vérification complète : `npx vitest run src/components/ui/NxSparkline.spec.ts`
 Version 0.25.44 → 0.25.45. Commit `3a5c951`, poussé sur `origin/master`.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). 9 correctifs désormais en attente d'une release publiée.
+
+[2026-08-06T22:42:00+02:00] Cycle 150 : poursuite du filon "élément de taille/dimension fixe qui ne rétrécit pas" du cycle 149. Grep généralisé (`width: [0-9]{3,}px`/`:width="[0-9]`) sur toutes les pages et composants UI : les seules autres occurrences trouvées sont soit le nouveau `min-width: 480px` des tables (cycles 147, attendu), soit des `min-width` modestes (140-160px) sur des grilles déjà `auto-fit`/`auto-fill` (pattern responsive correct, pas un bug). Confirmé par grep dédié qu'aucun autre `<svg`/`<canvas` n'existe dans toute l'app en dehors de `NxSparkline.vue` déjà corrigé -- ce filon est clos.
+
+Pivot vers `WiFiAnalyzerPage.vue`. **Bug de clé `v-for` non-unique trouvé** : la liste de réseaux WiFi est clée sur `net.ssid` seul, mais la vraie source backend (`network.rs`, `nmcli -t -f IN-USE,SSID,SECURITY,SIGNAL dev wifi`) liste UNE LIGNE PAR POINT D'ACCÈS, pas par nom de réseau unique -- un système mesh diffusant le même SSID sur plusieurs APs, ou plusieurs réseaux masqués (que nmcli rapporte avec un SSID vide `""`), produisent couramment des `ssid` dupliqués. Le contrat de clé `v-for` de Vue exige l'unicité.
+
+**Tentative de reproduction honnête** : test écrit avec 4 réseaux dont 2 paires de SSID dupliqués, espionnage de `console.warn`/`console.error` pour capter l'avertissement Vue habituel "Duplicate keys detected" -- **l'avertissement ne s'est PAS déclenché**, même avant correctif. Investigation : le cycle de vie de cette page ne fait qu'UN SEUL fetch au montage (`networks` part de `[]` puis passe une fois à N éléments) -- l'algorithme de diff de Vue prend un chemin rapide "monter tout" pour une transition 0→N, sans jamais exécuter la section de `patchKeyedChildren` qui détecte spécifiquement les clés dupliquées (cette détection nécessite une vraie réconciliation entre deux listes non-vides). Le défaut est donc réel contre la vraie forme de données backend, mais actuellement LATENT dans le cycle de vie particulier de cette page précise (pas de bouton rafraîchir).
+
+**Décision** : corrigé quand même, de façon défensive (clé composite `${net.ssid}-${i}`), cohérent avec le précédent déjà établi dans ce projet (`terminal.rs::insert_session`, cycle ~96 : "fix even though not currently exploitable, for consistency with this codebase's established defensive-validation discipline"). Test de régression réécrit pour vérifier le rendu correct des 4 lignes distinctes plutôt que l'avertissement (qui n'est pas un signal fiable pour ce composant précis) -- honnêteté methodologique : le journal documente explicitement que la reproduction "avertissement Vue" a échoué et pourquoi, plutôt que de prétendre à une reproduction qui n'a pas eu lieu.
+
+Vérification complète : `npx vitest run src/pages/WiFiAnalyzerPage.spec.ts` 4/4, suite complète 315/315 frontend (314→315, +1), `npx vue-tsc --noEmit` 0 erreur, `cargo test --lib` 292/292 Rust (sanity check, aucun fichier Rust modifié).
+
+Version 0.25.45 → 0.25.46. Commit `c33ec03`, poussé sur `origin/master`.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). 10 correctifs désormais en attente d'une release publiée.
