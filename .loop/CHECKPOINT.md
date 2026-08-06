@@ -306,3 +306,9 @@ chmod 600 "$dest_path"
 (`set -eu` gère l'échec de `dd` exactement comme avant -- abandon immédiat, `chmod` jamais atteint si `dd` échoue.)
 
 **Pourquoi non appliqué** : la tentative d'édition de ce fichier a été bloquée par le classificateur auto mode de cette session (contenu `dd`/clonage de disque jugé sensible même pour une simple modification de fichier source texte, sans exécution). Reculé sans contourner. **Ne pas re-tenter automatiquement dans un futur cycle non-supervisé** -- sera bloqué de la même façon à chaque fois. Nécessite soit que l'utilisateur applique ce correctif lui-même, soit une session où la permission d'édition peut être accordée explicitement.
+
+## Mise à jour (2026-08-06, v0.25.33, cycle 121) — cycle propre, note du cycle 120 respectée
+
+Note "ne pas re-tenter" respectée -- portion cherchée ailleurs. 8 vérifications distinctes, toutes propres/hors de portée : `portscan.rs`/`packages/zypper.rs` (relus intégralement), `ReportGeneratorPage.vue` (téléchargement navigateur natif, pas le même risque que backup/clone-disk), sweep exhaustif de tous les `File::create`/`OpenOptions`/`fs::write` du code Rust hors tests (rien en production restant), ID de session terminal (non pertinent, app desktop mono-utilisateur), `trash.rs::copy_recursive` (hypothèse de perte de permissions sur repli cross-FS **infirmée** par un vrai test Rust compilé : `std::fs::copy` préserve bien le mode 0600→0600).
+
+Aucun changement de code ce cycle. Le seul élément en attente reste `clone-disk` (cycle 120, ci-dessus) -- toujours action humaine requise.
