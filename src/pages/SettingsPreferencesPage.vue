@@ -35,6 +35,7 @@ function onConfirmToggle(event: Event) {
       <NxInput
         :model-value="preferences.defaultScanDirectory"
         placeholder="ex: /home/dev"
+        aria-label="Répertoire par défaut pour les scanners"
         @update:model-value="onScanDirChange"
       />
     </NxCard>
@@ -44,6 +45,7 @@ function onConfirmToggle(event: Event) {
       <NxSelect
         :model-value="String(preferences.dashboardRefreshIntervalMs)"
         :options="REFRESH_INTERVAL_OPTIONS"
+        aria-label="Intervalle de rafraîchissement du tableau de bord"
         @update:model-value="onIntervalChange"
       />
     </NxCard>

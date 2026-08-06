@@ -37,7 +37,7 @@ function bytesToMb(bytes: number): string {
 
     <NxCard>
       <NxSectionHeader title="Processus" />
-      <NxInput v-model="processFilter" placeholder="Filtrer par nom..." />
+      <NxInput v-model="processFilter" placeholder="Filtrer par nom..." aria-label="Filtrer les processus par nom" />
       <div v-if="processes && filteredProcesses.length === 0" class="proc-empty">Aucun processus trouvé.</div>
       <div v-for="p in filteredProcesses" :key="p.pid" class="proc-row">
         <span>{{ p.name }} ({{ p.pid }})</span>

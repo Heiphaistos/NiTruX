@@ -48,8 +48,8 @@ async function runScript(name: string, content: string) {
     <NxSectionHeader title="Scripts & Snippets" description="Enregistre et exécute des scripts shell avec vos propres privilèges — aucune élévation." />
 
     <NxCard class="scr-new">
-      <NxInput v-model="newName" placeholder="Nom du script..." />
-      <textarea v-model="newContent" class="scr-textarea" rows="4" placeholder="Contenu du script..."></textarea>
+      <NxInput v-model="newName" placeholder="Nom du script..." aria-label="Nom du script" />
+      <textarea v-model="newContent" class="scr-textarea" rows="4" placeholder="Contenu du script..." aria-label="Contenu du script"></textarea>
       <NxButton @click="saveScript">Enregistrer</NxButton>
       <NxCard v-if="saveError" danger>{{ saveError }}</NxCard>
     </NxCard>
