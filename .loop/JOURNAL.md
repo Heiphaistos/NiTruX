@@ -1090,3 +1090,13 @@ Nouveau `installProfiles.spec.ts` (n'existait pas) : ids de profil uniques, cham
 Vérification : `npx vitest run` 4/4, suite complète 313/313 (309→313, +4), `npx vue-tsc --noEmit` 0 erreur.
 
 Version 0.25.40 → 0.25.41. Commit `a71878e`, poussé sur `origin/master`.
+
+[2026-08-06T21:29:00+02:00] Cycle 143 : audit module-par-module Rust, cible `disks.rs` (jamais relu intégralement selon CHECKPOINT, 4 mentions seulement dans le journal). **Vrai bug trouvé** : `parse_df_line` (parsing de `df -k -P`) exigeait exactement 6 champs séparés par des espaces -- mais le point de montage (dernière colonne) peut lui-même contenir des espaces (média amovible monté par son label de volume, ex. `/media/dev/My Passport`), ce qui fait déborder le compte de champs au-delà de 6 et rejette silencieusement la ligne entière. Le disque disparaissait purement et simplement de `list_disk_usage` sans aucune erreur visible en UI.
+
+Reproduit EN DIRECT : nouveau test avec une ligne `df` synthétique contenant un point de montage à espace, exécution `cargo test --lib disks::` AVANT correctif -- échec confirmé (panic, `test result: FAILED. 5 passed; 1 failed`). Corrigé : le point de montage est désormais tout ce qui suit les 5 premières colonnes fixes (source/total/used/avail/pourcentage), plutôt qu'un unique token whitespace-délimité. Re-exécuté après correctif : 6/6 sur `disks::`.
+
+Vérification complète : `cargo test --lib` 291/291 Rust (290→291, +1), `npm run test -- --run` 313/313 frontend (inchangé, correctif Rust pur), `npx vue-tsc --noEmit` 0 erreur.
+
+Version 0.25.41 → 0.25.42. Commit `a7c820b`, poussé sur `origin/master`.
+
+Élément en attente inchangé : `clone-disk` (cycle 120) -- action humaine requise, toujours pas livré en production.
