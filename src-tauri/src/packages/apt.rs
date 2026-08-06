@@ -5,8 +5,19 @@ use std::time::Duration;
 
 pub struct Apt;
 
-/// Parses one line of `apt list --upgradable` output, e.g.:
-/// "curl/jammy-updates 7.81.0-1ubuntu1.20 amd64 [upgradable from: 7.81.0-1ubuntu1.19]"
+/// Parses one line of `apt list --upgradable` (run with `LC_ALL=C` by the
+/// caller, mirroring `hardware_details.rs`'s `lscpu` invocation) output,
+/// e.g.: "curl/jammy-updates 7.81.0-1ubuntu1.20 amd64 [upgradable from: 7.81.0-1ubuntu1.19]"
+///
+/// Confirmed live on a real Debian VM in its actual default locale
+/// (`LANG=fr_FR.UTF-8`, the target distro's own installer default, not an
+/// exotic edge case): under that locale `apt` prints the bracketed suffix
+/// as `[pouvant être mis à jour depuis: ...]`, not the English
+/// `"upgradable from:"` this parser matches on -- without forcing
+/// `LC_ALL=C`, `list_upgradable()` would silently return an empty list on
+/// any non-English-locale system even with real updates pending, exactly
+/// the same class of silent-data-loss bug already fixed for dnf's
+/// exit-code convention (`dnf.rs::interpret_check_update_result`).
 pub fn parse_apt_line(line: &str) -> Option<PackageUpdate> {
     if !line.contains("[upgradable from:") {
         return None;
@@ -60,7 +71,12 @@ impl PackageManager for Apt {
     }
 
     fn list_upgradable(&self) -> Result<Vec<PackageUpdate>, String> {
-        let output = subprocess::run_with_timeout("apt", &["list", "--upgradable"], Duration::from_secs(15))?;
+        let output = subprocess::run_with_timeout_env(
+            "apt",
+            &["list", "--upgradable"],
+            &[("LC_ALL", "C")],
+            Duration::from_secs(15),
+        )?;
         Ok(output.lines().filter_map(parse_apt_line).collect())
     }
 
@@ -95,6 +111,22 @@ mod tests {
         assert_eq!(update.new_version, "7.81.0-1ubuntu1.20");
         assert_eq!(update.current_version, "7.81.0-1ubuntu1.19");
         assert_eq!(update.source, "apt");
+    }
+
+    #[test]
+    fn does_not_match_the_localized_bracket_text_this_parser_relies_on_lc_all_c_to_avoid() {
+        // Byte-for-byte the real line `apt list --upgradable` prints under
+        // LANG=fr_FR.UTF-8 -- captured live from a real Debian 13 VM whose
+        // default locale IS French (the target distro's own installer
+        // default, not a contrived edge case). Without list_upgradable
+        // forcing LC_ALL=C on the actual `apt` invocation, every line on
+        // such a system would silently fail to match "[upgradable from:"
+        // and list_upgradable() would report zero updates despite real
+        // ones being pending. This test pins the parser's documented
+        // English-only contract; it must never start "helpfully" matching
+        // localized text, since LC_ALL=C at the call site is the real fix.
+        let line = "libaom3/stable-security 3.12.1-1+deb13u1 amd64 [pouvant être mis à jour depuis\u{a0}: 3.12.1-1]";
+        assert!(parse_apt_line(line).is_none());
     }
 
     #[test]
