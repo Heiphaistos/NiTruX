@@ -46,9 +46,19 @@ pub fn compute_hash(path: &Path, algorithm: HashAlgorithm) -> Result<String, Str
     }
 }
 
+/// Extracts just the hash from `expected`: users routinely paste the full
+/// line a checksum tool prints (`<hash>  <filename>`, as produced by
+/// `sha256sum`/`md5sum`/`sha1sum` and shown verbatim on many vendor
+/// download pages), not a bare hash -- comparing the whole trimmed string
+/// would reject a genuinely matching hash just because a filename tagged
+/// along. The hash itself is always the first whitespace-delimited token.
+fn extract_hash_token(expected: &str) -> &str {
+    expected.trim().split_whitespace().next().unwrap_or("")
+}
+
 pub fn verify_hash(path: &Path, algorithm: HashAlgorithm, expected: &str) -> Result<bool, String> {
     let actual = compute_hash(path, algorithm)?;
-    Ok(actual.eq_ignore_ascii_case(expected.trim()))
+    Ok(actual.eq_ignore_ascii_case(extract_hash_token(expected)))
 }
 
 #[tauri::command]
@@ -100,5 +110,25 @@ mod tests {
         std::fs::remove_file(&path).ok();
 
         assert!(matches);
+    }
+
+    #[test]
+    fn matches_expected_hash_pasted_in_sha256sum_output_format() {
+        // Many vendor download pages show (or a user copies from a
+        // `sha256sum`-generated .sha256 file) the full checksum-tool line
+        // "<hash>  <filename>", not just the bare hash. Pasting that whole
+        // line into "Hash attendu" should still verify correctly.
+        let path = std::env::temp_dir().join(format!("nitrux-hash-sumline-{}.txt", std::process::id()));
+        std::fs::File::create(&path).unwrap().write_all(b"hello world").unwrap();
+
+        let matches = verify_hash(
+            &path,
+            HashAlgorithm::Sha256,
+            "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9  hello.txt",
+        )
+        .expect("should verify");
+        std::fs::remove_file(&path).ok();
+
+        assert!(matches, "a full `sha256sum`-style line must still match on its hash portion");
     }
 }
