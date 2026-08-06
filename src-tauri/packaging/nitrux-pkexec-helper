@@ -97,6 +97,22 @@ validate_quarantine_path() {
     /*) : ;;
     *) die "quarantine path must be absolute: $1" ;;
   esac
+  # Reject the filesystem root itself ("/", "//", "///", ...): every check
+  # above passes it (absolute, no "..", no metacharacters), and this is a
+  # "quarantine one file" feature with no legitimate reason to ever target
+  # the root -- confirmed live (2026-08-06, unprivileged, this function
+  # only, never reaching mv) that `basename "/"` prints "/" too, so the
+  # dest below would become ".../<timestamp>-/" and `mv "$1" "$dest"`
+  # would attempt to move the entire mounted root as root. Strip trailing
+  # slashes (POSIX has no extglob for a one-shot "one or more" match) and
+  # check whether anything meaningful is left.
+  stripped="$1"
+  while [ "${stripped%/}" != "$stripped" ]; do
+    stripped="${stripped%/}"
+  done
+  if [ -z "$stripped" ]; then
+    die "cannot quarantine the filesystem root: $1"
+  fi
   case "$1" in
     *..*) die "quarantine path must not contain '..': $1" ;;
     *'*'*|*'?'*|*'$'*|*'`'*|*';'*|*'|'*|*'&'*|*'<'*|*'>'*|*'\n'*)
