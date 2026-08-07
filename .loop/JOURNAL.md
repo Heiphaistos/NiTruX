@@ -2207,3 +2207,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif. Les deux scripts shell pkexec-adjacents (`nitrux-pkexec-helper` cycle 263, `nitrux-postrm-cleanup.sh` cycle 264) sont désormais tous les deux lus en entier au moins une fois cette session.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 155 cycles cumulés 110-264.
+
+[2026-08-07T16:56:00+02:00] Cycle 265 : les 5 fichiers `.policy` polkit lus en entier pour la première fois (jusqu'ici seulement comptés/listés, jamais leur contenu XML examiné). 14 actions au total (4 packages + 3 network + 3 security + 3 disks + 1 system-tools) toutes exigeant uniformément `auth_admin` pour `allow_any`/`allow_inactive`/`allow_active` -- aucun raccourci de type `auth_admin_keep`/`yes`, cohérent avec la nature réellement privilégiée de chaque action. **Cross-check automatisé final** (script Python jetable) : les 14 `exec.path` des fichiers `.policy` comparés aux 14 `PKEXEC_BINARY_NAMES` de `pkexec_bootstrap.rs` -- correspondance exacte, 0 écart. Ceci clôt l'audit de toute l'infrastructure pkexec/polkit (script helper cycle 263, script postrm cycle 264, fichiers policy cycle 265) comme entièrement cohérente en interne.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 156 cycles cumulés 110-265.
