@@ -2171,3 +2171,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 149 cycles cumulés 110-258.
+
+[2026-08-07T16:08:00+02:00] Cycle 259 : `appCatalog.ts` (502 entrées) et `systemToolsCatalog.ts` (506 entrées) -- lus/validés directement pour la première fois avec un script Python jetable (jusqu'ici seulement cross-vérifiés par id, jamais leur contenu structurel). Validation automatisée : 0 id dupliqué, 0 `installMethod` invalide, 0 champ requis vide sur les 502 entrées d'`appCatalog.ts` ; les 6 paires `(installMethod, packageId)` dupliquées retrouvées correspondent EXACTEMENT aux 6 déjà signalées aux cycles 201-202 (`firefox`/`firefox-esr`, `xournalpp-office`/`xournalpp`, `galculator`/`gcp`, `syncthing`/`syncthing-server`, `freecad`/`freecad-3dp`, `kmag`/`gnome-boxes-util`) -- aucune nouvelle dérive. `systemToolsCatalog.ts` : 0 id dupliqué, les 3 commandes dupliquées trouvées (`nproc`, `cat /proc/loadavg`, `localectl status`) correspondent aux 3 déjà signalées -- aucune nouvelle dérive non plus.
+
+Aucun bug trouvé. Négatif, mais re-confirmation précieuse qu'aucun nouveau doublon de catalogue n'est apparu depuis le signalement initial.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 150 cycles cumulés 110-259.
