@@ -1897,3 +1897,15 @@ Aucun changement de code. **3e cycle négatif consécutif au sens strict (217-21
 Aucun changement de code. Négatif au sens strict (aucune correction appliquée), mais un vrai écart de design non trivial trouvé et correctement escaladé plutôt que corrigé par une supposition arbitraire.
 
 Éléments en attente inchangés + nouveau signalement : `accentSecondary` jamais utilisé visuellement dans l'app malgré sa présence sur les 13 thèmes (cycle 220, décision de design produit requise, pas un bug). 111 cycles cumulés 110-220.
+
+[2026-08-07T11:00:00+02:00] Cycle 221 : comparaison précise `PackagesPage.vue`/`UpdatesPage.vue` -- pages quasi-jumelles, déjà à l'origine d'un correctif au cycle 181 (garde du bouton "Tout mettre à jour"). Diff normalisé (script `sed` remplaçant les préfixes `pkg`/`upd` puis `diff`) pour repérer toute divergence RESTANTE au-delà des différences volontaires déjà connues (formulaire d'installation propre à PackagesPage, titres/descriptions différents).
+
+**Vrai écart trouvé** : `.upd-header` a déjà `flex-wrap: wrap` (permet au titre/description et aux boutons d'action de se replier sur une 2e ligne plutôt que déborder sur une fenêtre étroite), mais `.pkg-header` ne l'avait pas. Confirmé qu'aucun `minWidth` n'est défini dans `tauri.conf.json` -- la fenêtre peut réellement être redimensionnée très étroite, rendant ce cas atteignable.
+
+Corrigé en miroir exact. Changement CSS pur (comportement `flex-wrap` non ambigu et bien compris), vérifié via la suite de tests existante complète plutôt que d'inventer une infrastructure de test de mise en page CSS que ce projet n'a pas par ailleurs.
+
+Vérification complète : suite frontend complète 333/333 (inchangée, changement CSS pur), `npx vue-tsc --noEmit` 0 erreur, `cargo check` propre.
+
+Version 0.25.76 → 0.25.77. Commit `a5e3c26`, poussé sur `origin/master`.
+
+Éléments en attente inchangés (dont `accentSecondary`, cycle 220). **3 correctifs accumulés depuis la release v0.25.74** (index.html cycle 213, README.md cycle 214, PackagesPage.vue cycle 221). 112 cycles cumulés 110-221.
