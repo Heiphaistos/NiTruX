@@ -2019,3 +2019,13 @@ Aucun bug trouvé. Négatif -- 12e cycle négatif sur 13 (222-226, 228-234 ; cyc
 Aucun bug trouvé. Négatif -- 13e cycle négatif sur 14 (222-226, 228-235 ; cycle 227 seul positif).
 
 Éléments en attente inchangés. **4 correctifs accumulés depuis la release v0.25.74**. 126 cycles cumulés 110-235.
+
+[2026-08-07T13:04:00+02:00] Cycle 236 : `DisksPage.vue` (jamais lue en entier) : formulaire de formatage correctement gardé par taper-pour-confirmer, extension/clonage volontairement non gardés (l'un ne fait que croître sans jamais toucher aux données existantes, l'autre est non-destructif pour la source -- cohérent avec les propres commentaires de `disk_write.rs`). `disks.rs` : `list_disks` filtre déjà par `device_type == "disk"`, mais `list_disk_usage` (`df -k -P`) n'avait AUCUN filtre.
+
+**Vrai bug trouvé et reproduit EN DIRECT** (`df -k -P` sur la machine de dev WSL2) : la sortie brute est dominée par des pseudo-systèmes de fichiers non filtrés -- `tmpfs`/`none`/`rootfs`/`drivers`/lettres de lecteur Windows, et surtout des montages `snapfuse` (un par paquet Snap installé) systématiquement épinglés à "100%" (une image squashfs en lecture seule est par nature toujours pleine à 100% d'elle-même -- ce n'est PAS un signal de disque plein). Un utilisateur consultant "Disques & partitions" aurait donc vu chaque application Snap installée listée comme "100% plein", lisible à tort comme une alerte de manque d'espace disque réel.
+
+Corrigé : `parse_df_line` rejette désormais toute ligne dont la source ne commence pas par `/dev/` -- miroir exact du filtre déjà en place côté `list_disks`/`lsblk`. Nouveau test de régression utilisant les lignes réelles capturées en direct (tmpfs, none, rootfs, snapfuse, drivers, lettre Windows).
+
+Vérification complète : `cargo test` 310/310 (+1), suite frontend 333/333 (inchangée, changement Rust pur), `vue-tsc --noEmit` 0 erreur. Version 0.25.78 → 0.25.79. Commit `8f91a20`, poussé sur `origin/master`.
+
+Éléments en attente inchangés. **5 correctifs accumulés depuis la release v0.25.74** (index.html cycle 213, README.md cycle 214, PackagesPage.vue cycle 221, validate_port_proto cycle 227, list_disk_usage cycle 236). 127 cycles cumulés 110-236.
