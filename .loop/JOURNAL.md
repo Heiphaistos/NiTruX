@@ -1725,3 +1725,15 @@ Aucun changement de code. 5e cycle négatif consécutif (192-196), mais chacun a
 Aucun changement de code. 7e cycle négatif consécutif (192-198) -- balayage des modules de gestionnaires de paquets désormais complet (apt/dnf/pacman/zypper/flatpak/universal, cycles 160/192/198).
 
 Éléments en attente inchangés. 36 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (89 cycles cumulés 110-198).
+
+[2026-08-07T08:00:00+02:00] Cycle 199 : nouveau sweep transversal -- script Python pour trouver tous les `.unwrap()` de code PRODUCTION (hors blocs `#[cfg(test)]`, hors `.expect(...)`) dans tout `src-tauri/src`. Seulement 5 occurrences réelles trouvées sur toute la base : 1 dans `network.rs` (structurellement sûr, `peek()` juste avant `next()` dans la même branche de match, laissé tel quel) et 4 dans `terminal.rs` (verrous du même `Mutex<HashMap<...>>` dans les 4 commandes Tauri du fichier).
+
+**Incohérence mineure mais réelle trouvée** : `system.rs` a déjà établi le pattern pour la forme identique `Mutex<T>` en état Tauri : `state.lock().expect("system state mutex poisoned")` -- un message de panique clair au lieu du générique "called `Result::unwrap()` on an `Err` value" que produirait `.unwrap()` nu. `terminal.rs` ne suivait pas ce pattern déjà établi. Corrigé en miroir exact (`"terminal state mutex poisoned"`) sur les 4 sites. Aucun changement de comportement observable (panique dans les deux cas si jamais le mutex est empoisonné, uniquement le message change) -- sévérité cosmétique/qualité de code, pas un bug fonctionnel, mais cohérent avec le principe "Zéro `unwrap()` sans garde" du projet et le pattern déjà établi ailleurs.
+
+Vérification complète : `cargo test terminal::` 3/3, suite Rust complète 308/308 (inchangée, pas de nouveau test -- aucun changement de comportement observable à tester), `cargo check` propre, suite frontend complète 333/333 (inchangée), `npx vue-tsc --noEmit` 0 erreur.
+
+Version 0.25.73 → 0.25.74. Commit `c46b200`, poussé sur `origin/master`.
+
+Série négative rompue après 7 cycles (192-198), mais ce correctif est de sévérité cosmétique (comme le cleanup clippy du cycle 159), pas un vrai bug fonctionnel -- le compte des "36 correctifs fonctionnels + 1 cleanup cosmétique" devient donc 36 + 2 cleanups cosmétiques plutôt que 37 fonctionnels.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu) + timeout `run_pkexec_with_stdin` (cycle 193, hors périmètre). **36 correctifs fonctionnels + 2 cleanups cosmétiques désormais en attente d'une release publiée** depuis v0.25.24 (90 cycles cumulés 110-199).
