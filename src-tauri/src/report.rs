@@ -191,6 +191,22 @@ pub fn render_markdown(report: &SystemReport) -> String {
     }
     out.push('\n');
 
+    out.push_str("## Utilisation disque\n\n");
+    match &report.disk_usage {
+        Some(usage) if !usage.is_empty() => {
+            out.push_str("| Point de montage | Utilisé | Total |\n|---|---|---|\n");
+            for u in usage {
+                out.push_str(&format!(
+                    "| {} | {}% ({}) | {} |\n",
+                    u.mountpoint, u.used_percent, format_bytes_gb(u.used_bytes), format_bytes_gb(u.total_bytes)
+                ));
+            }
+        }
+        Some(_) => out.push_str("_Aucune information d'utilisation disque._\n"),
+        None => out.push_str("_Indisponible._\n"),
+    }
+    out.push('\n');
+
     out.push_str("## Réseau\n\n");
     out.push_str(&format!(
         "- **Serveurs DNS** : {}\n- **Ports en écoute** : {}\n- **Réseaux Wi-Fi visibles** : {}\n\n",
@@ -286,6 +302,22 @@ pub fn render_html(report: &SystemReport) -> String {
             body.push_str("</table>");
         }
         Some(_) => body.push_str("<p>Aucun disque détecté.</p>"),
+        None => body.push_str("<p><em>Indisponible.</em></p>"),
+    }
+
+    body.push_str("<h2>Utilisation disque</h2>");
+    match &report.disk_usage {
+        Some(usage) if !usage.is_empty() => {
+            body.push_str("<table><tr><th>Point de montage</th><th>Utilisé</th><th>Total</th></tr>");
+            for u in usage {
+                body.push_str(&format!(
+                    "<tr><td>{}</td><td>{}% ({})</td><td>{}</td></tr>",
+                    escape_html(&u.mountpoint), u.used_percent, format_bytes_gb(u.used_bytes), format_bytes_gb(u.total_bytes)
+                ));
+            }
+            body.push_str("</table>");
+        }
+        Some(_) => body.push_str("<p>Aucune information d'utilisation disque.</p>"),
         None => body.push_str("<p><em>Indisponible.</em></p>"),
     }
 
@@ -528,6 +560,27 @@ mod tests {
         assert!(md.contains("curl"));
     }
 
+    fn fixture_report_with_disk_usage() -> SystemReport {
+        let mut report = fixture_report();
+        report.disk_usage = Some(vec![crate::disks::UsageEntry {
+            mountpoint: "/".to_string(),
+            total_bytes: 500_000_000_000,
+            used_bytes: 100_000_000_000,
+            used_percent: 20,
+        }]);
+        report
+    }
+
+    #[test]
+    fn render_markdown_includes_disk_usage_like_render_txt_already_does() {
+        // render_txt has a dedicated "== UTILISATION DISQUE ==" section
+        // (disk_usage: Option<Vec<UsageEntry>>) -- render_markdown had none
+        // at all, silently dropping this data for the Markdown export.
+        let report = fixture_report_with_disk_usage();
+        let md = render_markdown(&report);
+        assert!(md.contains("93.1 Go"), "Markdown report must include disk usage data like render_txt does");
+    }
+
     #[test]
     fn render_html_produces_a_document_with_key_fields_and_no_unescaped_lt_in_text_content() {
         let report = fixture_report();
@@ -548,6 +601,16 @@ mod tests {
         let report = fixture_report(); // battery_percent: Some(80)
         let html = render_html(&report);
         assert!(html.contains("80%"), "HTML report must include battery data like the other formats do");
+    }
+
+    #[test]
+    fn render_html_includes_disk_usage_like_render_txt_already_does() {
+        // Same gap as the Capteurs section above, for disk_usage instead:
+        // render_txt has "== UTILISATION DISQUE ==", render_html had
+        // nothing -- also missing from the PDF export by extension.
+        let report = fixture_report_with_disk_usage();
+        let html = render_html(&report);
+        assert!(html.contains("93.1 Go"), "HTML report must include disk usage data like render_txt does");
     }
 
     #[test]
