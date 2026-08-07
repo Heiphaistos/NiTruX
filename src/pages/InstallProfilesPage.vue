@@ -20,6 +20,18 @@ onMounted(() => {
 
 const catalogById = new Map<string, AppCatalogEntry>(appCatalog.map((e) => [e.id, e]));
 
+// The manual selection list below renders straight from appCatalog (506
+// entries) -- an unfiltered flat checkbox list at that size is
+// effectively unusable (hundreds of rows to scroll through to find one
+// app). QuickInstallPage.vue already solved this exact problem for the
+// same data source with a category chip filter; mirrored here rather
+// than inventing a different mechanism for the same underlying gap.
+const selectedCategory = ref<string>("Tous");
+const categories = computed(() => ["Tous", ...new Set(appCatalog.map((e) => e.category))]);
+const filteredCatalog = computed<AppCatalogEntry[]>(() =>
+  selectedCategory.value === "Tous" ? appCatalog : appCatalog.filter((e) => e.category === selectedCategory.value),
+);
+
 const selected = ref<Set<string>>(new Set());
 
 function toggle(id: string) {
@@ -98,7 +110,18 @@ async function installSelection() {
 
     <NxCard>
       <NxSectionHeader title="Sélection" />
-      <label v-for="entry in appCatalog" :key="entry.id" class="ip-check-row">
+      <div class="ip-chips">
+        <button
+          v-for="cat in categories"
+          :key="cat"
+          class="ip-chip"
+          :class="{ active: selectedCategory === cat }"
+          @click="selectedCategory = cat"
+        >
+          {{ cat }}
+        </button>
+      </div>
+      <label v-for="entry in filteredCatalog" :key="entry.id" class="ip-check-row">
         <input type="checkbox" :checked="selected.has(entry.id)" @change="toggle(entry.id)" />
         <span>{{ entry.icon }} {{ entry.name }}</span>
       </label>
@@ -124,6 +147,9 @@ async function installSelection() {
 .ip-profile-button { text-align: left; padding: 14px; border-radius: 10px; border: 1px solid var(--nx-border); background: var(--nx-bg-elevated); color: var(--nx-text-primary); cursor: pointer; font: inherit; }
 .ip-profile-button p { margin: 6px 0; font-size: 12px; color: var(--nx-text-secondary); }
 .ip-profile-count { font-size: 11px; color: var(--nx-text-secondary); }
+.ip-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.ip-chip { padding: 6px 14px; border-radius: 99px; border: var(--nx-style-border-width) solid var(--nx-style-border-color); background: var(--nx-style-bg); color: var(--nx-text-secondary); cursor: pointer; font: inherit; font-size: 12px; }
+.ip-chip.active { color: var(--nx-text-primary); font-weight: 600; border-color: var(--nx-accent-primary); }
 .ip-check-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; }
 .ip-result-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; font-size: 13px; }
 .ip-result-message { color: var(--nx-text-secondary); font-size: 12px; }

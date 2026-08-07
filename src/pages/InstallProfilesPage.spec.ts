@@ -20,6 +20,25 @@ describe("InstallProfilesPage", () => {
     expect(wrapper.text()).toContain("Développement");
   });
 
+  it("filters the manual selection catalog by category, mirroring QuickInstallPage's chip filter", async () => {
+    // Regression guard for the actual gap: the manual selection list
+    // rendered all 506 appCatalog entries as a flat, unfiltered checkbox
+    // list -- effectively unusable at that size, unlike QuickInstallPage
+    // which already solved this exact problem for the same data source.
+    const wrapper = mount(InstallProfilesPage);
+    const allCheckboxCount = wrapper.findAll("input[type=checkbox]").length;
+    expect(allCheckboxCount).toBeGreaterThan(100);
+
+    const chips = wrapper.findAll("button").filter((b) => b.classes().includes("ip-chip"));
+    expect(chips.length).toBeGreaterThan(1);
+    const nonDefaultChip = chips.find((c) => c.text() !== "Tous")!;
+    await nonDefaultChip.trigger("click");
+
+    const filteredCheckboxCount = wrapper.findAll("input[type=checkbox]").length;
+    expect(filteredCheckboxCount).toBeGreaterThan(0);
+    expect(filteredCheckboxCount).toBeLessThan(allCheckboxCount);
+  });
+
   it("selecting a profile checks all its apps", async () => {
     const wrapper = mount(InstallProfilesPage);
     const button = wrapper.findAll("button").find((b) => b.text().includes("Essentiels"))!;
