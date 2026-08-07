@@ -2073,3 +2073,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **5 correctifs accumulés depuis la release v0.25.74**. 134 cycles cumulés 110-243.
+
+[2026-08-07T14:08:00+02:00] Cycle 244 : `ReportGeneratorPage.vue` (jamais lue, site des 2 vrais bugs de parité de format déjà trouvés dans `report.rs` aux cycles 190-191). `generatedFormat` correctement suivi séparément de `selectedFormat` (le téléchargement reste fidèle au contenu affiché même si l'utilisateur change le sélecteur après génération sans regénérer). Cross-vérifié `generate_system_report`'s dispatch `match format.as_str()` : exactement les 4 formats exposés côté frontend (json/markdown/txt/html), avec un bras d'erreur explicite pour tout format inconnu (défensif, inatteignable depuis l'UI dont le type TypeScript restreint déjà les valeurs). `render_pdf` réutilise `render_html` comme unique source de vérité plutôt que de dupliquer la mise en page -- hérite donc automatiquement des correctifs déjà appliqués à `render_html` (sections Capteurs/Disque des cycles 190-191).
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **5 correctifs accumulés depuis la release v0.25.74**. 135 cycles cumulés 110-244.
