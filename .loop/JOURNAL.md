@@ -2333,3 +2333,11 @@ Point de renforcement du signalement du cycle 276 : `.scr-output { color: var(--
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés + renforcement du signalement `NxBadge`/couleur-accent-comme-texte (cycles 274/276, maintenant confirmé récurrent dans au moins 2 composants). **3 correctifs accumulés depuis la release v0.25.79**. 173 cycles cumulés 110-282.
+
+[2026-08-08T01:32:00+02:00] Cycle 283 : dernier fichier Rust jamais confirmé lu DIRECTEMENT (par opposition à connu par rappel/résumé de la portion pré-visible de la session) -- `packages/apt.rs`, site du tout premier bug de locale (cycle 160, `[upgradable from:` vs `[pouvant être mis à jour depuis:`). Lu en entier par discipline ("jamais faire confiance à la mémoire, vérifier") plutôt que de continuer à s'appuyer sur le rappel. Contenu confirmé identique à ce qui était rappelé : parseur avec test de régression byte-for-byte capturé en direct sur la vraie VM Debian en locale française, filtrage `apt-mark showmanual` contre les dépendances transitives (64 manuels vs 1241 total `dpkg -l`, vérifié en direct). Aucun écart, aucun bug.
+
+**Ceci clôt la couverture de lecture directe des DEUX arborescences source complètes de cette session** : `src/` (frontend, clos au cycle 282) et `src-tauri/src/` (backend, 49/49 fichiers désormais confirmés lus directement, y compris ce dernier).
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 174 cycles cumulés 110-283.
