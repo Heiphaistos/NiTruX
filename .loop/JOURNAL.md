@@ -2219,3 +2219,11 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif, mais cross-check exhaustif précieux fermant définitivement toute possibilité de variable CSS cassée ailleurs dans l'app.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 157 cycles cumulés 110-266.
+
+[2026-08-07T17:12:00+02:00] Cycle 267 : tentative de résoudre le risque `WiFiAnalyzerPage.vue::securityStatus` signalé au cycle 241 (nmcli terse SECURITY pour réseau ouvert). VM Debian 13 confirmée UP (`Get-VM` PowerShell, IP a changé : 172.21.233.222, pas celle documentée -- conforme à l'avertissement du prompt). **Tentative abandonnée après investigation raisonnable** : ni `sshpass`, ni `expect`, ni `paramiko` (Python) ne sont installés dans l'environnement WSL2 de dev, et leur installation nécessite soit `sudo` (mot de passe requis, non disponible en non-interactif) soit `pip3` (absent). Pas de contournement propre sans intervention utilisateur -- abandonné plutôt que de sur-investir sur une voie bloquée, conformément à la discipline du projet. Le risque reste donc non vérifié.
+
+Pivot vers `vite.config.ts`/`vitest.config.ts` (jamais lus, pilotent tout le pipeline build/test) : les deux propres, `vitest.config.ts::environment: "jsdom"` confirme et explique tous les commentaires "absent de jsdom" vus dans le code (ex. `TerminalPage.vue::ResizeObserver`).
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés (WiFiAnalyzerPage toujours non vérifié -- nécessiterait `sshpass`/`expect`/`paramiko` pré-installés ou une intervention utilisateur pour les installer). **1 correctif accumulé depuis la release v0.25.79**. 158 cycles cumulés 110-267.
