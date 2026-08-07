@@ -2137,3 +2137,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif. **Couverture des pages Vue frontend désormais quasi exhaustive** : la quasi-totalité des 41 pages a maintenant été lue directement au moins une fois cette session, en plus des deux bouclages complets du backend Rust et de la couverture complète des layouts/stores.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 144 cycles cumulés 110-253.
+
+[2026-08-07T15:28:00+02:00] Cycle 254 : couverture complète de la couche composants UI partagés (`src/components/ui/`), le dernier grand pan de la codebase pas encore lu directement -- ces composants sont utilisés sur littéralement chaque page, donc un bug ici aurait un impact maximal. `NxSelect.vue`/`NxInput.vue` (`ariaLabel` optionnel déjà en place, campagne a11y cycles 127-130 confirmée), `NxButton.vue`, `NxCard.vue`, `NxBadge.vue`, `NxSparkline.vue` (confirme le correctif responsive déjà appliqué -- `width:100%`+`preserveAspectRatio="none"` au lieu d'un attribut `width` fixe qui ne rétrécissait jamais sous sa taille intrinsèque), `NxSectionHeader.vue` -- tous lus intégralement, 7 fichiers. Cas limite noté sans être un bug : `NxSparkline` avec un seul point de données (juste après le tout premier `sample()` de `PerfHistoryPage.vue`) ne trace aucune ligne visible (un `<polyline>` a besoin d'au moins 2 points) -- se résout naturellement au prochain rafraîchissement, pas une régression.
+
+Aucun bug trouvé. Négatif. **Couche `src/components/ui/` désormais entièrement couverte (9/9 fichiers, en comptant `NxStatTile.vue`/`NxQuickActionTile.vue` du cycle 230)** -- avec le backend Rust (2 bouclages complets), les layouts, les stores Pinia, et la quasi-totalité des pages Vue déjà couvertes, la session a maintenant audité directement la quasi-intégralité du code source lisible de l'application.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 145 cycles cumulés 110-254.
