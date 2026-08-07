@@ -1975,3 +1975,11 @@ Aucun bug trouvé. **Couverture de lecture directe désormais complète sur la t
 Aucun changement de code. Négatif -- 7e cycle négatif sur 8 (222-226, 228-229 ; cycle 227 seul positif). **Constat de plateau de maturité confirmé une 2e fois cette session** (1er constat cycle 224) : l'audit module-par-module Rust est désormais épuisé comme filon à court terme. Prochain cycle : basculer l'effort côté Vue (stores Pinia, composants UI partagés, layouts) ou revenir à un nouveau pattern transversal encore inexploré, plutôt que de continuer à relire un backend déjà exhaustivement couvert deux fois.
 
 Éléments en attente inchangés. **4 correctifs accumulés depuis la release v0.25.74**. 120 cycles cumulés 110-229.
+
+[2026-08-07T12:16:00+02:00] Cycle 230 : premier cycle du bascule côté Vue annoncé au cycle 229. `PkexecIntegrationBanner.vue` lu en entier (frontend du `pkexec_bootstrap.rs` lu au cycle 228) -- cohérent, aucun problème. `App.vue` (composant racine, jamais lu directement en entier cette session) : dictionnaire `pages` (41 entrées) qui route `currentPage` vers le bon composant de page.
+
+**2 cross-checks automatisés (scripts Python jetables, exécutés une fois puis supprimés)** pour fermer une classe de bug déjà identifiée dans son propre commentaire par `App.vue` ("un id qui ne correspond à aucune page dans `pages` retombe silencieusement sur le tableau de bord -- pas un crash, mais un vrai bug si ça arrive") : (1) les 41 ids de page de `categories.ts` comparés aux 41 clés du dictionnaire `pages` d'`App.vue` -- correspondance exacte, 0 écart dans les deux sens ; (2) les 39 noms d'icônes utilisés dans `categories.ts` comparés aux 39 entrées de l'`iconMap` d'`AppNav.vue` (dont le propre commentaire du fichier signale le même risque de repli silencieux sur l'icône `Circle`) -- correspondance exacte aussi. `NxStatTile.vue`/`NxQuickActionTile.vue` (composants UI partagés jamais lus directement) : purement présentationnels, aucun problème.
+
+Aucun bug trouvé. Négatif -- 8e cycle négatif sur 9 (222-226, 228-230 ; cycle 227 seul positif), mais 2 cross-checks systématiques réels effectués plutôt qu'une simple relecture, fermant définitivement un risque que le code lui-même documentait sans jamais l'avoir vérifié.
+
+Éléments en attente inchangés. **4 correctifs accumulés depuis la release v0.25.74**. 121 cycles cumulés 110-230.
