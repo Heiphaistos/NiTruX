@@ -1661,3 +1661,17 @@ Vérification complète : `cargo test report::` 13/13, suite Rust complète 306/
 Version 0.25.71 → 0.25.72. Commit `6c90759`, poussé sur `origin/master`.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). **35 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (81 cycles cumulés 110-190).
+
+[2026-08-07T06:42:00+02:00] Cycle 191 : `firewall.rs`/`system_tools.rs`/`malwarescan.rs` relues intégralement -- toutes déjà exceptionnellement mûres (permission unprivileged reproduite en direct pour ufw, allowlist actions cohérente avec le catalogue frontend, bitmask clamscan déjà bien géré), rien à corriger.
+
+**2e gap de parité entre formats trouvé dans `report.rs`, même filon que le correctif du cycle précédent** : en re-vérifiant systématiquement chaque champ de `SystemReport` contre les 3 renderers texte, `disk_usage` (`Option<Vec<UsageEntry>>`) s'est avéré présent dans `render_txt` ("== UTILISATION DISQUE ==") mais absent des DEUX AUTRES (`render_markdown` ET `render_html`, donc aussi le PDF) -- un gap encore plus large que celui des capteurs (3 formats sur 4 concernés au lieu de 2).
+
+**Reproduit EN DIRECT selon la discipline stricte** : deux tests écrits (markdown + html) avec une entrée `disk_usage` fixture, tous deux confirmés échouants contre le code d'origine (13 passed, 2 failed). Corrigé en ajoutant la section "Utilisation disque" aux deux renderers, miroir du contenu de `render_txt` (point de montage, % utilisé, Go utilisé/total), échappement HTML cohérent avec le reste de `render_html`.
+
+Vérification complète : `cargo test report::` 15/15, suite Rust complète 308/308 (306→308, +2), `cargo check` propre, suite frontend complète 333/333 (inchangée), `npx vue-tsc --noEmit` 0 erreur.
+
+Version 0.25.72 → 0.25.73. Commit `7f9dd6e`, poussé sur `origin/master`.
+
+**`report.rs` désormais audité champ par champ pour la parité entre les 4 formats -- plus aucun gap restant** (JSON sérialise la structure complète par construction ; TXT/Markdown/HTML couvrent maintenant identiquement Système/Capteurs/PCI/Pilotes/Disques/Utilisation disque/Réseau/Pare-feu/Mises à jour).
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). **36 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (82 cycles cumulés 110-191).
