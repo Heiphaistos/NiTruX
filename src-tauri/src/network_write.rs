@@ -60,6 +60,18 @@ fn validate_dns_content(content: &str) -> Result<(), String> {
 /// Mirrors the helper script's own `validate_port_proto`, checked here too
 /// so obviously-malformed input gets a clear error from the app itself
 /// rather than an opaque failure from `pkexec`/the helper.
+///
+/// The port number is additionally bounds-checked against the real 1-65535
+/// range -- reproduced live (`ufw allow 99999999/tcp` and `ufw allow
+/// 0/tcp`, run unprivileged): `ufw` exits 0 (success) for a syntactically
+/// digit-only but out-of-range port, printing its real "ERROR: Bad port"
+/// only to stderr. `add_firewall_rule`/`remove_firewall_rule` call
+/// `run_with_timeout`, which discards stderr on a successful exit code --
+/// without this check, a typo'd port (e.g. "650000/tcp" instead of
+/// "65000/tcp") would be reported to the user as a successfully added
+/// firewall rule despite `ufw` never actually adding anything. Same
+/// silent-false-success class as `firewall.rs::parse_ufw_output`'s already-
+/// fixed `ufw status` bug, just on the write side.
 fn validate_port_proto(value: &str) -> Result<(), String> {
     let Some((port, proto)) = value.split_once('/') else {
         return Err(format!(
@@ -70,6 +82,14 @@ fn validate_port_proto(value: &str) -> Result<(), String> {
         return Err(format!(
             "format port/protocole invalide (attendu par ex. 22/tcp) : {value}"
         ));
+    }
+    match port.parse::<u32>() {
+        Ok(1..=65535) => {}
+        _ => {
+            return Err(format!(
+                "le port doit être compris entre 1 et 65535 : {value}"
+            ));
+        }
     }
     if proto != "tcp" && proto != "udp" {
         return Err(format!(
@@ -202,6 +222,22 @@ mod tests {
         assert!(validate_port_proto("22/tcp").is_ok());
         assert!(validate_port_proto("53/udp").is_ok());
         assert!(validate_port_proto("8080/tcp").is_ok());
+        assert!(validate_port_proto("65535/tcp").is_ok());
+        assert!(validate_port_proto("1/tcp").is_ok());
+    }
+
+    #[test]
+    fn rejects_out_of_range_port() {
+        // Regression guard for the actual bug: reproduced live that `ufw
+        // allow 99999999/tcp` (and `ufw allow 0/tcp`) exits 0 with the real
+        // "ERROR: Bad port" only on stderr -- run_with_timeout discards
+        // stderr on a successful exit code, so without this bounds check a
+        // typo'd port would be silently reported to the user as a
+        // successfully added firewall rule.
+        let err = validate_port_proto("99999999/tcp").expect_err("port above 65535 must be rejected");
+        assert!(err.contains("65535"), "error should mention the valid range: {err}");
+        assert!(validate_port_proto("0/tcp").is_err(), "port 0 must be rejected");
+        assert!(validate_port_proto("65536/tcp").is_err(), "one above the max must be rejected");
     }
 
     #[test]
