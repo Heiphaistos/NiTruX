@@ -13,13 +13,23 @@ const envVars = ref<[string, string][]>([]);
 const softwareFilter = ref("");
 const loadError = ref<string | null>(null);
 
+// Kept in two independent try/catch blocks, not one shared try: these are
+// unrelated data sources (installed-packages detection can genuinely fail
+// with no native package manager found -- InstalledPackagesPage's own
+// loadError below -- but that has nothing to do with reading the app's own
+// environment variables). A shared try previously meant a package-listing
+// failure silently left "Variables d'environnement" empty too, even though
+// get_environment_variables is infallible and would have succeeded on its
+// own. Mirrors the already-established pattern in UninstallerPage.vue,
+// which keeps list_installed_packages's own try/catch separate from the
+// unrelated detect_native_manager call right after it.
 onMounted(async () => {
   try {
     packages.value = await invoke<InstalledPackage[]>("list_installed_packages");
-    envVars.value = await invoke<[string, string][]>("get_environment_variables");
   } catch (e) {
     loadError.value = String(e);
   }
+  envVars.value = await invoke<[string, string][]>("get_environment_variables");
 });
 
 const filteredPackages = computed(() =>

@@ -54,6 +54,25 @@ describe("InstalledSoftwarePage", () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain("aucun gestionnaire de paquets détecté"));
   });
 
+  // Regression guard for the actual bug: list_installed_packages and
+  // get_environment_variables used to share one try/catch, so a rejected
+  // list_installed_packages (a real, already-handled failure mode -- no
+  // native package manager detected) silently left "Variables
+  // d'environnement" empty too, even though get_environment_variables is
+  // completely unrelated and infallible on its own.
+  it("still shows environment variables when list_installed_packages rejects", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "list_installed_packages") return Promise.reject("aucun gestionnaire de paquets détecté");
+      if (cmd === "get_environment_variables") return Promise.resolve([["HOME", "/home/dev"]]);
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(InstalledSoftwarePage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("aucun gestionnaire de paquets détecté"));
+    expect(wrapper.text()).toContain("HOME");
+    expect(wrapper.text()).toContain("/home/dev");
+  });
+
   it("does not flash 'no package matches' while list_installed_packages is still pending", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     let resolvePackages!: (value: unknown[]) => void;
