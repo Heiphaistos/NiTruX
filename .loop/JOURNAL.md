@@ -1819,3 +1819,9 @@ Aucun changement de code. Négatif.
 Aucun changement de code. Négatif, mais avec une vérification post-release rassurante en prime.
 
 Éléments en attente inchangés (mêmes 4 items non bloquants + doublons de catalogue signalés). **v0.25.74 publiée -- plus aucun correctif en attente de release.** 102 cycles cumulés 110-211.
+
+[2026-08-07T09:52:00+02:00] Cycle 212 : nouvel angle "hygiène du dépôt et intégrité du build", jamais couvert cette session. `.gitattributes`/`.gitignore` relus intégralement -- corrects, la règle repo-wide `eol=lf` (ajoutée après l'incident CRLF du 2026-08-06) explique pourquoi ce bruit n'est plus jamais réapparu sur ~100 cycles depuis. Scan de tout l'historique git (`git log --all --diff-filter=A`) pour tout fichier `.env`/secret/credential/`.pem`/`.key` jamais committé -- aucun résultat, historique propre. `Cargo.toml`/`package.json` : versionnage standard, rien d'anormal. Vérification d'existence de tous les fichiers référencés par `tauri.conf.json` (5 icônes + 6 ressources de paquetage) -- tous présents (déjà implicitement confirmé par le succès du build v0.25.74, mais vérifié explicitement). `build.rs` trivial, boilerplate Tauri standard.
+
+Aucun changement de code. Négatif, mais couverture désormais étendue à l'hygiène du dépôt lui-même (au-delà du seul code applicatif).
+
+Éléments en attente inchangés. 103 cycles cumulés 110-212.
