@@ -93,6 +93,39 @@ describe("NetworkPage", () => {
     expect(wrapper.text()).not.toContain("n'est pas installé");
   });
 
+  it("renders every image as a distinct row when two tags point to the same image id", async () => {
+    // `docker images` lists one row per repository:tag, not per unique
+    // image -- tagging the same image twice (e.g. `docker tag app:latest
+    // app:v1.0`, routine after any build) produces two rows sharing the
+    // identical `ID`. Keying the v-for on `i.id` alone is not guaranteed
+    // unique against this real, everyday data shape.
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") {
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n" });
+      }
+      if (cmd === "get_docker_snapshot") {
+        return Promise.resolve({
+          available: true,
+          installed: true,
+          error: null,
+          containers: [],
+          images: [
+            { id: "sha256:abc123", repository: "myapp", tag: "latest", size: "142MB" },
+            { id: "sha256:abc123", repository: "myapp", tag: "v1.0", size: "142MB" },
+          ],
+        });
+      }
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("get_docker_snapshot"));
+    const dockerTab = wrapper.findAll("button").find((b) => b.text() === "Docker")!;
+    await dockerTab.trigger("click");
+    expect(wrapper.text()).toContain("myapp:latest");
+    expect(wrapper.text()).toContain("myapp:v1.0");
+  });
+
   it("calls write_hosts_file with the edited content on save", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     const wrapper = mount(NetworkPage);
