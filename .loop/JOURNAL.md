@@ -1675,3 +1675,11 @@ Version 0.25.72 → 0.25.73. Commit `7f9dd6e`, poussé sur `origin/master`.
 **`report.rs` désormais audité champ par champ pour la parité entre les 4 formats -- plus aucun gap restant** (JSON sérialise la structure complète par construction ; TXT/Markdown/HTML couvrent maintenant identiquement Système/Capteurs/PCI/Pilotes/Disques/Utilisation disque/Réseau/Pare-feu/Mises à jour).
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). **36 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (82 cycles cumulés 110-191).
+
+[2026-08-07T06:51:00+02:00] Cycle 192 : `disk_write.rs` relue intégralement -- fichier le plus critique de l'app (format/extend/clone), déjà exceptionnellement durci (validation de forme de device sd/vd/nvme/mmcblk/loop, pièges `.contains()` vacueux déjà corrigés et testés). `disks.rs` relue -- propre. `packages/mod.rs` + agrégation `lib.rs::list_updates`/`aggregate_update_results`/`combine_native_and_universal` relues -- design "chaque source dégrade indépendamment" déjà cohérent et bien testé (cycle 165).
+
+`dnf.rs` relue -- gestion du code retour 100 (dnf) déjà correcte, aucun appel `LC_ALL=C`, mais `parse_dnf_line` ne dépend d'aucun mot-clé anglais fixe (contrairement à `apt.rs`) donc pas exposé au même risque de localisation -- de toute façon non testable en direct, `dnf` absent de la VM de dev Debian (limitation déjà documentée et acceptée depuis le cycle 176).
+
+Aucun changement de code. 1er cycle négatif d'une nouvelle série (après 190-191 productifs) -- le cœur des modules Rust les plus sensibles (écriture disque, agrégation paquets) est maintenant très largement audité et mûr.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). 36 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (83 cycles cumulés 110-192).
