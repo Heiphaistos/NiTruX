@@ -2245,3 +2245,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 161 cycles cumulés 110-270.
+
+[2026-08-07T17:44:00+02:00] Cycle 271 : nouvelle technique de vérification jamais appliquée cette session -- calcul du ratio de contraste WCAG (formule officielle relative luminance/contrast ratio, script Python jetable) pour `textPrimary`/`textSecondary` contre `bgBase` sur les 13 thèmes intégrés. La campagne a11y des cycles 127-130 avait couvert les labels ARIA/navigation clavier des composants, jamais le contraste réel des couleurs de thème elles-mêmes. Résultat : les 13 thèmes respectent WCAG AA (`textPrimary` ≥ 4.5:1, `textSecondary` ≥ 3.0:1) sans exception -- pire cas `one-dark` (6.57:1 / 3.98:1) et `everforest` (7.38:1 / 5.55:1), tous deux confortablement au-dessus des minimums.
+
+Aucun bug trouvé. Négatif, mais vérification d'accessibilité réelle jamais faite jusqu'ici sur les couleurs de thème elles-mêmes plutôt que sur la structure des composants.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 162 cycles cumulés 110-271.
