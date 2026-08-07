@@ -2159,3 +2159,9 @@ Aucun bug trouvé. Négatif, mais re-vérification systématique précieuse d'un
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 147 cycles cumulés 110-256.
+
+[2026-08-07T15:52:00+02:00] Cycle 257 : `system.rs` (jamais lu en entier, `build_snapshot`/`get_system_snapshot` référencés partout ce cycle) : explique le "1 ignored" systématiquement vu dans les résultats `cargo test` -- un test de régression du bug historique "CPU toujours à ~0%" volontairement marqué `#[ignore]` car sensible au timing (nécessite un vrai delta de rafraîchissement mesurable), à lancer manuellement via `--ignored`. `DashboardPage.vue` (jamais lue, page d'accueil par défaut de l'app -- la plus visible de toutes) : confirme le pattern de clé composite `${t.label}-${i}` (cycle 180), confirme le partage volontaire de `SensorSnapshot` entre `DashboardPage`/`TemperaturesPage` (cycle 253), les 5 cibles de `QUICK_ACTIONS` (diagnostic/quick-install/updates/troubleshoot/report-generator) toutes des ids de navigation réels (cohérent avec le cross-check exhaustif du cycle 230).
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 148 cycles cumulés 110-257.
