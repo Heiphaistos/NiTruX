@@ -2119,3 +2119,9 @@ Aucun autre bug de ce type trouvé. Négatif, mais confirmation systématique qu
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 141 cycles cumulés 110-250.
+
+[2026-08-07T15:04:00+02:00] Cycle 251 : `TroubleshootPage.vue` (jamais lue, frontend de `security_write.rs::run_troubleshoot_action` déjà lu au cycle 228) : les 4 actions exposées (`fix-broken`/`restart-network`/`clean-cache`/`vacuum-logs`) correspondent exactement à `validate_troubleshoot_action`, aucune dérive. `UpdateHistoryPage.vue` (jamais lue, backend `update_history.rs` déjà lu au cycle 226) : confirme que le correctif de clé composite `${e.start_date}-${i}` du cycle 186 est toujours en place.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 142 cycles cumulés 110-251.
