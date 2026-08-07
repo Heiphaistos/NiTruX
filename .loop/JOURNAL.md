@@ -1473,3 +1473,15 @@ Aucun changement de code ce cycle -- 1er cycle négatif après une série produc
 Aucun changement de code ce cycle -- 2e cycle négatif consécutif (173-174), plusieurs pistes réelles explorées et honnêtement écartées faute de preuve suffisante ou de pattern de référence à mirroiter.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + `UpdatesPage`/`PackagesPage` bouton Vérifier non désactivé pendant mise à jour (cycle 174, sévérité faible, non retenu). 25 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (65 cycles cumulés 110-174).
+
+[2026-08-07T03:33:00+02:00] Cycle 175 : audit systématique du système de theming/style/layout complet (variables CSS, cohérence visuelle entre les 8 dispositions, orchestration `LayoutShell.vue`) -- déclenché proactivement en anticipation du seuil des 3 cycles négatifs consécutifs plutôt que d'attendre.
+
+- Extraction exhaustive (`find src -name "*.vue" -o -name "*.css" | xargs grep`) de toutes les 18 variables CSS `--nx-*` réellement consommées dans le code -- confirmé que `style-tokens.css` définit bien les 7 propriétés `--nx-style-*` pour chacun des 12 styles (déjà vérifié cycle 141, reconfirmé). `--nx-accent-secondary` et `--nx-bg-overlay` (théoriquement "orphelins" selon un premier grep incomplet limité aux `.vue`) confirmés bien utilisés une fois les fichiers `.css` inclus dans la recherche -- fausse alerte de méthodologie de recherche, pas un bug.
+- `CommandFirstLayout.vue`/`FloatingDockLayout.vue` n'utilisent pas la classe `.nx-nav` partagée par les 6 autres dispositions -- vérifié que c'est intentionnel : ces deux dispositions ont des concepts visuels distincts (barre de commande flottante centrée, dock flottant en bas d'écran) avec leur propre classe et fond dédiés (`.nx-command-bar`/`.nx-dock`), pas un oubli de cohérence.
+- `LayoutShell.vue` relu intégralement -- déjà correctement défensif (fallback `?? SidebarClassicLayout` documenté pour un id de disposition invalide/périmé).
+
+Aucun changement de code ce cycle -- 3e cycle négatif consécutif (173-175), seuil de la règle du projet atteint. Les trois cycles ont exploré des angles réellement distincts (numérique/IPC, concurrence UI, système de theming complet), pas des sweeps redondants -- signal probable que la surface facilement auditable du projet reste très largement saine après 175 cycles cumulés (comme déjà noté à un seuil similaire au cycle 123).
+
+**Prochain cycle : reprendre explicitement un audit page-par-page/module-par-module classique** conformément à la règle du projet, plutôt qu'un nouveau pattern transversal.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). 25 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (66 cycles cumulés 110-175).
