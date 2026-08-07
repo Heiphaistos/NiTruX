@@ -1811,3 +1811,11 @@ Aucun changement de code fonctionnel -- mise à jour de documentation interne au
 Aucun changement de code. Négatif.
 
 Éléments en attente inchangés. 36 correctifs fonctionnels + 2 cleanups cosmétiques toujours en attente d'une release publiée depuis v0.25.24 (101 cycles cumulés 110-210).
+
+[2026-08-07T09:36:00+02:00] **Hors cycle régulier -- RELEASE PUBLIÉE** : l'utilisateur a explicitement demandé la publication ("publie la nouvelle release avec toute les nouvelle modification"). `npm run tauri build` (WSL2) → 3 bundles générés sans erreur (deb/rpm/AppImage, ~1min30 de build), tag annoté `v0.25.74` poussé, release GitHub créée avec les 3 assets + notes organisées par catégorie (faille apt en tête, puis sécurité/fiabilité/ergonomie/interne). **Les 36 correctifs fonctionnels + 2 cleanups cosmétiques accumulés depuis v0.25.24 sont désormais tous dans une release publiée.** Mémoire projet mise à jour en conséquence.
+
+[2026-08-07T09:44:00+02:00] Cycle 211 : `subprocess.rs` (module partagé le plus central de l'app, jamais relu en entier cette session malgré son usage omniprésent) relu intégralement -- déjà exceptionnellement mûr (kill-on-timeout vérifié par test avec assertion de délai, distinction stdout/stderr déjà correcte). `nitrux-postrm-cleanup.sh` (jamais lu cette session) relu intégralement -- logique deb purge/rpm count=0 correcte, portée de suppression strictement scopée à `~/.local/share/org.heiphaistos.nitrux` par utilisateur réel. **Vérification supplémentaire liée à la release fraîchement publiée** : comparaison binaire du script `postrm` réellement empaqueté dans le `.deb` v0.25.74 tout juste construit contre le fichier source -- identiques, confirmant qu'aucune dérive de build ne s'est glissée dans le paquet publié.
+
+Aucun changement de code. Négatif, mais avec une vérification post-release rassurante en prime.
+
+Éléments en attente inchangés (mêmes 4 items non bloquants + doublons de catalogue signalés). **v0.25.74 publiée -- plus aucun correctif en attente de release.** 102 cycles cumulés 110-211.

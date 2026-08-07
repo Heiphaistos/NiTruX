@@ -456,3 +456,11 @@ Cette section consolide les cycles 161-208 (JOURNAL.md en garde le détail entr�
 **À ce stade, la quasi-totalité du code source lisible de l'app a été auditée au moins une fois** durant cette session étendue (110-208) : les 40 pages Vue, tous les composants UI partagés, les 8 layouts, tous les stores Pinia, la quasi-totalité des modules Rust (y compris le script pkexec et les policies polkit), les registres de données et leurs types. Plateau de maturité très profond.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu, UpdatesPage/PackagesPage) + timeout `run_pkexec_with_stdin` (cycle 193, hors périmètre documenté dans le code) + 9 doublons de catalogue signalés pour curation (cycles 201-202, non bloquants). **36 correctifs fonctionnels + 2 cleanups cosmétiques désormais en attente d'une release publiée** depuis v0.25.24 (99 cycles cumulés 110-208) -- **recommandation de coupure de release maintenue au niveau maximal**, backlog important et plateau de maturité atteint.
+
+## Mise à jour (2026-08-07, v0.25.74, cycle 211) — RELEASE PUBLIÉE, backlog livré
+
+**Utilisateur a explicitement demandé la publication** ("publie la nouvelle release avec toute les nouvelle modification") entre les cycles 210 et 211. `npm run tauri build` (WSL2) → 3 bundles (deb/rpm/AppImage) générés sans erreur. Tag annoté `v0.25.74` + release GitHub créée avec les 3 assets et des notes organisées par catégorie (faille apt en tête). Vérification post-build : script `postrm` empaqueté dans le `.deb` comparé binairement au fichier source -- identiques, aucune dérive.
+
+**Les 36 correctifs fonctionnels + 2 cleanups cosmétiques accumulés depuis v0.25.24 sont désormais tous dans une release publiée. Plus aucun backlog de correctifs non livrés.** La recommandation de coupure de release répétée depuis le cycle 160 est close.
+
+Éléments en attente inchangés (non bloquants, statut identique) : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu) + timeout `run_pkexec_with_stdin` (cycle 193, hors périmètre) + 9 doublons de catalogue signalés pour curation (cycles 201-202). 102 cycles cumulés 110-211 depuis la reprise.
