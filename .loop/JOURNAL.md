@@ -1753,3 +1753,9 @@ Sweep transversal sur `src/data/appCatalog.ts` (502 entrées) : script Node comp
 **Signalé pour révision humaine future du catalogue**, mais pas corrigé ce cycle. Aucun changement de code fonctionnel.
 
 Éléments en attente inchangés + nouveau signalement : 6 doublons de paquet réel dans `appCatalog.ts` sous des `id` catalogue différents (cycle 201, décision de curation éditoriale requise, pas un bug). 36 correctifs fonctionnels + 2 cleanups cosmétiques toujours en attente d'une release publiée depuis v0.25.24 (92 cycles cumulés 110-201).
+
+[2026-08-07T08:24:00+02:00] Cycle 202 : même sweep transversal appliqué à `systemToolsCatalog.ts` (506 entrées) -- **3 paires de commandes strictement identiques sous des `id` différents** : `nproc`/`cpu-count-online` (les deux `nproc`), `loadavg`/`watch-load-once` (les deux `cat /proc/loadavg`), `localectl`/`localectl-status-full` (les deux `localectl status`). Contrairement aux 6 doublons de `appCatalog.ts` (catégories/framings différents pouvant justifier une double entrée), ceux-ci sont dans des catégories proches (diagnostics/performance) avec une différenciation quasi nulle -- clutter catalogue plus net, mais même raisonnement appliqué : ce sont des commandes en lecture seule inoffensives (aucun risque fonctionnel/sécurité), et supprimer/fusionner des entrées catalogue reste une décision de curation éditoriale, pas un correctif de bug. Non modifié, même discipline que le cycle 201.
+
+Aucun changement de code. Balayage des deux gros catalogues de données (`appCatalog.ts`, `systemToolsCatalog.ts`) désormais complet pour ce pattern de doublon.
+
+Éléments en attente inchangés + nouveau signalement : 3 doublons de commande dans `systemToolsCatalog.ts` (cycle 202, même statut que les 6 de `appCatalog.ts`). 36 correctifs fonctionnels + 2 cleanups cosmétiques toujours en attente d'une release publiée depuis v0.25.24 (93 cycles cumulés 110-202).
