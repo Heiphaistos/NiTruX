@@ -2151,3 +2151,11 @@ Aucun bug trouvé. Négatif. **Couche `src/components/ui/` désormais entièreme
 Aucun bug trouvé. Négatif, mais re-vérification systématique précieuse d'un invariant global de l'application.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 146 cycles cumulés 110-255.
+
+[2026-08-07T15:44:00+02:00] Cycle 256 : `main.rs` (trivial, point d'entrée). `portscan.rs` (jamais lu, site du bug u16 du cycle 172) : déjà borné (`MAX_PORTS_PER_SCAN = 200`), propre. `system_tools.rs` (jamais lu) : allowlist fermée de 7 actions, dont `apt-autoremove` -- **exactement l'élément mentionné dans le texte d'exemple répété du déclencheur de boucle** ("exit-code apt-autoremove masqué côté script pkexec partagé"). Vérification dans `nitrux-pkexec-helper` : **déjà corrigé** (daté 2026-08-06, reproduit en direct avec un faux `apt-get` substitué via PATH) -- l'ancien code `if cmd; then ...; fi` en chaîne sans `else` retournait toujours l'exit code 0 sur un système n'ayant qu'UN SEUL des 3 gestionnaires (le cas normal, apt sur Debian), masquant un vrai échec `apt-get autoremove` comme un succès 100% du temps. Corrigé en capturant explicitement le code de sortie du gestionnaire qui s'exécute réellement.
+
+**Confirmation définitive** : les deux éléments d'exemple du texte répété du déclencheur de boucle ("gap validation quarantine-file accepte /" confirmé fixé au cycle 228, "exit-code apt-autoremove masqué" confirmé fixé ici) sont désormais TOUS LES DEUX vérifiés comme du texte d'exemple périmé, pas des suspects actifs -- plus aucune raison de les revérifier à chaque cycle futur.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 147 cycles cumulés 110-256.
