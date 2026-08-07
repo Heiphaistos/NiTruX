@@ -26,6 +26,31 @@ describe("scriptsStore", () => {
     expect(store.scripts.map((s) => s.name)).toEqual(["B"]);
   });
 
+  it("falls back to an empty list instead of loading malformed persisted entries", () => {
+    // themeStore.ts::readPersistedTheme/readPersistedCustomThemes and
+    // preferencesStore.ts::isPreferences both strictly validate every
+    // parsed field before accepting persisted JSON, falling back to a safe
+    // default on anything malformed. readPersistedScripts only checked
+    // `Array.isArray(parsed)`, then cast the contents straight to
+    // SavedScript[] with no per-item field validation -- a corrupted or
+    // stale-schema localStorage entry (e.g. missing `name`) would flow
+    // straight into ScriptsPage.vue's `:key="s.name"` as `undefined`,
+    // breaking the store's own single identity guarantee that
+    // addScript/removeScript rely on.
+    localStorage.setItem("nitrux-scripts", JSON.stringify([{ foo: "bar" }, { name: 42, content: "echo x" }]));
+    const store = useScriptsStore();
+    expect(store.scripts).toEqual([]);
+  });
+
+  it("keeps only the well-formed entries from a persisted list that mixes valid and malformed scripts", () => {
+    localStorage.setItem(
+      "nitrux-scripts",
+      JSON.stringify([{ name: "valid", content: "echo ok" }, { name: "bad" }, { content: "no name here" }]),
+    );
+    const store = useScriptsStore();
+    expect(store.scripts).toEqual([{ name: "valid", content: "echo ok" }]);
+  });
+
   it("rejects adding a script whose name is already taken, instead of silently creating a duplicate", () => {
     // Without this guard, two scripts could share a name -- removeScript
     // filters by name, so deleting either one would silently delete BOTH
