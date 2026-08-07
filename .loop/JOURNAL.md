@@ -1683,3 +1683,11 @@ Version 0.25.72 → 0.25.73. Commit `7f9dd6e`, poussé sur `origin/master`.
 Aucun changement de code. 1er cycle négatif d'une nouvelle série (après 190-191 productifs) -- le cœur des modules Rust les plus sensibles (écriture disque, agrégation paquets) est maintenant très largement audité et mûr.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). 36 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (83 cycles cumulés 110-192).
+
+[2026-08-07T07:00:00+02:00] Cycle 193 : `network_write.rs`/`terminal.rs`/`boot_manager.rs`/`accounts.rs`/`secure_temp.rs` relues intégralement. Toutes déjà exceptionnellement mûres : `terminal.rs` a des tests PTY réels (vrai shell spawné, vrai kill de process vérifié via `/proc/<pid>`) ; `secure_temp.rs` protège déjà contre TOCTOU/symlink avec tests dédiés ; `boot_manager.rs`/`accounts.rs` propres avec simplifications déjà documentées comme délibérées.
+
+Point relevé mais non retenu : `network_write.rs::run_pkexec_with_stdin` a un paramètre `_timeout` explicitement non utilisé (pas de watchdog kill-on-expiry contrairement à `subprocess::run_with_timeout`) -- mais ce gap est déjà documenté dans le code lui-même comme une limitation connue et volontairement hors périmètre ("a reasonable future improvement, not something this task builds"), pas un oubli silencieux. Respecté comme frontière de scope déjà consciente, cohérent avec la discipline du projet de ne pas re-décider unilatéralement un compromis déjà tranché.
+
+Aucun changement de code. 2e cycle négatif consécutif (192-193) -- couverture Rust désormais très large et mûre sur l'ensemble des modules non-frontend.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu) + timeout `run_pkexec_with_stdin` (cycle 193, limitation déjà documentée, hors périmètre). 36 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (84 cycles cumulés 110-193).
