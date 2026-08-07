@@ -1595,3 +1595,11 @@ Version 0.25.67 → 0.25.68. Commit `be85570`, poussé sur `origin/master`.
 Aucun changement de code. 1er cycle négatif après une série productive, mais chaque page a été lue en entier avec un raisonnement explicite, pas un sweep superficiel.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). 31 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (75 cycles cumulés 110-184).
+
+[2026-08-07T05:28:00+02:00] Cycle 185 : audit page-par-page continué. `InstallProfilesPage.vue` relue intégralement -- propre, `selectedEntries` filtre déjà défensivement les `appId` non résolus, et `installProfiles.spec.ts` (trouvaille du cycle 136) garantit par test que chaque `appId` référencé existe réellement dans `appCatalog` et qu'aucun profil n'a de doublon interne.
+
+`DataRecoveryPage.vue` relue intégralement -- `busy` utilise déjà le pattern sûr `!== null` (pas le bug corrigé aux cycles 182-183). `trash.rs` relue en entier -- déjà exceptionnellement durcie (validation de nom, fallback EXDEV pour `move_path`, cleanup best-effort du `.trashinfo`), rien à ajouter. `HardwareDetailsPage.vue`/`DriversPage.vue`/`DiagnosticPage.vue` relues intégralement -- toutes propres, chaque clé `v-for` de ces trois pages (slot PCI, nom de module noyau) est structurellement garantie unique par sa source, contrairement aux cas déjà corrigés (WiFi/sockets/capteurs).
+
+Aucun changement de code. 2e cycle négatif consécutif (184-185), mais l'audit page-par-page reste la stratégie en cours (pas de sweep de pattern à interrompre) -- 9 fichiers/pages relus en entier ce cycle-ci et le précédent, tous mûrs et déjà bien couverts par les correctifs accumulés depuis le cycle 110.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). 31 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (76 cycles cumulés 110-185).
