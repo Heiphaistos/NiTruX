@@ -1521,3 +1521,15 @@ Version 0.25.63 → 0.25.64. Commit `6ea9389`, poussé sur `origin/master`.
 Aucun changement de code. 1er cycle négatif d'une nouvelle série (après 176-177 productifs) -- mais négatif au sens fort : ~15 sites vérifiés positivement contre le code Rust réel, pas une simple absence de piste.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). 27 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (69 cycles cumulés 110-178).
+
+[2026-08-07T04:30:00+02:00] Cycle 179 : audit page-par-page continué. `CleanerPage.vue` relue intégralement -- propre, actions "Vider le cache"/"Purger les journaux" correctement non-destructives (pas de type-to-confirm requis, cohérent avec le pattern établi qui réserve cette protection aux actions vraiment irréversibles). En creusant `security_write.rs` derrière cette page, **constaté que le gap `quarantine-file` accepte `/` cité dans l'exemple du prompt de boucle est déjà corrigé côté Rust** (`validate_quarantine_path`, `path.trim_end_matches('/').is_empty()`, avec test dédié `rejects_the_filesystem_root`) -- correctif d'un cycle antérieur non encore répercuté dans le prompt de déclenchement (fixe, jamais mis à jour par le cron). Le script pkexec partagé lui-même reste non modifié (règle du projet : jamais sans re-test VM live).
+
+`PerfHistoryPage.vue`/`preferencesStore.ts::setDashboardRefreshIntervalMs` : store sans validation de bornes (accepterait 0/négatif/NaN), MAIS **non exploitable via l'UI réelle** -- `SettingsPreferencesPage.vue` n'expose ce réglage que via un `NxSelect` à 3 valeurs fixes (1000/2000/5000), jamais un champ texte libre. Pas de chemin utilisateur pour atteindre une valeur invalide -- écarté comme non reproductible, cohérent avec la discipline "jamais de correctif spéculatif".
+
+`OptimizationsPage.vue` relue intégralement -- propre, lecture seule, clé `v-for` sur noms de services systemd (garantis uniques par `systemctl`).
+
+Sweep complémentaire : recherche de tout nouveau `Number()`/`parseInt()` non gardé contre NaN dans `src/pages/` -- seules occurrences trouvées sont déjà les 2 déjà auditées et corrigées (`FileToolsPage.vue` minSizeMb, `NetworkPage.vue` port-scan, cycle 172) + le `Number()` de `SettingsPreferencesPage.vue` ci-dessus (non exploitable). Rien de nouveau.
+
+Aucun changement de code. 2e cycle négatif consécutif (178-179), mais chacun avec un focus distinct et une vérification réelle (pas un sweep redondant) -- le gap quarantine-file du prompt figé s'avère être un faux signal (déjà traité), pas une piste manquée.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). 27 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (70 cycles cumulés 110-179).
