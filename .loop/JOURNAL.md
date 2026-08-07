@@ -1361,3 +1361,17 @@ Vérification complète : `cargo test --lib tests::` 8/8 (module `lib.rs`), suit
 Version 0.25.56 → 0.25.57. Commit `7a09f44`, poussé sur `origin/master`.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). **20 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (56 cycles cumulés 110-165).
+
+[2026-08-07T02:16:00+02:00] Cycle 166 : généralisation directe du filon d'agrégation du cycle 165 -- `grep -n "extend("` sur tous les modules Rust pour trouver d'autres combinaisons de sources indépendantes. `processes.rs::get_scheduled_tasks` et `network.rs::get_network_snapshot`/`hardware_details.rs::get_hardware_details` vérifiés : tous déjà infaillibles par conception, chaque sous-source dégradant indépendamment (`.unwrap_or_default()`), aucun `?` propageant une erreur d'une source vers les autres -- pattern déjà correct.
+
+**2e bug d'agrégation trouvé, même famille exacte que le cycle 165** : `benchmark.rs::run_benchmark` calculait `cpu_hashes_per_sec` et `memory_bandwidth_gbps` avec succès, PUIS appelait `benchmark_disk(...)?` -- si le sous-benchmark disque échouait seul (dossier temporaire non inscriptible, disque plein), toute la fonction retournait `Err`, jetant les deux mesures déjà calculées avec succès. **Contredit directement la philosophie documentée dans le MÊME fichier** : le commentaire de `collect_disk_health` juste au-dessus dit explicitement "one unreadable disk must never hide results for the others, or for every other benchmark metric that already ran successfully" -- exactement ce que le `?` sur `benchmark_disk` violait.
+
+Reproduit par construction d'un scénario de test (logique pure, pas besoin d'un vrai échec disque). Corrigé : nouveau champ `disk_error: Option<String>` sur `BenchmarkResult`, nouvelle fonction pure testable `resolve_disk_benchmark` (miroir de `combine_native_and_universal` du cycle 165), `run_benchmark` devient infaillible par conception (mêmes rationale/doc-comment déjà établis pour `network.rs`/`docker.rs`/`hardware_details.rs`). `BenchmarkPage.vue` mise à jour : affiche CPU+mémoire même si le disque échoue, avec un message d'erreur disque distinct plutôt qu'un échec total. 2 nouveaux tests Rust + 1 nouveau test frontend de régression.
+
+Vérification complète : `cargo test --lib benchmark::` 9/9, suite complète 304/304 Rust (302→304, +2), `npx vitest run src/pages/BenchmarkPage.spec.ts` 7/7, suite complète 320/320 frontend (319→320, +1), `npx vue-tsc --noEmit` 0 erreur.
+
+Version 0.25.57 → 0.25.58. Commit `01511e5`, poussé sur `origin/master`.
+
+**Filon "agrégation multi-source, une erreur en masque une autre" : 2 bugs réels trouvés sur 2 cas positifs (list_updates cycle 165, run_benchmark cycle 166), le reste des candidats déjà vérifiés corrects.** Filon probablement clos, aucun autre candidat identifié par le grep `extend(`/patterns similaires.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). **21 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (57 cycles cumulés 110-166).
