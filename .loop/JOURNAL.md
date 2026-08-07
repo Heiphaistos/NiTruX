@@ -2201,3 +2201,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 154 cycles cumulés 110-263.
+
+[2026-08-07T16:48:00+02:00] Cycle 264 : `nitrux-postrm-cleanup.sh` lu en entier pour la première fois (jusqu'ici seulement vérifié byte-identique dans le `.deb` au cycle 211, jamais lu directement). Gère correctement la distinction `apt remove` (conserve les données) vs `apt purge` (les efface) côté dpkg, et l'argument entier rpm (0 = dernière version retirée) -- deux conventions différentes bien comprises et bien testées. Suppression de données scopée strictement au dossier `~/.local/share/org.heiphaistos.nitrux` de chaque utilisateur réel, jamais un chemin plus large, jamais une erreur si le dossier n'existe pas.
+
+Aucun bug trouvé. Négatif. Les deux scripts shell pkexec-adjacents (`nitrux-pkexec-helper` cycle 263, `nitrux-postrm-cleanup.sh` cycle 264) sont désormais tous les deux lus en entier au moins une fois cette session.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 155 cycles cumulés 110-264.
