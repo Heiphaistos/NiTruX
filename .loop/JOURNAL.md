@@ -2107,3 +2107,9 @@ Corrigé : les deux appels séparés en deux étapes indépendantes dans `onMoun
 Vérification complète : suite frontend 334/334 (+1), `cargo test` inchangé (changement frontend pur), `vue-tsc --noEmit` 0 erreur. Version 0.25.79 → 0.25.80. Commit `097b8d9`, poussé sur `origin/master`.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 139 cycles cumulés 110-248.
+
+[2026-08-07T14:48:00+02:00] Cycle 249 : généralisation du filon du cycle 248 -- recherche systématique (grep + script `awk` jetable) de tout autre bloc `try { ... }` d'une page Vue contenant 2+ appels `invoke` susceptibles d'être des sources de données réellement indépendantes couplées à tort. 19 pages avec `onMounted(async () => {...})` passées en revue : `NetworkPage.vue` (3 appels séquentiels, mais tous les 3 infaillibles côté Rust, donc aucun `try` nécessaire -- pas un oubli) ; toutes les autres n'ont qu'un seul appel par `try`. 4 blocs supplémentaires détectés avec 2-3 appels `invoke` dans un même `try` (`DisksPage.vue`, `InstallProfilesPage.vue`, `QuickInstallPage.vue`, `SystemToolsPage.vue`) -- tous vérifiés comme des dispatches à branchement (`if`/ternaire selon `installMethod`/`privilegedAction`) où un seul appel s'exécute réellement par invocation, pas des appels indépendants systématiquement couplés comme l'était le bug du cycle 248. `DisksPage.vue::loadDisks` (list_disks + list_disk_usage) reste le seul cas de deux appels réellement séquentiels dans un même `try`, mais les deux sont légitimement liés au même domaine (disques) -- pas la même catégorie de bug.
+
+Aucun autre bug de ce type trouvé. Négatif, mais confirmation systématique que le bug du cycle 248 était isolé plutôt qu'un pattern répété ailleurs.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 140 cycles cumulés 110-249.
