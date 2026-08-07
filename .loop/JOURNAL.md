@@ -1779,3 +1779,9 @@ Aucun changement de code. Le fichier pkexec le plus critique de l'app est désor
 Aucun changement de code. Négatif, mais dernière zone de fichiers jamais lus (policies polkit) désormais couverte.
 
 Éléments en attente inchangés. 36 correctifs fonctionnels + 2 cleanups cosmétiques toujours en attente d'une release publiée depuis v0.25.24 (96 cycles cumulés 110-205).
+
+[2026-08-07T08:56:00+02:00] Cycle 206 : nouvel angle -- `drivers.rs` (jamais lu cette session, seulement `DriversPage.vue` l'était) relue intégralement, déjà bien testée. Vérification de dérive entre interfaces TypeScript et structs Rust sérialisées (un décalage de champ ici échapperait à la vérification statique de `vue-tsc`, `invoke<T>()` faisant simplement un cast sans validation runtime) : `DeviceDriver`/`DriverSnapshot` (drivers.rs vs DriversPage.vue), `NetworkInterface` (network.rs vs NetworkPage.vue) -- tous identiques champ par champ, aucune dérive trouvée.
+
+Aucun changement de code. Négatif.
+
+Éléments en attente inchangés. 36 correctifs fonctionnels + 2 cleanups cosmétiques toujours en attente d'une release publiée depuis v0.25.24 (97 cycles cumulés 110-206).
