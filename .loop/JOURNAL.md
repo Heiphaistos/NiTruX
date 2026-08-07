@@ -1413,3 +1413,15 @@ Version 0.25.59 → 0.25.60. Commit `4e22428`, poussé sur `origin/master`.
 **Filon "liste de 100+ éléments sans filtre" désormais clos** : les 4 candidats identifiés (catalogues x3 + journaux) sont tous corrigés sur les cycles 168-169.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). **23 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (60 cycles cumulés 110-169).
+
+[2026-08-07T02:50:00+02:00] Cycle 170 : plusieurs pistes explorées, toutes écartées après examen honnête.
+
+1. **Filon "liste vide sans message" (historique, cycles 1-32) re-tenté** : grep sur toutes les pages pour `v-for` sans mention "empty"/"Aucun" -- 4 candidats (`BenchmarkPage`, `DashboardPage`, `ThemeEditorPage`, `TroubleshootPage`) tous vérifiés et écartés : soit la section entière est masquée si vide (`disk_health`), soit la liste itère sur une constante fixe qui ne peut structurellement jamais être vide (`QUICK_ACTIONS`, `TROUBLESHOOT_ACTIONS`, registres de thème/style/layout), soit c'est une page tableau de bord qui omet légitimement les sections vides plutôt que d'afficher un message par section (`DashboardPage`, cohérent avec l'UX attendue d'un dashboard).
+
+2. **Suppression de doublons/gros fichiers (`FileToolsPage.vue`)** : confirmé volontairement en lecture seule, aucune commande `delete_file` n'existe même côté backend -- une décision de périmètre délibérée du projet (pas un file manager), pas un oubli.
+
+3. **Support "Entrée pour valider" absent de toute l'app** (`grep -rln "keyup.enter\|@keydown.enter\|<form>"` = 0 résultat partout) -- **écarté explicitement** : contrairement aux correctifs des cycles 168-169 qui miroitaient un pattern DÉJÀ établi ailleurs dans l'app, ici aucune page n'a cette fonctionnalité -- l'ajouter serait introduire un nouveau paradigme d'interaction à l'échelle de toute l'application en un seul cycle, hors périmètre d'un correctif de 10 minutes mirroring un pattern existant.
+
+Aucun changement de code ce cycle -- 1er cycle négatif après une série productive (168-169), plusieurs pistes réelles explorées et honnêtement écartées plutôt que de forcer un correctif hors de portée raisonnable pour un seul cycle.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). 23 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (61 cycles cumulés 110-170).
