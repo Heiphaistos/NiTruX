@@ -2091,3 +2091,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. 137 cycles cumulés 110-246.
+
+[2026-08-07T14:32:00+02:00] Cycle 247 : `PeripheralsPage.vue` (frontend de `peripherals.rs`, déjà lu au cycle 226) et `BluetoothPage.vue` (frontend de `bluetooth.rs`, déjà lu au cycle 225), jamais vus. Les deux simples, cohérents avec leurs commandes Rust infaillibles respectives (pas de `try/catch` nécessaire, aucune n'a de type `Result`).
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. 138 cycles cumulés 110-247.
