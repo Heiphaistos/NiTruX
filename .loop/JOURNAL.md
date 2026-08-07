@@ -2013,3 +2013,9 @@ Aucun bug trouvé. Négatif -- 11e cycle négatif sur 12 (222-226, 228-233 ; cyc
 Aucun bug trouvé. Négatif -- 12e cycle négatif sur 13 (222-226, 228-234 ; cycle 227 seul positif).
 
 Éléments en attente inchangés. **4 correctifs accumulés depuis la release v0.25.74**. 125 cycles cumulés 110-234.
+
+[2026-08-07T12:56:00+02:00] Cycle 235 : `NetworkPage.vue` lue en entier pour la première fois (seuls des extraits `grep` avaient été vus au cycle 227) -- site du correctif `validate_port_proto` : confirmé que le champ `firewallPortProto` n'a aucune validation côté client (contrairement à `scanPortsInput`, filtré par `isValidPort` 0-65535 avant `invoke`), ce qui est exactement le flux que le correctif du cycle 227 protège désormais correctement côté Rust en amont du `pkexec`. `network.rs` (déjà dans la liste des 7 fichiers "reproduit en direct" du cycle 225, jamais lu en entier jusqu'ici) : parseur `nmcli -t` avec gestion correcte de l'échappement terse-mode (SSID contenant `:` ou `\`), parseur `ss -tulnp` positionnel (robuste à la colonne Netid réelle absente du format documenté), lecture `/proc/net/dev` avec test de régression capturé sur la vraie machine.
+
+Aucun bug trouvé. Négatif -- 13e cycle négatif sur 14 (222-226, 228-235 ; cycle 227 seul positif).
+
+Éléments en attente inchangés. **4 correctifs accumulés depuis la release v0.25.74**. 126 cycles cumulés 110-235.
