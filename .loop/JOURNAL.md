@@ -2299,3 +2299,9 @@ Aucun changement de code. Négatif au sens strict, mais confirmation exacte (pas
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 168 cycles cumulés 110-277.
+
+[2026-08-08T00:52:00+02:00] Cycle 278 : `report.rs::render_html` lu en entier pour la première fois (le générateur HTML dont la sortie est convertie en PDF par `printpdf`, dont le support CSS/HTML pourrait être limité par rapport à un vrai moteur de rendu -- angle de vérification jamais essayé). CSS utilisé extrêmement simple et portable (`font-family`/`max-width`/`margin`/`padding`/`border-collapse`/`border`/`color` uniquement, aucune fonctionnalité exotique type flexbox/grid/variables CSS), balises HTML toutes basiques (h1/h2/p/ul/li/table/tr/td/th/strong/em/br) -- largement dans les capacités de n'importe quel moteur HTML-vers-PDF, y compris `printpdf`. Tout le contenu dynamique/utilisateur passe systématiquement par `escape_html` (déjà confirmé ailleurs cette session), les champs numériques non échappés (pourcentages, compteurs) ne le nécessitent pas.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 169 cycles cumulés 110-278.
