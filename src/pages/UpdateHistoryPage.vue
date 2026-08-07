@@ -23,7 +23,7 @@ onMounted(async () => {
   <div class="uh-page">
     <NxSectionHeader title="Historique des mises à jour" description="Journal des installations et mises à jour passées." />
     <NxCard v-if="error" danger>{{ error }}</NxCard>
-    <NxCard v-for="e in entries ?? []" :key="e.start_date" class="uh-row">
+    <NxCard v-for="(e, i) in entries ?? []" :key="`${e.start_date}-${i}`" class="uh-row">
       <div class="uh-date">{{ e.start_date }}</div>
       <div class="uh-cmd">{{ e.commandline }}</div>
       <div class="uh-summary">{{ e.summary }}</div>
