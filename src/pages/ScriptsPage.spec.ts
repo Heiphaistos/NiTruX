@@ -39,6 +39,19 @@ describe("ScriptsPage", () => {
     expect(invoke).toHaveBeenCalledWith("run_script", { content: "echo hello" });
   });
 
+  it("rejects a whitespace-only script name instead of saving an unidentifiable entry", async () => {
+    // Regression guard for the actual gap: saveScript only checked
+    // `newName.value === ""`, which a whitespace-only name (e.g. "   ")
+    // passes -- the script would then save under an effectively blank,
+    // indistinguishable name in the list.
+    const wrapper = mount(ScriptsPage);
+    await wrapper.find("input[placeholder*='Nom']").setValue("   ");
+    await wrapper.find("textarea").setValue("echo hello");
+    const saveButton = wrapper.findAll("button").find((b) => b.text() === "Enregistrer")!;
+    await saveButton.trigger("click");
+    expect(wrapper.findAll(".scr-item")).toHaveLength(0);
+  });
+
   it("shows an error and keeps only the first script when saving a duplicate name", async () => {
     const wrapper = mount(ScriptsPage);
     await wrapper.find("input[placeholder*='Nom']").setValue("backup");
