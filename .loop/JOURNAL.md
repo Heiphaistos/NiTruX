@@ -1545,3 +1545,15 @@ Vérification complète : `npx vitest run TemperaturesPage.spec.ts` 3/3, suite c
 Version 0.25.64 → 0.25.65. Commit `27470c7`, poussé sur `origin/master`.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). **28 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (71 cycles cumulés 110-180).
+
+[2026-08-07T04:53:00+02:00] Cycle 181 : audit page-par-page continué. `TroubleshootPage.vue` relue intégralement -- propre, les 4 actions correspondent exactement au set validé par `security_write.rs`. `PackagesPage.vue` relue ensuite.
+
+**Vrai bug d'incohérence jumelle trouvé, sévérité notable** : `PackagesPage.vue` et `UpdatesPage.vue` sont des pages quasi-identiques pilotant le même flux `upgrade_all_packages` (commande privilégiée via pkexec, jusqu'à 30 min de timeout). `UpdatesPage.vue` protège déjà son bouton "Tout mettre à jour" avec `:disabled="upgrading || updates.length === 0"` -- `PackagesPage.vue` n'avait que `:disabled="upgrading"`, le bouton restant cliquable même pendant l'affichage du message "Aucune mise à jour disponible." juste au-dessus. Contrairement au bouton "Vérifier" écarté au cycle 174 (aucun pattern de référence clair), ici le pattern correct existe littéralement sur la page jumelle -- correction sans ambiguïté.
+
+**Reproduit EN DIRECT selon la discipline stricte** : test écrit vérifiant l'attribut `disabled` avec zéro mise à jour, confirmé échouant contre le code d'origine (`expected undefined to be defined`). Corrigé en miroir exact d'`UpdatesPage.vue`. En creusant plus loin, le test existant "re-fetches the update list after a successful upgrade-all" s'est mis à échouer après le correctif -- pas une régression du correctif lui-même, mais une race condition préexistante dans le test (il n'attendait que l'appel `list_updates`, pas que la liste résolue atteigne réellement le DOM) qui devenait visible maintenant que le bouton peut être désactivé pendant cette fenêtre : corrigé pour attendre l'apparition de "curl" dans le DOM avant de cliquer.
+
+Vérification complète : `npx vitest run PackagesPage.spec.ts UpdatesPage.spec.ts` 8/8 (5+3), suite complète 327/327 frontend (326→327, +1), `npx vue-tsc --noEmit` 0 erreur, `cargo test --lib` 305/305 Rust (sanity check, aucun fichier Rust modifié).
+
+Version 0.25.65 → 0.25.66. Commit `a30f458`, poussé sur `origin/master`.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). **29 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (72 cycles cumulés 110-181).
