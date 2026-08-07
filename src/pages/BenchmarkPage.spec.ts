@@ -7,6 +7,7 @@ vi.mock("@tauri-apps/api/core", () => ({
     cpu_hashes_per_sec: 500_000,
     disk_write_mbps: 320.5,
     disk_read_mbps: 480.2,
+    disk_error: null,
     memory_bandwidth_gbps: 12.4,
     cpu_frequency_mhz: 3600,
     disk_health: [
@@ -51,6 +52,7 @@ describe("BenchmarkPage", () => {
       cpu_hashes_per_sec: 1,
       disk_write_mbps: 1,
       disk_read_mbps: 1,
+      disk_error: null,
       memory_bandwidth_gbps: 1,
       cpu_frequency_mhz: 0,
       disk_health: [],
@@ -59,6 +61,32 @@ describe("BenchmarkPage", () => {
     const button = wrapper.findAll("button").find((b) => b.text() === "Lancer le benchmark")!;
     await button.trigger("click");
     await vi.waitFor(() => expect(wrapper.text()).toContain("inconnue"));
+  });
+
+  it("shows the CPU and memory results plus a disk error, instead of losing everything, when only the disk sub-benchmark fails", async () => {
+    // Regression guard for the actual bug: run_benchmark used to fail the
+    // whole command (a rejected invoke) the moment the disk sub-benchmark
+    // alone failed, discarding the CPU/memory measurements that had
+    // already succeeded. Now the backend degrades disk_write_mbps/
+    // disk_read_mbps to 0 with disk_error set, and the command itself
+    // never rejects for this reason.
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockResolvedValueOnce({
+      cpu_hashes_per_sec: 500_000,
+      disk_write_mbps: 0,
+      disk_read_mbps: 0,
+      disk_error: "disque plein",
+      memory_bandwidth_gbps: 12.4,
+      cpu_frequency_mhz: 3600,
+      disk_health: [],
+    });
+    const wrapper = mount(BenchmarkPage);
+    const button = wrapper.findAll("button").find((b) => b.text() === "Lancer le benchmark")!;
+    await button.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("disque plein"));
+    expect(wrapper.text()).toContain("500");
+    expect(wrapper.text()).toContain("12.4");
+    expect(wrapper.text()).not.toContain("Mo/s");
   });
 
   it("shows a caveat about the disk measurement possibly reflecting the OS cache rather than real disk throughput", async () => {

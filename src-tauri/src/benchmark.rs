@@ -21,6 +21,12 @@ pub struct BenchmarkResult {
     pub cpu_hashes_per_sec: u64,
     pub disk_write_mbps: f64,
     pub disk_read_mbps: f64,
+    /// The real reason `disk_write_mbps`/`disk_read_mbps` are `0.0`, when
+    /// the disk sub-benchmark itself failed (temp dir unwritable, disk
+    /// full, ...) rather than genuinely measuring zero throughput --
+    /// `None` on a normal successful run. See `resolve_disk_benchmark`'s
+    /// doc comment for why this exists.
+    pub disk_error: Option<String>,
     pub memory_bandwidth_gbps: f64,
     pub cpu_frequency_mhz: u64,
     pub disk_health: Vec<DiskHealthEntry>,
@@ -141,11 +147,30 @@ pub fn benchmark_disk(size_bytes: usize) -> Result<(f64, f64), String> {
     Ok((write_mbps, read_mbps))
 }
 
+/// Turns `benchmark_disk`'s outcome into the three `BenchmarkResult` fields
+/// it feeds, defaulting to `(0.0, 0.0, Some(reason))` on failure instead of
+/// propagating an error out of the whole benchmark. `run_benchmark` used to
+/// `?` straight through `benchmark_disk`'s `Result`, which discarded the
+/// CPU and memory benchmarks -- already measured successfully by that
+/// point -- the moment the disk sub-benchmark alone failed (temp dir
+/// unwritable, disk full, ...). Contradicts this same file's own
+/// documented "each source degrades independently" philosophy
+/// (`collect_disk_health`'s doc comment, right above), which already
+/// applied to per-disk SMART health but not to the disk throughput
+/// sub-benchmark itself. Extracted as a pure function so this is directly
+/// unit-testable without needing a real disk failure.
+fn resolve_disk_benchmark(result: Result<(f64, f64), String>) -> (f64, f64, Option<String>) {
+    match result {
+        Ok((write_mbps, read_mbps)) => (write_mbps, read_mbps, None),
+        Err(e) => (0.0, 0.0, Some(e)),
+    }
+}
+
 #[tauri::command]
-pub fn run_benchmark(state: tauri::State<Mutex<System>>) -> Result<BenchmarkResult, String> {
+pub fn run_benchmark(state: tauri::State<Mutex<System>>) -> BenchmarkResult {
     let cpu_hashes_per_sec = benchmark_cpu(Duration::from_millis(800));
     let memory_bandwidth_gbps = benchmark_memory(Duration::from_millis(500));
-    let (disk_write_mbps, disk_read_mbps) = benchmark_disk(50 * 1024 * 1024)?; // 50 MB
+    let (disk_write_mbps, disk_read_mbps, disk_error) = resolve_disk_benchmark(benchmark_disk(50 * 1024 * 1024)); // 50 MB
 
     let cpu_frequency_mhz = {
         let mut sys = state.lock().expect("system state mutex poisoned");
@@ -153,14 +178,15 @@ pub fn run_benchmark(state: tauri::State<Mutex<System>>) -> Result<BenchmarkResu
     };
     let disk_health = collect_disk_health(&disks::list_disks().unwrap_or_default());
 
-    Ok(BenchmarkResult {
+    BenchmarkResult {
         cpu_hashes_per_sec,
         disk_write_mbps,
         disk_read_mbps,
+        disk_error,
         memory_bandwidth_gbps,
         cpu_frequency_mhz,
         disk_health,
-    })
+    }
 }
 
 #[cfg(test)]
@@ -228,5 +254,27 @@ mod tests {
     #[test]
     fn collect_disk_health_returns_an_empty_vec_for_no_disks() {
         assert!(collect_disk_health(&[]).is_empty());
+    }
+
+    #[test]
+    fn resolve_disk_benchmark_passes_through_a_successful_measurement() {
+        let (write_mbps, read_mbps, err) = resolve_disk_benchmark(Ok((120.5, 340.2)));
+        assert_eq!(write_mbps, 120.5);
+        assert_eq!(read_mbps, 340.2);
+        assert_eq!(err, None);
+    }
+
+    #[test]
+    fn resolve_disk_benchmark_degrades_to_zero_with_a_reason_instead_of_losing_the_rest() {
+        // Regression guard for the actual bug: run_benchmark used to `?`
+        // straight through benchmark_disk's Result, discarding the
+        // already-successful CPU and memory measurements the moment the
+        // disk sub-benchmark alone failed. This must degrade to (0.0, 0.0,
+        // Some(reason)) instead, exactly like collect_disk_health already
+        // does per-disk.
+        let (write_mbps, read_mbps, err) = resolve_disk_benchmark(Err("disque plein".to_string()));
+        assert_eq!(write_mbps, 0.0);
+        assert_eq!(read_mbps, 0.0);
+        assert_eq!(err, Some("disque plein".to_string()));
     }
 }

@@ -12,6 +12,7 @@ interface BenchmarkResult {
   cpu_hashes_per_sec: number;
   disk_write_mbps: number;
   disk_read_mbps: number;
+  disk_error: string | null;
   memory_bandwidth_gbps: number;
   cpu_frequency_mhz: number;
   disk_health: DiskHealthEntry[];
@@ -53,12 +54,16 @@ async function run() {
     <div class="bench-grid" v-if="result">
       <NxCard><NxStatTile label="CPU (hachages/s)" :value="result.cpu_hashes_per_sec.toLocaleString('fr-FR')" /></NxCard>
       <NxCard><NxStatTile label="Fréquence CPU" :value="result.cpu_frequency_mhz > 0 ? `${(result.cpu_frequency_mhz / 1000).toFixed(2)} GHz` : 'inconnue'" /></NxCard>
-      <NxCard><NxStatTile label="Écriture disque" :value="`${result.disk_write_mbps.toFixed(1)} Mo/s`" /></NxCard>
-      <NxCard><NxStatTile label="Lecture disque" :value="`${result.disk_read_mbps.toFixed(1)} Mo/s`" /></NxCard>
+      <NxCard v-if="!result.disk_error"><NxStatTile label="Écriture disque" :value="`${result.disk_write_mbps.toFixed(1)} Mo/s`" /></NxCard>
+      <NxCard v-if="!result.disk_error"><NxStatTile label="Lecture disque" :value="`${result.disk_read_mbps.toFixed(1)} Mo/s`" /></NxCard>
       <NxCard><NxStatTile label="Bande passante mémoire" :value="`${result.memory_bandwidth_gbps.toFixed(1)} Go/s`" /></NxCard>
     </div>
 
-    <p v-if="result" class="bench-disk-caveat">
+    <NxCard v-if="result && result.disk_error" danger>
+      Le benchmark disque a échoué (les autres mesures ci-dessus restent valides) : {{ result.disk_error }}
+    </NxCard>
+
+    <p v-if="result && !result.disk_error" class="bench-disk-caveat">
       Note : l'écriture/lecture disque se fait sur un fichier temporaire sans vider le cache du système —
       la mesure de lecture peut donc refléter la bande passante mémoire (cache) plutôt que le disque physique,
       surtout sur HDD. Si le dossier temporaire est un tmpfs (RAM) sur ce système, l'écriture est concernée aussi.
