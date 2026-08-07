@@ -1737,3 +1737,9 @@ Version 0.25.73 → 0.25.74. Commit `c46b200`, poussé sur `origin/master`.
 Série négative rompue après 7 cycles (192-198), mais ce correctif est de sévérité cosmétique (comme le cleanup clippy du cycle 159), pas un vrai bug fonctionnel -- le compte des "36 correctifs fonctionnels + 1 cleanup cosmétique" devient donc 36 + 2 cleanups cosmétiques plutôt que 37 fonctionnels.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu) + timeout `run_pkexec_with_stdin` (cycle 193, hors périmètre). **36 correctifs fonctionnels + 2 cleanups cosmétiques désormais en attente d'une release publiée** depuis v0.25.24 (90 cycles cumulés 110-199).
+
+[2026-08-07T08:08:00+02:00] Cycle 200 (jalon) : 4 vérifications transversales complémentaires, toutes négatives mais réelles -- `cargo clippy --all-targets` (0 warning), `cargo audit` (0 vraie vulnérabilité, seulement 18 avertissements "unmaintained"/"unsound" sur les bindings GTK3 transitifs de Tauri Linux -- hors du contrôle de ce projet, propres à la stack Tauri elle-même), `npm audit` (0 vulnérabilité), grep `TODO|FIXME|XXX|HACK` sur tout le code source (0 résultat).
+
+Aucun changement de code. Après 90 cycles cumulés depuis la reprise (110-200) et un plateau de maturité désormais très profond sur l'ensemble du code source, de la sécurité des dépendances et de la qualité statique (clippy), la recommandation reste la même : couper une release pour livrer les 36 correctifs fonctionnels + 2 cleanups accumulés depuis v0.25.24.
+
+Éléments en attente inchangés. 36 correctifs fonctionnels + 2 cleanups cosmétiques toujours en attente d'une release publiée depuis v0.25.24 (91 cycles cumulés 110-200).
