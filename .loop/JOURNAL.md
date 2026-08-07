@@ -2047,3 +2047,9 @@ Aucun bug trouvé. Négatif -- 2e cycle négatif après le correctif du cycle 23
 Aucun bug trouvé. Négatif -- 3e cycle négatif après le correctif du cycle 236.
 
 Éléments en attente inchangés. **5 correctifs accumulés depuis la release v0.25.74**. 130 cycles cumulés 110-239.
+
+[2026-08-07T13:36:00+02:00] Cycle 240 : `AntivirusPage.vue` (frontend de `malwarescan.rs`, déjà lu au cycle 225) : quarantaine gardée par taper-pour-confirmer, cohérent. `trash.rs` (déjà dans la liste des 7 fichiers "reproduit en direct" du cycle 225, jamais lu en entier) : validation de `trashed_name` contre la traversée de chemin, décodage `.trashinfo` (`%20`), fallback `rename`→copie récursive pour `EXDEV` (trash et `/tmp` sur des systèmes de fichiers différents, confirmé en direct sur la VM), nettoyage best-effort du fichier `.trashinfo` après restauration (bug déjà trouvé et corrigé : un `unlink()` échouant sur le dossier `info/` en lecture seule ne doit pas faire échouer une restauration déjà réussie). `CleanerPage.vue`/`DataRecoveryPage.vue` (UI réelle de la corbeille, pas `CleanerPage.vue` qui ne gère que le cache) : suppression définitive gardée par taper-pour-confirmer, restauration sans garde (cohérent, réversible par nature).
+
+Aucun bug trouvé. Négatif -- 4e cycle négatif après le correctif du cycle 236.
+
+Éléments en attente inchangés. **5 correctifs accumulés depuis la release v0.25.74**. 131 cycles cumulés 110-240.
