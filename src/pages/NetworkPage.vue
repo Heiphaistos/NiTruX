@@ -235,7 +235,7 @@ async function runScan() {
         </div>
         <div v-if="docker.containers.length === 0" class="net-empty">Aucun conteneur.</div>
         <NxSectionHeader title="Images" />
-        <div v-for="i in docker.images" :key="i.id" class="net-row">
+        <div v-for="(i, ii) in docker.images" :key="`${i.id}-${ii}`" class="net-row">
           <span>{{ i.repository }}:{{ i.tag }}</span>
           <span>{{ i.size }}</span>
         </div>
