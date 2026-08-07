@@ -2305,3 +2305,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 169 cycles cumulés 110-278.
+
+[2026-08-08T01:00:00+02:00] Cycle 279 : suite du cycle 278 -- `render_txt`/`render_markdown` de `report.rs` lus en entier (jamais vus directement, seulement `render_html`/`render_pdf` jusqu'ici). Structure identique section par section aux deux autres formats, confirme que la parité des 4 formats (corrigée aux cycles 190-191 pour Capteurs/Utilisation disque) est désormais complète et cohérente partout. Point noté sans être traité comme un bug : `render_markdown` n'échappe pas le caractère `|` dans les cellules de tableau (nom de disque, description PCI, nom de paquet, règle pare-feu) -- pourrait théoriquement casser la mise en page d'un tableau Markdown si l'une de ces valeurs contenait un `|` littéral, mais aucune source réelle de ces champs (noms de périphériques, paquets système, règles ufw) n'a de raison plausible d'en contenir un -- pas de scénario de reproduction réaliste, donc pas chassé comme un vrai bug. Ceci clôt la lecture complète de `report.rs`.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 170 cycles cumulés 110-279.
