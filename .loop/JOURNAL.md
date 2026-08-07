@@ -2195,3 +2195,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 153 cycles cumulés 110-262.
+
+[2026-08-07T16:40:00+02:00] Cycle 263 : `nitrux-pkexec-helper` lu EN ENTIER pour la première fois cette session (415 lignes -- jusqu'ici seulement des fragments vus par grep). Fichier le plus à risque de toute la codebase (s'exécute en root). Lecture seule, aucune modification (règle absolue -- toucher ce fichier nécessiterait un re-test VM live). Confirmé : `validate_port_proto` côté shell (`case "$1" in [0-9]*/tcp|[0-9]*/udp)`) n'a toujours pas de borne 1-65535, exactement la même lacune que celle corrigée côté Rust au cycle 227 -- laissée intentionnellement non touchée à l'époque puisque le garde-fou Rust en amont ferme déjà le risque pratique depuis l'UI, cohérent. Point noté sans être un bug actionnable : `write-hosts`/`set-dns` ne re-valident que la TAILLE du contenu décodé (≥10/≥5 octets, contre l'écrasement accidentel du fichier), pas sa sémantique (présence de `localhost`/`nameserver`) comme le fait pourtant `network_write.rs` côté Rust -- en tension avec le principe affiché en tête de fichier ("re-validates everything itself"), mais la garde Rust en amont ferme déjà le risque pratique, et le risque résiduel (contenu syntaxiquement valide mais sémantiquement vide) est mineur comparé au vrai danger que la vérification de taille prévient (écrasement total du fichier). Reste des 415 lignes : validation de partition/disque/quarantaine/clonage déjà exceptionnellement documentée et durcie (`validate_partition_device`'s propre commentaire explique en détail pourquoi son pattern seul n'est pas suffisant et quelles deux couches de défense supplémentaires le rendent sûr).
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 154 cycles cumulés 110-263.
