@@ -62,6 +62,39 @@ describe("SystemToolsPage", () => {
     expect(wrapper.text()).toContain("Aucun outil ne correspond à cette recherche.");
   });
 
+  it("keeps a tool's button disabled while it is running, even after a different tool starts running too", async () => {
+    // `running` was a single ref holding at most one tool id -- clicking a
+    // second, different tool while the first is still in flight overwrites
+    // it, so the first tool's button re-evaluates `running === tool.id` to
+    // false and re-enables while genuinely still running (its own `finally`
+    // hasn't fired yet). A user could then click it again, invoking the
+    // same command a second time concurrently. Each tool's `outputs`/
+    // `errors` are already tracked per-id (Record<string, ...>); `running`
+    // must be too.
+    const { invoke } = await import("@tauri-apps/api/core");
+    let resolveFirst!: (v: string) => void;
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string, args?: Record<string, unknown>) => {
+      if (cmd === "run_script" && args?.content === "uname -a") {
+        return new Promise<string>((resolve) => { resolveFirst = resolve; });
+      }
+      if (cmd === "run_system_tool" && args?.action === "systemd-reload") {
+        return new Promise<string>(() => {}); // never resolves within this test
+      }
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(SystemToolsPage);
+    const firstCard = wrapper.findAll(".st-card").find((c) => c.text().includes("Informations noyau"))!;
+    await firstCard.find("button").trigger("click");
+    expect(firstCard.find("button").attributes("disabled")).toBeDefined();
+
+    const secondCard = wrapper.findAll(".st-card").find((c) => c.text().includes("Recharger systemd"))!;
+    await secondCard.find("button").trigger("click");
+
+    expect(firstCard.find("button").attributes("disabled")).toBeDefined();
+    resolveFirst("Linux DEV 6.12.0 x86_64");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Linux DEV 6.12.0 x86_64"));
+  });
+
   it("clears a previous run's stale output when a rerun of the same tool fails, instead of showing both at once", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string, args?: Record<string, unknown>) => {

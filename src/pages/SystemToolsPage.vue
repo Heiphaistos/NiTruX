@@ -24,7 +24,13 @@ const CATEGORY_LABELS: Record<SystemTool["category"], string> = {
 
 const activeCategory = ref<string>("all");
 const search = ref("");
-const running = ref<string | null>(null);
+// Per-tool, not a single shared id: a single ref would be overwritten by
+// whichever tool starts running most recently, so an earlier tool's
+// `finally` (which only knows its own id) could never reliably tell
+// whether it's still the one holding the "busy" slot -- clearing global
+// state that might now belong to a different, still-running tool. Tracked
+// per-id like `outputs`/`errors` already are.
+const running = ref<Record<string, boolean>>({});
 const outputs = ref<Record<string, string>>({});
 const errors = ref<Record<string, string>>({});
 
@@ -43,7 +49,7 @@ const filteredCatalog = computed<SystemTool[]>(() => {
 });
 
 async function runTool(tool: SystemTool) {
-  running.value = tool.id;
+  running.value = { ...running.value, [tool.id]: true };
   delete errors.value[tool.id];
   delete outputs.value[tool.id];
   try {
@@ -54,7 +60,8 @@ async function runTool(tool: SystemTool) {
   } catch (e) {
     errors.value = { ...errors.value, [tool.id]: String(e) };
   } finally {
-    running.value = null;
+    const { [tool.id]: _removed, ...rest } = running.value;
+    running.value = rest;
   }
 }
 </script>
@@ -84,8 +91,8 @@ async function runTool(tool: SystemTool) {
           <NxBadge v-if="tool.privilegedAction" status="warning">root</NxBadge>
         </div>
         <p class="st-desc">{{ tool.description }}</p>
-        <NxButton :disabled="running === tool.id" @click="runTool(tool)">
-          {{ running === tool.id ? "Exécution..." : "Exécuter" }}
+        <NxButton :disabled="running[tool.id] === true" @click="runTool(tool)">
+          {{ running[tool.id] === true ? "Exécution..." : "Exécuter" }}
         </NxButton>
         <pre v-if="outputs[tool.id]" class="st-output">{{ outputs[tool.id] }}</pre>
         <NxCard v-if="errors[tool.id]" danger class="st-error">{{ errors[tool.id] }}</NxCard>
