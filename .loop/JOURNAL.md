@@ -2143,3 +2143,11 @@ Aucun bug trouvé. Négatif. **Couverture des pages Vue frontend désormais quas
 Aucun bug trouvé. Négatif. **Couche `src/components/ui/` désormais entièrement couverte (9/9 fichiers, en comptant `NxStatTile.vue`/`NxQuickActionTile.vue` du cycle 230)** -- avec le backend Rust (2 bouclages complets), les layouts, les stores Pinia, et la quasi-totalité des pages Vue déjà couvertes, la session a maintenant audité directement la quasi-intégralité du code source lisible de l'application.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 145 cycles cumulés 110-254.
+
+[2026-08-07T15:36:00+02:00] Cycle 255 : `lib.rs` lu en entier pour la première fois cette session (précédemment seulement grep'é par fragments). `list_updates`/`aggregate_update_results`/`combine_native_and_universal` : logique d'agrégation multi-gestionnaires déjà très solide, 2 vrais bugs déjà trouvés et corrigés (un gestionnaire natif en échec ne doit ni masquer les mises à jour d'un autre gestionnaire natif réussi, ni masquer les mises à jour Flatpak/Snap indépendantes -- les deux couverts par des tests de régression dédiés).
+
+**Cross-check automatisé complet de la surface IPC** (script Python jetable) -- déjà fait une fois au cycle 208, ~50 cycles et de nombreux fichiers modifiés depuis, jamais re-vérifié depuis : 69 commandes enregistrées dans `generate_handler!` comparées à tous les appels `invoke()` du frontend (`.vue`+`.ts`) -- correspondance exacte, 0 écart dans les deux sens, confirmant qu'aucune dérive n'est apparue malgré tous les changements de cette session.
+
+Aucun bug trouvé. Négatif, mais re-vérification systématique précieuse d'un invariant global de l'application.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 146 cycles cumulés 110-255.
