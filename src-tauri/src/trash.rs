@@ -91,20 +91,42 @@ pub fn list_trash() -> Vec<TrashedItem> {
     items
 }
 
+/// Core of `restore_trash_item`, taking real filesystem paths directly so
+/// it's testable with isolated temp directories instead of the real,
+/// process-global `$HOME`-derived trash directory.
+///
+/// Info-file cleanup after a successful move is best-effort (`let _ =
+/// ...`), NOT `?`-propagated: `delete_trash_item_permanently` right below
+/// already treats the identical "remove the `.trashinfo` file" operation
+/// as best-effort, but this function used to `.map_err(...)? ` it instead
+/// -- turning a real, already-successful restore into a reported failure
+/// the moment metadata cleanup alone failed (e.g. the trash `info/`
+/// directory losing write permission, confirmed live: `unlink()` requires
+/// write access on the PARENT directory, not the target file, so this is
+/// independent of whatever let the file itself move successfully).
+/// `DataRecoveryPage.vue`'s `restore()` treats any `Err` identically --
+/// it would neither remove the item from the visible list nor tell the
+/// user their file was actually already safe at its original location,
+/// and a retry would then fail for a second, more confusing reason (the
+/// source no longer exists in Trash/files at all).
+fn restore_from_trash_paths(trashed_file_path: &std::path::Path, original_path: &std::path::Path, info_path: &std::path::Path) -> Result<(), String> {
+    if let Some(parent) = original_path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| format!("impossible de recréer le dossier d'origine : {e}"))?;
+    }
+    move_path(trashed_file_path, original_path).map_err(|e| format!("échec de la restauration : {e}"))?;
+    let _ = std::fs::remove_file(info_path);
+    Ok(())
+}
+
 #[tauri::command]
 pub fn restore_trash_item(trashed_name: String) -> Result<(), String> {
     validate_trashed_name(&trashed_name)?;
     let info_path = trash_dir().join("info").join(format!("{trashed_name}.trashinfo"));
     let content = std::fs::read_to_string(&info_path).map_err(|e| format!("élément introuvable dans la corbeille : {e}"))?;
     let (original_path, _) = parse_trashinfo(&content).ok_or("fichier .trashinfo invalide (Path= manquant)")?;
-
     let trashed_file_path = trash_dir().join("files").join(&trashed_name);
-    if let Some(parent) = std::path::Path::new(&original_path).parent() {
-        std::fs::create_dir_all(parent).map_err(|e| format!("impossible de recréer le dossier d'origine : {e}"))?;
-    }
-    move_path(&trashed_file_path, std::path::Path::new(&original_path)).map_err(|e| format!("échec de la restauration : {e}"))?;
-    std::fs::remove_file(&info_path).map_err(|e| format!("restauré, mais échec du nettoyage de la métadonnée : {e}"))?;
-    Ok(())
+
+    restore_from_trash_paths(&trashed_file_path, std::path::Path::new(&original_path), &info_path)
 }
 
 fn copy_recursive(from: &std::path::Path, to: &std::path::Path) -> std::io::Result<()> {
@@ -277,5 +299,45 @@ mod tests {
         assert!(!from.exists());
         assert_eq!(std::fs::read_to_string(to.join("nested/file.txt")).unwrap(), "content");
         let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn restore_from_trash_paths_succeeds_even_when_info_file_cleanup_fails() {
+        // Regression guard for the actual bug: reproduced live with a real
+        // chmod on the info/ directory (unlink() requires write access on
+        // the PARENT dir, not the target file, so this genuinely blocks
+        // removing the .trashinfo file independently of the file move,
+        // which uses a completely different directory). Before this fix,
+        // this exact scenario returned Err despite the file already being
+        // safely moved to its original location.
+        use std::os::unix::fs::PermissionsExt;
+
+        let base = std::env::temp_dir().join(format!("nitrux-trash-restore-cleanup-fail-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let info_dir = base.join("info");
+        let files_dir = base.join("files");
+        let dest_dir = base.join("restored");
+        std::fs::create_dir_all(&info_dir).unwrap();
+        std::fs::create_dir_all(&files_dir).unwrap();
+
+        let trashed_file_path = files_dir.join("report.pdf");
+        let info_path = info_dir.join("report.pdf.trashinfo");
+        let original_path = dest_dir.join("report.pdf");
+        std::fs::write(&trashed_file_path, b"real content").unwrap();
+        std::fs::write(&info_path, "[Trash Info]\nPath=doesn't matter here\n").unwrap();
+
+        // Remove write permission on info_dir itself: unlink() needs it on
+        // the PARENT to remove an entry, regardless of the file's own mode.
+        std::fs::set_permissions(&info_dir, std::fs::Permissions::from_mode(0o555)).unwrap();
+
+        let result = restore_from_trash_paths(&trashed_file_path, &original_path, &info_path);
+
+        // Cleanup before asserting, so a failed assertion doesn't leave a
+        // read-only directory behind for the next run to trip over.
+        std::fs::set_permissions(&info_dir, std::fs::Permissions::from_mode(0o755)).unwrap();
+        let cleanup_result = result.clone();
+        let _ = std::fs::remove_dir_all(&base);
+
+        assert!(cleanup_result.is_ok(), "a successful file move must not be reported as a failure just because metadata cleanup failed: {cleanup_result:?}");
     }
 }
