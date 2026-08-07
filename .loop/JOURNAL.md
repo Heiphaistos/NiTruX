@@ -2113,3 +2113,9 @@ Vérification complète : suite frontend 334/334 (+1), `cargo test` inchangé (c
 Aucun autre bug de ce type trouvé. Négatif, mais confirmation systématique que le bug du cycle 248 était isolé plutôt qu'un pattern répété ailleurs.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 140 cycles cumulés 110-249.
+
+[2026-08-07T14:56:00+02:00] Cycle 250 : `FileToolsPage.vue` (jamais lue, frontend de `duplicates.rs`/`largefiles.rs`/`hashcheck.rs` déjà lus aux cycles 224/226/228). 3 onglets (doublons/gros fichiers/vérif. hash) tous cohérents avec leurs commandes backend respectives. `minSizeMb` (champ texte libre, pas de garde `type="number"` au niveau DOM) déjà validé avec `Number.isFinite` + `>= 0` avant l'appel `invoke` -- confirme et referme le fil déjà mentionné dans le commentaire de `NetworkPage.vue::isValidPort` (même classe de garde-fou, cohérent). `:key="p"` sur les chemins d'un groupe de doublons sûr (chemins de fichiers réels, intrinsèquement uniques dans un système de fichiers).
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 141 cycles cumulés 110-250.
