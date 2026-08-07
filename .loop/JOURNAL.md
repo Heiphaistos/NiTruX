@@ -2029,3 +2029,9 @@ Corrigé : `parse_df_line` rejette désormais toute ligne dont la source ne comm
 Vérification complète : `cargo test` 310/310 (+1), suite frontend 333/333 (inchangée, changement Rust pur), `vue-tsc --noEmit` 0 erreur. Version 0.25.78 → 0.25.79. Commit `8f91a20`, poussé sur `origin/master`.
 
 Éléments en attente inchangés. **5 correctifs accumulés depuis la release v0.25.74** (index.html cycle 213, README.md cycle 214, PackagesPage.vue cycle 221, validate_port_proto cycle 227, list_disk_usage cycle 236). 127 cycles cumulés 110-236.
+
+[2026-08-07T13:12:00+02:00] Cycle 237 : `benchmark.rs`/`BenchmarkPage.vue` (jamais lus, filon disque productif au cycle 236 -- vérification par prudence si le même angle "pas de filtre" s'applique ici). Les deux déjà exceptionnellement durcis : `collect_disk_health` dégrade proprement par disque (santé `None` si `smartctl` indisponible, jamais de panic ni de disque manquant) ; `resolve_disk_benchmark` corrige un vrai bug déjà historique (propager `?` sur l'échec du sous-benchmark disque perdait les mesures CPU/mémoire déjà réussies -- désormais dégradé en `(0.0, 0.0, Some(raison))`) ; écriture/lecture via `secure_temp::create_exclusively_owner_only` (même protection anti-symlink que `pkexec_bootstrap.rs`) ; le frontend affiche même un avertissement honnête sur le biais tmpfs/cache de la mesure disque plutôt que de prétendre à une mesure parfaite.
+
+Aucun bug trouvé. Négatif -- 1er cycle négatif après le correctif du cycle 236.
+
+Éléments en attente inchangés. **5 correctifs accumulés depuis la release v0.25.74**. 128 cycles cumulés 110-237.
