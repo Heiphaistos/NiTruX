@@ -1909,3 +1909,11 @@ Vérification complète : suite frontend complète 333/333 (inchangée, changeme
 Version 0.25.76 → 0.25.77. Commit `a5e3c26`, poussé sur `origin/master`.
 
 Éléments en attente inchangés (dont `accentSecondary`, cycle 220). **3 correctifs accumulés depuis la release v0.25.74** (index.html cycle 213, README.md cycle 214, PackagesPage.vue cycle 221). 112 cycles cumulés 110-221.
+
+[2026-08-07T11:08:00+02:00] Cycle 222 : généralisation de la technique du cycle 221 (comparaison précise de pages jumelles) à deux patterns d'UI dupliqués indépendamment sur plusieurs pages plutôt qu'une seule paire. **Filtre par catégorie (chips)** : `QuickInstallPage`/`SystemToolsPage`/`InstallProfilesPage` -- CSS `.xx-chip`/`.xx-chip.active` identique octet pour octet sur les 3 pages, seule différence légitime `.ip-chips` ayant un `margin-bottom` supplémentaire (contexte de mise en page différent). Markup du bouton : `SystemToolsPage` a une logique d'affichage supplémentaire (`cat === "all" ? "Tout" : CATEGORY_LABELS[...]`) absente des deux autres -- vérifié JUSTIFIÉ, pas un oubli : son `categories` computed utilise l'id anglais interne "all" (nécessitant traduction), alors que les deux autres pages ont déjà "Tous" en français directement dans leur tableau de catégories.
+
+**Filtre texte (recherche)** : 5 implémentations indépendantes (`InstalledSoftwarePage`/`LogsPage`/`ProcessesPage`/`SystemToolsPage`/`UninstallerPage`) toutes utilisent `.toLowerCase().includes()` de façon cohérente -- aucune divergence de casse ou de champ recherché.
+
+Aucun changement de code. Négatif, mais deux patterns dupliqués sur 3 et 5 pages respectivement vérifiés exhaustivement cohérents plutôt qu'une simple relecture superficielle.
+
+Éléments en attente inchangés. 113 cycles cumulés 110-222.
