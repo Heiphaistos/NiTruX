@@ -2239,3 +2239,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 160 cycles cumulés 110-269.
+
+[2026-08-07T17:36:00+02:00] Cycle 270 : vérification du piège déjà documenté en mémoire projet ("npm lockfile mauvais OS") sur `package-lock.json`, jamais checké pour ce projet spécifiquement. Confirmé que les variantes optionnelles `linux-x64` (esbuild, rollup gnu/musl, tauri-cli gnu/musl) ET `win32-x64` (esbuild, rollup gnu/msvc, tauri-cli msvc) sont toutes deux déclarées dans le lockfile -- couverture multi-plateforme complète, cohérent avec le comportement npm standard pour `optionalDependencies` (indépendant de l'OS de la machine génératrice). Confirme empiriquement ce que les builds `npm run tauri build` déjà réussis plusieurs fois cette session (v0.25.74, v0.25.79) démontraient déjà indirectement : aucun problème de plateforme dans ce lockfile.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 161 cycles cumulés 110-270.
