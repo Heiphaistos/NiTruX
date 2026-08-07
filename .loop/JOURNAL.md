@@ -1451,3 +1451,17 @@ Vérification complète : `npx vitest run src/pages/NetworkPage.spec.ts` 9/9, su
 Version 0.25.61 → 0.25.62. Commit `92bf7cb`, poussé sur `origin/master`.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). **25 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (63 cycles cumulés 110-172).
+
+[2026-08-07T03:18:00+02:00] Cycle 173 : généralisation du filon "erreur IPC brute par valeur numérique non bornée" du cycle 172. Deux angles :
+
+1. **Types Tauri numériques restreints (u8/u16/u32) côté backend** : `grep` sur tous les `#[tauri::command]` -- seuls 3 candidats existent dans toute l'app (`get_recent_logs(limit: u32)`, `scan_ports_cmd(ports: Vec<u16>)`, `resize_terminal(rows: u16, cols: u16)`). Le premier est toujours appelé avec une constante codée en dur (`{ limit: 200 }`, jamais de saisie utilisateur). Le second est le bug déjà corrigé au cycle 172. Le troisième reçoit ses valeurs directement de l'état interne de xterm.js (`term.rows`/`term.cols`), jamais de texte tapé par l'utilisateur -- aucun risque.
+
+2. **`grep -rn "parseInt\|Number("` sur tout le frontend** : seulement 3 sites au total dans toute l'app. `FileToolsPage.vue` déjà protégé (historique). `NetworkPage.vue` corrigé ce cycle-ci (172). `SettingsPreferencesPage.vue::Number(value)` -- vérifié que `value` provient toujours d'un `<select>` à options fixes (`REFRESH_INTERVAL_OPTIONS`, jamais de texte libre), donc structurellement ne peut jamais produire `NaN` ni une valeur hors plage -- déjà explicitement documenté comme sûr par le commentaire existant dans `FileToolsPage.vue`.
+
+**Piste supplémentaire envisagée puis écartée** : `themeStore.ts::hasAllRequiredColors` valide la présence des clés de couleur d'un thème importé mais pas que les VALEURS soient des couleurs CSS valides -- vérifié par raisonnement que ce n'est PAS exploitable : `CSSStyleDeclaration.setProperty()` sur une variable CSS personnalisée accepte n'importe quelle chaîne sans l'interpréter comme HTML/JS (pas de vecteur XSS), et un navigateur ignore silencieusement une valeur CSS invalide sans planter -- dégradation cosmétique bénigne dans un cas d'usage marginal (édition manuelle d'un fichier de thème exporté), pas un bug confirmé avec un impact utilisateur réel observable.
+
+**Filon "conversion numérique non bornée" désormais clos** : les 3 sites `parseInt`/`Number()` du frontend entier sont tous vérifiés sûrs.
+
+Aucun changement de code ce cycle -- 1er cycle négatif après une série productive (171-172), plusieurs filons explorés jusqu'à épuisement plutôt que de forcer un correctif spéculatif sur une piste non confirmée.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). 25 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (64 cycles cumulés 110-173).
