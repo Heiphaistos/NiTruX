@@ -2251,3 +2251,13 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif, mais vérification d'accessibilité réelle jamais faite jusqu'ici sur les couleurs de thème elles-mêmes plutôt que sur la structure des composants.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 162 cycles cumulés 110-271.
+
+[2026-08-08T00:04:00+02:00] Cycle 272 : extension du filon du cycle 271 -- calcul du contraste WCAG du texte BLANC du bouton `.nx-button--danger` (`color: white` codé en dur dans `NxButton.vue`) contre `accentDanger` sur les 13 thèmes.
+
+**Vrai bug trouvé** : seuls 2 des 13 thèmes (`adwaita` 4.83:1, `solarized` 4.63:1) passent le minimum WCAG AA de 4.5:1 pour ce texte 13px. Les 11 autres échouent, plusieurs très largement en dessous même du seuil "grand texte" (3.0:1) : `catppuccin-mocha` 2.32:1, `tokyo-night` 2.65:1, `everforest` 2.74:1, `oled-noir` 2.77:1, `ayu` 2.86:1. C'est précisément la variante de bouton utilisée pour CHAQUE confirmation d'action destructrice de l'app (désinstaller, supprimer, formater, mettre en quarantaine...) -- un texte illisible y est plus grave que sur un bouton ordinaire.
+
+Recherche du meilleur remplacement fixe : testé noir pur (`#000000`, 12/13 passent, seul `adwaita` manque de peu à 4.35:1) contre `#1a1a1a` (déjà utilisé ailleurs dans la codebase par `PkexecIntegrationBanner.vue` pour le même genre de texte sombre-sur-couleur, mais seulement 10/13 passent ici) -- le noir pur l'emporte nettement. Corrigé : `.nx-button--danger` passe de `color: white` à `color: black`, avec le raisonnement de contraste documenté en commentaire pour éviter qu'un futur cycle ne le repasse en blanc sans vérifier. Aucune couleur de palette de thème touchée (authenticité des 13 thèmes nommés préservée) -- seule la couleur de texte du composant bouton, une décision purement interne à l'app, pas une valeur de palette empruntée à un thème tiers connu.
+
+Vérification complète : suite frontend 334/334 (inchangée, changement CSS pur, `NxButton.spec.ts` n'a pas d'assertion de couleur), `vue-tsc --noEmit` 0 erreur. Version 0.25.80 → 0.25.81. Commit `0adda86`, poussé sur `origin/master`.
+
+Éléments en attente inchangés. **2 correctifs accumulés depuis la release v0.25.79** (InstalledSoftwarePage.vue cycle 248, NxButton danger contrast cycle 272). 163 cycles cumulés 110-272.
