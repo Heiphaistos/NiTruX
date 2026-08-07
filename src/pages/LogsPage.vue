@@ -1,13 +1,25 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import NxCard from "@/components/ui/NxCard.vue";
+import NxInput from "@/components/ui/NxInput.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 
 interface LogEntry { priority: number; message: string; unit: string }
 
 const logs = ref<LogEntry[]>([]);
 const error = ref<string | null>(null);
+// 200 entries with no text filter is unusable to scan for one specific
+// event -- ProcessesPage/InstalledSoftwarePage/UninstallerPage all have
+// an NxInput filter for comparably-sized lists; mirrored here rather
+// than inventing a different mechanism for the same underlying gap.
+const logFilter = ref("");
+
+const filteredLogs = computed(() => {
+  const q = logFilter.value.toLowerCase();
+  if (q === "") return logs.value;
+  return logs.value.filter((log) => log.unit.toLowerCase().includes(q) || log.message.toLowerCase().includes(q));
+});
 
 function priorityClass(priority: number): string {
   if (priority <= 3) return "log-error";
@@ -31,9 +43,11 @@ onMounted(async () => {
     <NxCard v-if="error" danger>
       Impossible de récupérer les journaux système : {{ error }}
     </NxCard>
+    <NxInput v-if="logs.length" v-model="logFilter" placeholder="Filtrer par unité ou message..." aria-label="Filtrer les journaux" />
     <NxCard v-if="logs.length" class="logs-card">
+      <div v-if="filteredLogs.length === 0" class="logs-empty">Aucun journal ne correspond à ce filtre.</div>
       <div class="logs-list">
-        <div v-for="(log, i) in logs" :key="i" class="log-entry" :class="priorityClass(log.priority)">
+        <div v-for="(log, i) in filteredLogs" :key="i" class="log-entry" :class="priorityClass(log.priority)">
           <span class="log-unit">{{ log.unit }}</span>
           <span class="log-message">{{ log.message }}</span>
         </div>
