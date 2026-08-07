@@ -2177,3 +2177,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif, mais re-confirmation précieuse qu'aucun nouveau doublon de catalogue n'est apparu depuis le signalement initial.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 150 cycles cumulés 110-259.
+
+[2026-08-07T16:16:00+02:00] Cycle 260 : re-vérification des audits de dépendances (`npm audit`/`cargo audit`), tous deux basés sur des bases de vulnérabilités vivantes qui évoluent indépendamment du code -- dernière vérification remontant aux cycles 161-208, jamais relancée depuis malgré tous les correctifs accumulés depuis. `npm audit` : 0 vulnérabilité. `cargo audit` : 0 vraie vulnérabilité (sortie 0), 18 avertissements "unmaintained"/"unsound" sur des dépendances transitives (bindings GTK3 tirés par la pile Linux de Tauri elle-même, `bincode`/`proc-macro-error`/`unic-*` via d'autres dépendances transitives, `glib` 0.18.5 "unsound" RUSTSEC-2024-0429 sur un impl d'itérateur non exploité par ce projet) -- rien que ce projet ne contrôle directement, cohérent avec le constat déjà établi "0 vraie vulnérabilité".
+
+Aucun bug trouvé. Négatif, mais re-vérification de cadence précieuse d'un invariant qui peut changer sans aucune modification de code.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 151 cycles cumulés 110-260.
