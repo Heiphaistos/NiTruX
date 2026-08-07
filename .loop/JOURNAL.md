@@ -2007,3 +2007,9 @@ Aucun bug trouvé. Négatif -- 10e cycle négatif sur 11 (222-226, 228-232 ; cyc
 Aucun bug trouvé. Négatif -- 11e cycle négatif sur 12 (222-226, 228-233 ; cycle 227 seul positif).
 
 Éléments en attente inchangés. **4 correctifs accumulés depuis la release v0.25.74**. 124 cycles cumulés 110-233.
+
+[2026-08-07T12:48:00+02:00] Cycle 234 : `UninstallerPage.vue` (jamais lue en entier -- seule sa CSS `.unin-confirm-row` avait été comparée au cycle 223) : logique de confirmation taper-pour-valider correcte (bouton désactivé tant que `confirmText !== pkg.name`), retire le paquet de la liste locale après succès. `packages/install.rs` (backend partagé install/uninstall/upgrade-all, déjà porteur d'un commentaire "reproduit live" pour son exec path dédié par action pkexec) : allowlist de caractères stricte sur le nom de paquet, gestionnaire limité à apt/dnf/pacman/zypper, tout déjà testé contre l'injection shell. `packages/mod.rs` et `lib.rs::detect_native_manager` : vérifié que les deux utilisent bien la même convention "premier gestionnaire détecté" (`.first()`) sans dérive entre eux -- cohérent avec le propre commentaire du fichier qui l'affirme.
+
+Aucun bug trouvé. Négatif -- 12e cycle négatif sur 13 (222-226, 228-234 ; cycle 227 seul positif).
+
+Éléments en attente inchangés. **4 correctifs accumulés depuis la release v0.25.74**. 125 cycles cumulés 110-234.
