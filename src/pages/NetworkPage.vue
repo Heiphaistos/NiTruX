@@ -114,6 +114,19 @@ const scanResults = ref<PortResult[]>([]);
 const scanError = ref<string | null>(null);
 const scanning = ref(false);
 
+// The backend's `ports` parameter is a Vec<u16> -- a value outside 0-65535
+// (parseInt has no inherent range limit, unlike Number.isNaN alone
+// catching non-numeric/empty segments) fails Tauri IPC's own JSON
+// deserialization before scan_ports_cmd's body ever runs, surfacing a raw,
+// cryptic "invalid value: integer `99999`, expected u16" instead of a
+// message the user can act on -- the exact same class of bug already
+// documented and guarded against in FileToolsPage.vue's minSizeMb
+// validation, generalized here for a value going into an array instead of
+// a single field.
+function isValidPort(p: number): boolean {
+  return !Number.isNaN(p) && p >= 0 && p <= 65535;
+}
+
 async function runScan() {
   scanning.value = true;
   scanError.value = null;
@@ -121,7 +134,7 @@ async function runScan() {
     const ports = scanPortsInput.value
       .split(",")
       .map((p) => parseInt(p.trim(), 10))
-      .filter((p) => !Number.isNaN(p));
+      .filter(isValidPort);
     scanResults.value = await invoke<PortResult[]>("scan_ports_cmd", { host: scanHost.value, ports });
   } catch (e) {
     scanError.value = String(e);

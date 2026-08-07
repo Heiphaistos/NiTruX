@@ -176,4 +176,26 @@ describe("NetworkPage", () => {
     const portRows = wrapper.findAll(".net-row").filter((r) => r.text().includes("systemd-resolved"));
     expect(portRows.length).toBe(2);
   });
+
+  it("drops out-of-range port numbers before sending them, instead of crashing the scan on a raw IPC error", async () => {
+    // Regression guard for the actual bug: scan_ports_cmd's backend
+    // parameter is a Vec<u16> -- parseInt has no inherent range limit
+    // (unlike Number.isNaN alone, which only catches non-numeric/empty
+    // segments), so a value like 99999 or -5 typed into the comma-
+    // separated port list used to reach invoke() unfiltered and fail
+    // Tauri IPC's own JSON deserialization with a raw, cryptic error
+    // instead of the port simply being silently dropped from the scan.
+    const { invoke } = await import("@tauri-apps/api/core");
+    const wrapper = mount(NetworkPage);
+    await wrapper.findAll("button").find((b) => b.text() === "Scanner de ports")!.trigger("click");
+
+    const inputs = wrapper.findAll("input");
+    const portsInput = inputs[1]; // host input is inputs[0]
+    await portsInput.setValue("22,99999,-5,80,notanumber,65536");
+
+    const scanButton = wrapper.findAll("button").find((b) => b.text() === "Scanner")!;
+    await scanButton.trigger("click");
+
+    expect(invoke).toHaveBeenCalledWith("scan_ports_cmd", { host: "127.0.0.1", ports: [22, 80] });
+  });
 });
