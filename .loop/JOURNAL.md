@@ -1805,3 +1805,9 @@ Aucun changement de code. Négatif, mais ce filon (cohérence de la surface IPC 
 Aucun changement de code fonctionnel -- mise à jour de documentation interne au projet.
 
 Éléments en attente inchangés. 36 correctifs fonctionnels + 2 cleanups cosmétiques toujours en attente d'une release publiée depuis v0.25.24 (100 cycles cumulés 110-209).
+
+[2026-08-07T09:28:00+02:00] Cycle 210 : `main.ts`/`vite.config.ts`/`vitest.config.ts` relus, rien d'inhabituel. Cross-check bidirectionnel complet de la couverture de tests : les 40 pages Vue ont chacune un `.spec.ts` (aucune sans, aucun fichier orphelin) ; tous les modules `.rs` sauf `main.rs` (6 lignes, aucune logique) ont un bloc `#[cfg(test)]`. Discipline de test confirmée exhaustive sur toute la base.
+
+Aucun changement de code. Négatif.
+
+Éléments en attente inchangés. 36 correctifs fonctionnels + 2 cleanups cosmétiques toujours en attente d'une release publiée depuis v0.25.24 (101 cycles cumulés 110-210).
