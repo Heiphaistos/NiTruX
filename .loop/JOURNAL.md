@@ -2183,3 +2183,9 @@ Aucun bug trouvé. Négatif, mais re-confirmation précieuse qu'aucun nouveau do
 Aucun bug trouvé. Négatif, mais re-vérification de cadence précieuse d'un invariant qui peut changer sans aucune modification de code.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 151 cycles cumulés 110-260.
+
+[2026-08-07T16:24:00+02:00] Cycle 261 : suite de la vérification de cadence entamée au cycle 260. `cargo clippy --all-targets` relancé (dernière fois cycle 159/161-208, jamais depuis malgré tous les correctifs de cette session) : 0 avertissement. Grep `TODO|FIXME|XXX:|HACK:` sur `src/` et `src-tauri/src/` : 0 résultat dans les deux, cohérent avec le constat déjà établi.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 152 cycles cumulés 110-261.
