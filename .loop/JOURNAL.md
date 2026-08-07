@@ -1845,3 +1845,11 @@ Vérification complète : `cargo check` propre (aucun fichier de code applicatif
 Version 0.25.75 → 0.25.76. Commit `5718e0f`, poussé sur `origin/master`.
 
 Éléments en attente inchangés. **2 nouveaux correctifs accumulés depuis la release v0.25.74.** 105 cycles cumulés 110-214.
+
+[2026-08-07T10:12:00+02:00] Cycle 215 : poursuite du filon scaffold (cycles 213-214) sur les derniers fichiers de config jamais relus -- `vite-env.d.ts`, `tsconfig.json`, `tsconfig.node.json` : tous corrects (mode strict déjà activé, `noUnusedLocals`/`noUnusedParameters`/`noFallthroughCasesInSwitch` cohérents avec la discipline du reste du code). Absence de `.vscode/` confirmée volontaire et sans conséquence (déjà dans `.gitignore` depuis toujours, la recommandation IDE du README reste une suggestion non contraignante).
+
+**Vérification visuelle du filon lui-même, jamais faite avant de corriger** : lecture de `src-tauri/icons/128x128.png` (outil Read en mode image) -- confirmé être une mascotte robot orange dédiée à NiTruX, PAS le glyphe voilier par défaut de Tauri. Le correctif du favicon (cycle 213) également revérifié visuellement -- rendu correct à la taille favicon. Le filon "scaffold jamais personnalisé" est donc bien circonscrit aux deux fichiers déjà corrigés (`index.html`, `README.md`) -- les icônes elles-mêmes avaient déjà été customisées dès l'origine du projet.
+
+Aucun changement de code. Négatif, mais avec vérification visuelle réelle plutôt qu'une simple lecture de nom de fichier.
+
+Éléments en attente inchangés. 106 cycles cumulés 110-215.
