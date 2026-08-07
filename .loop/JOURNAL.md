@@ -2067,3 +2067,9 @@ Aucun changement de code. Négatif au sens strict, mais un vrai risque potentiel
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés (dont le signalement WiFiAnalyzerPage du cycle 241). **5 correctifs accumulés depuis la release v0.25.74**. 133 cycles cumulés 110-242.
+
+[2026-08-07T14:00:00+02:00] Cycle 243 : `InstallProfilesPage.vue` (jamais lue) : installation séquentielle (pas parallèle) explicitement motivée par la contention de verrou du gestionnaire de paquets natif, sélection par profil + filtre catégorie + sélection manuelle cohérents. **Cross-check automatisé** (script Python jetable, exécuté une fois puis supprimé) : les 13 `appIds` référencés à travers les 4 profils d'`installProfiles.ts` comparés aux 502 ids du catalogue `appCatalog.ts` -- correspondance exacte, 0 id manquant (un id mal orthographié dans un profil aurait été silencieusement filtré hors de `selectedEntries` sans aucune erreur visible).
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **5 correctifs accumulés depuis la release v0.25.74**. 134 cycles cumulés 110-243.
