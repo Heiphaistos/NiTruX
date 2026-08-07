@@ -1603,3 +1603,15 @@ Aucun changement de code. 1er cycle négatif après une série productive, mais 
 Aucun changement de code. 2e cycle négatif consécutif (184-185), mais l'audit page-par-page reste la stratégie en cours (pas de sweep de pattern à interrompre) -- 9 fichiers/pages relus en entier ce cycle-ci et le précédent, tous mûrs et déjà bien couverts par les correctifs accumulés depuis le cycle 110.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). 31 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (76 cycles cumulés 110-185).
+
+[2026-08-07T05:44:00+02:00] Cycle 186 : série négative rompue après 2 cycles (184-185). Changement d'angle -- relecture intégrale de pages jamais entièrement lues malgré des passages antérieurs : `NetworkPage.vue` (propre, `onMounted` sans `try/catch` mais les 3 commandes sous-jacentes sont bien infaillibles côté Rust, cohérent avec le pattern établi), `WiFiAnalyzerPage.vue` (propre), `AntivirusPage.vue` (propre, pattern `!== null` déjà sûr).
+
+**Vrai bug de clé `v-for` non unique trouvé, même filon que WiFiAnalyzerPage/TemperaturesPage** : `UpdateHistoryPage.vue` clait `entries` (historique apt) sur `e.start_date` seul. `update_history.rs::parse_apt_history` confirme que `Start-Date` n'a qu'une précision à la seconde -- un script `apt-get update && apt-get upgrade -y` enchaîné (schéma courant d'automatisation type unattended-upgrades), ou simplement deux invocations dans la même seconde, produit couramment deux blocs `history.log` avec un Start-Date identique.
+
+Corrigé en `${e.start_date}-${i}`, miroir exact du pattern déjà appliqué. Comme pour WiFiAnalyzerPage/TemperaturesPage, le nouveau test de régression passe même contre le code non corrigé (le montage initial de Vue ne force pas la réconciliation qui ferait apparaître l'avertissement "Duplicate keys") -- correctif appliqué par prudence contre la vraie forme des données, pas une reproduction stricte d'un rendu cassé, honnêtement documenté comme tel dans le commit.
+
+Vérification complète : `npx vitest run UpdateHistoryPage.spec.ts` 4/4, suite complète 330/330 frontend (329→330, +1), `npx vue-tsc --noEmit` 0 erreur, `cargo check` + `cargo test --lib` 305/305 Rust (sanity check, aucun fichier Rust modifié).
+
+Version 0.25.68 → 0.25.69. Commit `c3bcec9`, poussé sur `origin/master`.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). **32 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (77 cycles cumulés 110-186).
