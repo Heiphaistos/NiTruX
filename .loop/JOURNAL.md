@@ -1923,3 +1923,13 @@ Aucun changement de code. Négatif, mais deux patterns dupliqués sur 3 et 5 pag
 Aucun changement de code. Négatif -- 3e pattern dupliqué (chips cycle 222, filtre texte cycle 222, confirmation cycle 223) vérifié exhaustivement cohérent sur cette session.
 
 Éléments en attente inchangés. 114 cycles cumulés 110-223.
+
+[2026-08-07T11:24:00+02:00] Cycle 224 : après 2 cycles négatifs consécutifs de comparaison de patterns (222, 223), retour à un inventaire brut. `find src-tauri/src -iname "*.rs" | sort` pour lister les 48 fichiers backend Rust, recoupé avec les fichiers réellement lus en direct cette session (par opposition à leur seule page Vue frontend). Deux fichiers jamais lus directement identifiés malgré des relectures répétées de leurs pages frontend : `optimizations.rs` et `scripts.rs`.
+
+`optimizations.rs` (117 lignes) : backend d'`OptimizationsPage.vue`. Commande `get_optimization_snapshot` agrège services activés (`systemctl list-unit-files`), swappiness (`/proc/sys/vm/swappiness`), zram actif (`/proc/swaps`), minuterie fstrim (`systemctl is-enabled fstrim.timer`). Fonctions pures (`parse_enabled_service_line`, `parse_swappiness`, `detect_zram_active`), 7 tests. Aucun problème trouvé.
+
+`scripts.rs` (29 lignes) : backend de `ScriptsPage.vue`. Commande unique `run_script` enveloppant `subprocess::run_with_timeout("sh", &["-c", &content], Duration::from_secs(60))`. Documenté explicitement en commentaire comme n'étant PAS une nouvelle frontière de privilège -- s'exécute avec les privilèges de l'utilisateur invocateur, conceptuellement identique à taper la même commande soi-même dans un terminal. 2 tests (succès, code de sortie non-zéro). Aucun problème trouvé.
+
+Aucun changement de code. Négatif -- **3e cycle négatif consécutif** (222, 223, 224). Conformément à la règle de la boucle, passage du sweep de pattern à un audit page-par-page/module-par-module classique pour le prochain cycle. Valeur réelle malgré l'absence de bug : couverture de lecture directe désormais complète sur les 48 fichiers Rust de `src-tauri/src` (les deux derniers manquants viennent d'être lus).
+
+Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.74** (index.html cycle 213, README.md cycle 214, PackagesPage.vue cycle 221). 115 cycles cumulés 110-224.
