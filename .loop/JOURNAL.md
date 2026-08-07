@@ -2293,3 +2293,9 @@ Aucun bug trouvé. Négatif.
 Aucun changement de code. Négatif au sens strict, mais confirmation exacte (pas approximative) d'un vrai problème d'accessibilité large qui nécessite une décision de design avant correctif.
 
 Éléments en attente inchangés + signalement renforcé : `NxBadge` illisible sur 57% des combinaisons thème/disposition testées exactement (cycle 276, confirme et renforce le cycle 274 -- nécessite une décision de langage visuel avant tout correctif). **3 correctifs accumulés depuis la release v0.25.79**. 167 cycles cumulés 110-276.
+
+[2026-08-08T00:44:00+02:00] Cycle 277 : sortie du filon contraste (6 cycles investis, 271-276) pour un audit classique. Confirmé qu'aucun dossier `.github/workflows` n'existe -- pas de CI, tout est manuel (cohérent avec ce qui a été observé toute la session : chaque release/build a été déclenché explicitement par l'utilisateur). `index.html` relu en entier (seulement des extraits édités au cycle 213 jusqu'ici) : propre, cohérent. `src/main.ts` (jamais lu, le vrai point d'entrée JS référencé par `index.html`) : bootstrap Vue+Pinia standard, confirme que `style-tokens.css` est chargé globalement au démarrage. Ceci clôt la chaîne complète du point d'entrée (`index.html` → `main.ts` → `App.vue`), désormais entièrement lue cette session.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 168 cycles cumulés 110-277.
