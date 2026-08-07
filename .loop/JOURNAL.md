@@ -1485,3 +1485,15 @@ Aucun changement de code ce cycle -- 3e cycle négatif consécutif (173-175), se
 **Prochain cycle : reprendre explicitement un audit page-par-page/module-par-module classique** conformément à la règle du projet, plutôt qu'un nouveau pattern transversal.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). 25 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (66 cycles cumulés 110-175).
+
+[2026-08-07T04:03:00+02:00] Cycle 176 : reprise de l'audit page-par-page comme prévu. `BootManagerPage.vue` relue intégralement -- propre (le libellé "actif"/"inactif" sur les entrées EFI reflète fidèlement la sémantique documentée du backend -- flag activé/enable, pas "démarré actuellement" -- une simplification déjà consciente et acceptée, pas un oubli à corriger). `dnf`/`pacman`/`zypper` re-vérifiés absents de la VM de dev (distros différentes) -- limitation déjà documentée et acceptée dans le code, impossible à tester en direct sans un environnement différent.
+
+**Vrai bug de validation d'entrée trouvé** : `ScriptsPage.vue::saveScript` vérifiait `newName.value === ""` mais PAS après normalisation -- un nom composé uniquement d'espaces (`"   "`) passe ce contrôle tel quel et se sauvegarde comme un script au nom effectivement vide, indiscernable des autres dans la liste (`name` étant la seule clé d'identité de ce store, comme déjà documenté dans `scriptsStore.ts` pour justifier le rejet des doublons).
+
+**Reproduit EN DIRECT selon la discipline stricte** : test écrit avec `"   "` comme nom, confirmé échouant contre le code d'origine (1 élément sauvegardé au lieu de 0 attendu), puis corrigé en trimant le nom avant la vérification de vacuité ET avant l'appel à `addScript`. Correctif minimal et à risque quasi-nul (normalisation `trim()` classique), contrairement à la piste écartée au cycle 174 (bouton Vérifier) qui nécessitait un arbitrage UX sans pattern de référence clair -- ici la correction est sans ambiguïté.
+
+Vérification complète : `npx vitest run src/pages/ScriptsPage.spec.ts` 5/5, suite complète 324/324 frontend (323→324, +1), `npx vue-tsc --noEmit` 0 erreur, `cargo test --lib` 305/305 Rust (sanity check, aucun fichier Rust modifié).
+
+Version 0.25.62 → 0.25.63. Commit `81353c7`, poussé sur `origin/master`.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). **26 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (67 cycles cumulés 110-176).
