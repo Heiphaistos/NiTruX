@@ -1999,3 +1999,11 @@ Aucun bug trouvé. Négatif -- 9e cycle négatif sur 10 (222-226, 228-231 ; cycl
 Aucun bug trouvé. Négatif -- 10e cycle négatif sur 11 (222-226, 228-232 ; cycle 227 seul positif). Couche stores Pinia désormais entièrement couverte (5/5, en comptant `layoutStore.ts` du cycle 231).
 
 Éléments en attente inchangés. **4 correctifs accumulés depuis la release v0.25.74**. 123 cycles cumulés 110-232.
+
+[2026-08-07T12:40:00+02:00] Cycle 233 : bascule vers les pages Vue jamais lues directement cette session (nombreuses -- la couche backend/stores/layouts étant désormais épuisée). `TerminalPage.vue`/`terminal.rs` (pty xterm.js, seule fonctionnalité de streaming bidirectionnel de l'app, gestion `KeepAlive` dédiée) : les deux fichiers déjà exceptionnellement durcis -- tests avec un vrai shell dans un vrai pty, vérification via `/proc/<pid>` que `insert_session` tue réellement le process d'une session remplacée (pas juste l'entrée de la HashMap), `spawnError` déjà affiché à l'utilisateur en cas d'échec d'ouverture du pty. Aucun problème.
+
+`ProcessesPage.vue`/`processes.rs` : page en lecture seule (pas d'action de type "tuer un processus"), 4 sources indépendantes (processus sysinfo, services systemd, démarrage automatique, tâches planifiées). Vérification ciblée du risque de clé `v-for` dupliquée (filon déjà productif 3 fois cette session -- cycles 180/186/188) : `services`/`autostart`/`scheduledTasks` sont chacun définis une seule fois à `onMounted` et jamais mutés ensuite, donc même une collision de contenu (par ex. deux lignes crontab strictement identiques, cas plausible) resterait sans effet visible -- Vue ne se sert des clés que pour le diff ENTRE rendus, pas dans un unique rendu statique. Différent des bugs précédemment trouvés (listes qui changent après coup). Pas un vrai bug, juste écarté par raisonnement plutôt que par un test dédié.
+
+Aucun bug trouvé. Négatif -- 11e cycle négatif sur 12 (222-226, 228-233 ; cycle 227 seul positif).
+
+Éléments en attente inchangés. **4 correctifs accumulés depuis la release v0.25.74**. 124 cycles cumulés 110-233.
