@@ -2277,3 +2277,9 @@ Vérification complète : suite frontend 334/334 (inchangée), `vue-tsc --noEmit
 Aucun changement de code. Négatif au sens strict, mais risque réel signalé honnêtement plutôt que corrigé sur une base incertaine.
 
 Éléments en attente inchangés + nouveau signalement : contraste `NxBadge` texte/fond potentiellement sous AA sur plusieurs thèmes (cycle 274, approximation seulement, nécessite vérification de rendu réel avant tout correctif). **3 correctifs accumulés depuis la release v0.25.79**. 165 cycles cumulés 110-274.
+
+[2026-08-08T00:28:00+02:00] Cycle 275 : retour à un audit de code classique après 4 cycles sur le filon contraste. `subprocess.rs` (jamais lu en entier -- `run_with_timeout`/`run_with_timeout_env`/`run_capturing_exit_code` référencés constamment tout au long de cette session mais jamais examinés directement) : fondation de quasiment tous les modules backend, déjà exceptionnellement testée (timeout + SIGKILL testés en direct avec un vrai `sleep`, capture stderr séparée testée, gestion propre du cas où le PID kill échoue). Vérifié que le thread lecteur en arrière-plan ne fuit ni ne panique quand le timeout principal renvoie avant que `wait_with_output()` ne débloque (le `tx.send` échoue silencieusement sur un `rx` déjà droppé, correctement ignoré via `let _ =`).
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 166 cycles cumulés 110-275.
