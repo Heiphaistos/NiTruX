@@ -2131,3 +2131,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 143 cycles cumulés 110-252.
+
+[2026-08-07T15:20:00+02:00] Cycle 253 : `OptimizationsPage.vue` (jamais lue, backend `optimizations.rs` déjà lu au cycle 224) : propre, champs cohérents. `TemperaturesPage.vue` (jamais lue, backend `sensors.rs` déjà lu au cycle 226) : confirme le correctif de clé composite `${t.label}-${i}` du cycle 180 toujours en place. Vérification ciblée : `battery_percent`/`battery_charging` (partie de `SensorSnapshot`) ne sont jamais affichés dans cette page -- confirmé via `grep` qu'ils sont bien consommés séparément par `DashboardPage.vue`, pas un oubli mais une réutilisation volontaire de la même structure partagée entre deux pages aux périmètres différents.
+
+Aucun bug trouvé. Négatif. **Couverture des pages Vue frontend désormais quasi exhaustive** : la quasi-totalité des 41 pages a maintenant été lue directement au moins une fois cette session, en plus des deux bouclages complets du backend Rust et de la couverture complète des layouts/stores.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 144 cycles cumulés 110-253.
