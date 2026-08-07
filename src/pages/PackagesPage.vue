@@ -132,7 +132,7 @@ async function upgradeAll() {
 
 <style scoped>
 .pkg-page { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
-.pkg-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.pkg-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
 .pkg-install-card { display: flex; flex-direction: column; gap: 10px; }
 .pkg-install-row { display: flex; gap: 10px; align-items: center; }
 .pkg-empty { color: var(--nx-text-secondary); }
