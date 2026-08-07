@@ -1557,3 +1557,17 @@ Vérification complète : `npx vitest run PackagesPage.spec.ts UpdatesPage.spec.
 Version 0.25.65 → 0.25.66. Commit `a30f458`, poussé sur `origin/master`.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). **29 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (72 cycles cumulés 110-181).
+
+[2026-08-07T05:05:00+02:00] Cycle 182 : audit page-par-page continué. `QuickInstallPage.vue` relue intégralement -- propre, état d'installation déjà suivi par id (`Record<string, InstallState>`), aucun risque de course. `SystemToolsPage.vue` relue ensuite.
+
+**Vrai bug de concurrence trouvé** : `running` était un simple `ref<string | null>` retenant au plus UN id d'outil actif. Démarrer un 2e outil différent pendant que le 1er est encore en vol écrase cette valeur -- le bouton du 1er outil réévalue alors `running === tool.id` à faux et se réactive alors qu'il est toujours réellement en cours d'exécution (son propre `finally` ne s'est pas encore déclenché). Un utilisateur pouvait alors recliquer sur le 1er outil, invoquant la même commande une seconde fois en parallèle -- y compris pour les outils privilégiés via `run_system_tool`. Incohérent avec `outputs`/`errors` du même fichier, déjà suivis par id (`Record<string, ...>`).
+
+**Reproduit EN DIRECT selon la discipline stricte** : test écrit avec deux promesses contrôlables (une par outil), démarrage du 1er outil puis du 2e avant résolution du 1er, assertion que le bouton du 1er reste désactivé -- confirmé échouant contre le code d'origine (`expected undefined to be defined`). Corrigé en convertissant `running` en `Record<string, boolean>`, miroir du pattern déjà utilisé pour `outputs`/`errors` dans ce même fichier.
+
+Vérification complète : `npx vitest run SystemToolsPage.spec.ts` 8/8, suite complète 328/328 frontend (327→328, +1), `npx vue-tsc --noEmit` 0 erreur, `cargo check` + `cargo test --lib` 305/305 Rust (sanity check, aucun fichier Rust modifié).
+
+Version 0.25.66 → 0.25.67. Commit `cd7d765`, poussé sur `origin/master`.
+
+**3 cycles productifs consécutifs (180-182)**, tous des incohérences réelles trouvées par comparaison directe entre pages/fichiers jumeaux -- filon toujours actif, à continuer.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). **30 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (73 cycles cumulés 110-182).
