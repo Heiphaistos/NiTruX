@@ -1983,3 +1983,13 @@ Aucun changement de code. Négatif -- 7e cycle négatif sur 8 (222-226, 228-229 
 Aucun bug trouvé. Négatif -- 8e cycle négatif sur 9 (222-226, 228-230 ; cycle 227 seul positif), mais 2 cross-checks systématiques réels effectués plutôt qu'une simple relecture, fermant définitivement un risque que le code lui-même documentait sans jamais l'avoir vérifié.
 
 Éléments en attente inchangés. **4 correctifs accumulés depuis la release v0.25.74**. 121 cycles cumulés 110-230.
+
+[2026-08-07T12:24:00+02:00] Cycle 231 : audit du système de dispositions (`layouts/`), jamais lu directement cette session malgré ses 8 variantes visuellement distinctes exposées aux préférences. `registry.ts` (8 définitions), `layoutStore.ts` (persistance validée, `isValidLayoutId` contre le registre avant d'accepter une valeur localStorage), `LayoutShell.vue` (dispatch vers le bon composant, repli sur `SidebarClassicLayout` si un id invalide passe malgré tout) puis les 8 fichiers `*.vue` eux-mêmes lus intégralement (`SidebarClassicLayout`, `MasterDetailLayout`, `CompactSidebarLayout`, `FloatingDockLayout`, `CommandFirstLayout`, `TopNavLayout`, `WidgetsGridLayout`, `BentoLayout`).
+
+**Vérification ciblée** (classe de bug déjà rencontrée ailleurs dans ce projet : un slot nommé oublié dans un composant de layout ferait disparaître silencieusement la navigation sur cette seule disposition) : `grep -c '<slot'` sur les 9 fichiers (8 layouts + `LayoutShell`) -- tous exactement 2 occurrences (`nav` + par défaut), aucun oubli.
+
+Deux nuances de style notées, non corrigées -- variations cosmétiques cohérentes en interne, pas des bugs : (1) `.nx-content` a `padding: 24px` sur 6 layouts mais `padding: 20px` sur les 2 layouts en grille (`widgets-grid`/`bento`) -- distinction qui semble volontaire (2 layouts partagent la même valeur entre eux, pas une dérive isolée) ; (2) chaque page a elle-même son propre `padding: 24px` en plus de celui du layout (48px cumulés), pattern parfaitement uniforme sur toutes les pages et tous les layouts -- changer ce choix visuel global toucherait l'intégralité de l'app sans justification de bug fonctionnel, hors périmètre d'un correctif unilatéral.
+
+Aucun bug trouvé. Négatif -- 9e cycle négatif sur 10 (222-226, 228-231 ; cycle 227 seul positif). Système de dispositions désormais entièrement couvert.
+
+Éléments en attente inchangés. **4 correctifs accumulés depuis la release v0.25.74**. 122 cycles cumulés 110-231.
