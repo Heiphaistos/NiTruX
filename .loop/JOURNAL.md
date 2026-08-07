@@ -1641,3 +1641,11 @@ Version 0.25.70 → 0.25.71. Commit `793bfb1`, poussé sur `origin/master`.
 **Leçon méthodologique** : un sweep transversal rapide sur des champs "voisins" au nom similaire (`c.id`/`i.id` dans la même page) peut faire l'erreur de généraliser le verdict de l'un à l'autre sans vérifier chacun indépendamment contre sa VRAIE source de données -- à re-vérifier individuellement même quand deux champs semblent structurellement identiques en surface.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). **34 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (79 cycles cumulés 110-188).
+
+[2026-08-07T06:20:00+02:00] Cycle 189 : `network.rs` relue intégralement -- déjà exceptionnellement mûre et testée (échappement terse `nmcli -t`, `ss -tulnp` avec/sans colonne Netid, parsing `/proc/net/dev` vérifié en direct sur la vraie machine de dev), rien à corriger.
+
+`hardware.rs` relue -- hypothèse testée EN DIRECT : `lspci` (comme `apt`/`ufw` déjà corrigés aux cycles 160-161) pourrait-il être localisé sans `LC_ALL=C` ? Vérifié sur la VM WSL2 : `dpkg -L pciutils | grep '\.mo$'` → 0 fichier de traduction, et `LC_ALL=fr_FR.UTF-8 lspci` produit une sortie strictement identique à la sortie par défaut. Confirmé non affecté, cohérent avec le verdict déjà établi pour `bluetoothctl`/`smartctl` (0 `.mo` également).
+
+Aucun changement de code. 1er cycle négatif d'une nouvelle série (après 187-188 productifs), mais avec une hypothèse concrète testée en direct plutôt qu'un sweep sans piste.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). 34 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (80 cycles cumulés 110-189).
