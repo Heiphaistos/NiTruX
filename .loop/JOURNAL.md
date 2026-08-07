@@ -1853,3 +1853,11 @@ Version 0.25.75 → 0.25.76. Commit `5718e0f`, poussé sur `origin/master`.
 Aucun changement de code. Négatif, mais avec vérification visuelle réelle plutôt qu'une simple lecture de nom de fichier.
 
 Éléments en attente inchangés. 106 cycles cumulés 110-215.
+
+[2026-08-07T10:20:00+02:00] Cycle 216 : rupture délibérée avec le pattern des ~100 derniers cycles (lecture de code statique uniquement) -- **premier lancement réel de l'app depuis le début de cette session étendue**. L'AppImage v0.25.74 déjà construite lancée sous l'affichage WSLg existant (`DISPLAY=:0`, `GDK_BACKEND=x11` pour forcer le rendu via XWayland plutôt que Wayland natif, nécessaire pour que `xwininfo`/`import` puissent capturer la fenêtre). Piège rencontré et contourné : `import -window root` échoue sous WSLg ("Resource temporarily unavailable", probablement une limitation du compositeur Wayland-backed pour la capture de la racine composée) -- corrigé en capturant la fenêtre applicative par son ID réel (`xwininfo -root -tree | grep '"NiTruX"'`) plutôt que la racine.
+
+**Résultat : capture d'écran réelle du Tableau de bord obtenue et inspectée** (outil Read en mode image). Tout conforme au code lu tout au long de cette session : fenêtre titrée "NiTruX" à 1280×800 (correspond à `tauri.conf.json`), bannière d'intégration pkexec affichée correctement (comportement attendu -- cet AppImage n'a jamais été bootstrappé), les 5 tuiles d'action rapide correspondent exactement au tableau `QUICK_ACTIONS` de `DashboardPage.vue`, les catégories de navigation correspondent exactement à `categories.ts`, télémétrie système réelle (CPU/mémoire/processus/batterie) qui transite correctement par l'IPC Tauri sans erreur visible. Aucun défaut visuel, aucun élément cassé/manquant/superposé.
+
+Aucun changement de code -- négatif au sens strict (aucun bug trouvé), mais c'est la première vérification RUNTIME/visuelle de toute la campagne 110-216 (jusqu'ici 100% audit statique par lecture de code). Confirme que la maturité observée par lecture de code se traduit bien en un rendu réel sain.
+
+Éléments en attente inchangés. 107 cycles cumulés 110-216.
