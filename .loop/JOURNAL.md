@@ -1399,3 +1399,17 @@ Vérification complète : `npx vitest run src/pages/InstallProfilesPage.spec.ts`
 Version 0.25.58 → 0.25.59. Commit `51e3a32`, poussé sur `origin/master`.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). **22 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (59 cycles cumulés 110-168).
+
+[2026-08-07T02:42:00+02:00] Cycle 169 : généralisation directe du filon "page manquant une fonctionnalité déjà établie ailleurs" du cycle 168 -- `grep -rln "appCatalog\|systemToolsCatalog\|installProfiles"` confirme que les 3 pages consommant ces gros catalogues ont désormais toutes un filtre (QuickInstallPage, SystemToolsPage, InstallProfilesPage) -- filon spécifique aux catalogues clos. Généralisé à "toute liste de 100+ éléments" : `ProcessesPage.vue`/`InstalledSoftwarePage.vue`/`UninstallerPage.vue` déjà filtrables (confirmé).
+
+**Vrai gap trouvé** : `LogsPage.vue` récupère et affiche 200 entrées de journal (`get_recent_logs`, `limit: 200`) sans AUCUN filtre texte -- contraste net avec les 3 pages ci-dessus qui ont toutes un `NxInput` de filtrage pour des listes de taille comparable. Parcourir 200 lignes de journal pour trouver un événement précis sans recherche est concrètement inutilisable.
+
+Corrigé en miroir du pattern déjà établi (`ProcessesPage.vue`'s `NxInput`+`computed` filter) : nouveau champ `logFilter`, `filteredLogs` computed filtrant sur `unit` OU `message` (insensible à la casse), `NxInput` ajouté juste au-dessus de la carte de résultats, message d'état vide distinct ("Aucun journal ne correspond à ce filtre" vs "Aucun journal récent trouvé"). Nouveau test de régression vérifiant que le filtre masque bien les entrées non correspondantes.
+
+Vérification complète : `npx vitest run src/pages/LogsPage.spec.ts` 2/2, suite complète 322/322 frontend (321→322, +1), `npx vue-tsc --noEmit` 0 erreur, `cargo test --lib` 304/304 Rust (sanity check, aucun fichier Rust modifié).
+
+Version 0.25.59 → 0.25.60. Commit `4e22428`, poussé sur `origin/master`.
+
+**Filon "liste de 100+ éléments sans filtre" désormais clos** : les 4 candidats identifiés (catalogues x3 + journaux) sont tous corrigés sur les cycles 168-169.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). **23 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (60 cycles cumulés 110-169).
