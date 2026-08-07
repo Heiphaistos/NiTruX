@@ -7,12 +7,24 @@ export interface SavedScript {
   content: string;
 }
 
+function isSavedScript(value: unknown): value is SavedScript {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return typeof v.name === "string" && typeof v.content === "string";
+}
+
+// Mirrors themeStore.ts/preferencesStore.ts's own strict per-field
+// validation of persisted JSON, filtering out anything malformed instead of
+// trusting the array shape alone -- a corrupted or stale-schema entry (e.g.
+// missing `name`) would otherwise flow straight into ScriptsPage.vue's
+// `:key="s.name"` as `undefined`, breaking this store's own single-identity
+// guarantee that addScript/removeScript rely on.
 function readPersistedScripts(): SavedScript[] {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (!stored) return [];
   try {
     const parsed: unknown = JSON.parse(stored);
-    return Array.isArray(parsed) ? (parsed as SavedScript[]) : [];
+    return Array.isArray(parsed) ? parsed.filter(isSavedScript) : [];
   } catch {
     return [];
   }
