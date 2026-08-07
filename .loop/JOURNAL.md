@@ -1759,3 +1759,7 @@ Sweep transversal sur `src/data/appCatalog.ts` (502 entrées) : script Node comp
 Aucun changement de code. Balayage des deux gros catalogues de données (`appCatalog.ts`, `systemToolsCatalog.ts`) désormais complet pour ce pattern de doublon.
 
 Éléments en attente inchangés + nouveau signalement : 3 doublons de commande dans `systemToolsCatalog.ts` (cycle 202, même statut que les 6 de `appCatalog.ts`). 36 correctifs fonctionnels + 2 cleanups cosmétiques toujours en attente d'une release publiée depuis v0.25.24 (93 cycles cumulés 110-202).
+
+[2026-08-07T08:32:00+02:00] Cycle 203 : les 8 composants de layout jamais lus (`BentoLayout`/`CommandFirstLayout`/`CompactSidebarLayout`/`FloatingDockLayout`/`MasterDetailLayout`/`SidebarClassicLayout`/`TopNavLayout`/`WidgetsGridLayout`) relus intégralement -- tous propres. `types/theme.ts`/`layout.ts`/`style.ts` + `styles/registry.ts` relus, `StyleId` (12 valeurs) cross-vérifié contre `styleRegistry` -- identique, aucun écart. Négatif, mais couverture désormais quasi-exhaustive de tout le code source lisible de l'app (Vue + Rust + données + types).
+
+Éléments en attente inchangés. 36 correctifs fonctionnels + 2 cleanups cosmétiques toujours en attente d'une release publiée depuis v0.25.24 (94 cycles cumulés 110-203).
