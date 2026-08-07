@@ -2317,3 +2317,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 171 cycles cumulés 110-280.
+
+[2026-08-08T01:16:00+02:00] Cycle 281 : `DisksPage.spec.ts` (jamais lu directement) -- vérifié si la suite frontend exerce réellement le correctif `list_disk_usage`/snapfuse du cycle 236, ou seulement des données déjà filtrées. Confirmé que l'architecture de test est correctement en couches : le filtrage vit côté Rust avec son propre test de régression dédié (`rejects_non_dev_pseudo_filesystem_sources`, cycle 236), et la suite frontend teste uniquement le comportement d'affichage/UI avec des données mock déjà propres -- pas de logique dupliquée côté frontend qui pourrait dériver du backend. Note historique en passant : un test confirme que `DisksPage.vue` n'a plus d'onglets Doublons/Gros fichiers/Vérif. hash, déplacés vers `FileToolsPage.vue` lors d'un refactor antérieur -- cohérent, pas un bug.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 172 cycles cumulés 110-281.
