@@ -1627,3 +1627,17 @@ Vérification complète : `npx vitest run scriptsStore.spec.ts` 5/5, suite compl
 Version 0.25.69 → 0.25.70. Commit `e82d094`, poussé sur `origin/master`.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). **33 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (78 cycles cumulés 110-187).
+
+[2026-08-07T06:14:00+02:00] Cycle 188 : audit des 5 stores Pinia. `styleStore.ts` relue (déjà correcte, miroir de `layoutStore.ts`). `builtinThemes`/`layoutRegistry` + leurs tests d'unicité relus -- propres. `LayoutShell.vue` relue -- fallback déjà correct sur un `LayoutId` invalide. `docker.rs` relue intégralement.
+
+**Auto-correction d'une erreur de mon propre sweep transversal du cycle 187** : j'avais classé `NetworkPage.vue`'s clé `docker.images :key="i.id"` comme sûre, par analogie hâtive avec `docker.containers :key="c.id"` (IDs de conteneurs réellement uniques par instance). En relisant `docker.rs`, `docker images` liste UNE ligne PAR COUPLE repository:tag, pas par image unique -- taguer la même image deux fois (`docker tag app:latest app:v1.0`, routine après tout build) produit deux lignes partageant le même `ID`. Même filon que WiFiAnalyzerPage/TemperaturesPage/UpdateHistoryPage, raté au cycle précédent par confusion entre deux champs voisins de la même page.
+
+Corrigé en `${i.id}-${ii}`. Comme pour les correctifs précédents du même filon, le test de régression passe même contre le code non corrigé (limite déjà documentée du montage initial de Vue) -- appliqué par prudence contre la vraie forme des données.
+
+Vérification complète : `npx vitest run NetworkPage.spec.ts` 10/10, suite complète 333/333 frontend (332→333, +1), `npx vue-tsc --noEmit` 0 erreur, `cargo check` + `cargo test --lib` 305/305 Rust (sanity check, aucun fichier Rust modifié).
+
+Version 0.25.70 → 0.25.71. Commit `793bfb1`, poussé sur `origin/master`.
+
+**Leçon méthodologique** : un sweep transversal rapide sur des champs "voisins" au nom similaire (`c.id`/`i.id` dans la même page) peut faire l'erreur de généraliser le verdict de l'un à l'autre sans vérifier chacun indépendamment contre sa VRAIE source de données -- à re-vérifier individuellement même quand deux champs semblent structurellement identiques en surface.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). **34 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (79 cycles cumulés 110-188).
