@@ -2035,3 +2035,9 @@ Vérification complète : `cargo test` 310/310 (+1), suite frontend 333/333 (inc
 Aucun bug trouvé. Négatif -- 1er cycle négatif après le correctif du cycle 236.
 
 Éléments en attente inchangés. **5 correctifs accumulés depuis la release v0.25.74**. 128 cycles cumulés 110-237.
+
+[2026-08-07T13:20:00+02:00] Cycle 238 : `hardware.rs`/`DiagnosticPage.vue` (jamais lus) : parseur `lspci` simple et propre, page frontend a déjà une explication honnête du cas VMBus/Hyper-V Gen2 (matche exactement l'environnement de développement de ce projet). `DriversPage.vue` (backend `drivers.rs` déjà lu au cycle 226, jamais vu le frontend) : tableau pilotes+badges cohérent, note explicative "pas de gestionnaire de pilotes séparé sous Linux" bien placée, `:key="mod"` sur les modules chargés sûr (chaque module noyau n'apparaît qu'une fois dans `lsmod`).
+
+Aucun bug trouvé. Négatif -- 2e cycle négatif après le correctif du cycle 236.
+
+Éléments en attente inchangés. **5 correctifs accumulés depuis la release v0.25.74**. 129 cycles cumulés 110-238.
