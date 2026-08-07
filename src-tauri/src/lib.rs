@@ -73,15 +73,42 @@ fn aggregate_update_results(results: Vec<(&str, Result<Vec<packages::PackageUpda
     Ok(all_updates)
 }
 
+/// Combines the native-manager aggregate outcome with the independent
+/// Flatpak/Snap universal layer. Native and universal are genuinely
+/// unrelated sources (`list_universal_updates()` already treats a failing
+/// Flatpak/Snap as a silent, independent skip -- see its own doc comment),
+/// so a native-side error must never hide universal updates that were
+/// successfully found: previously `list_updates()` used `?` directly on
+/// `aggregate_update_results`'s outcome, which propagated a native error
+/// (e.g. every native manager failing due to a transient lock/network
+/// issue) and returned Err WITHOUT EVER QUERYING Flatpak/Snap at all --
+/// hiding real, independently-available updates behind a bare native-only
+/// error message, contradicting this same file's own documented
+/// "each source degrades independently" philosophy at the aggregation
+/// layer directly above.
+fn combine_native_and_universal(
+    native: Result<Vec<packages::PackageUpdate>, String>,
+    universal: Vec<packages::PackageUpdate>,
+) -> Result<Vec<packages::PackageUpdate>, String> {
+    match native {
+        Ok(mut native_updates) => {
+            native_updates.extend(universal);
+            Ok(native_updates)
+        }
+        Err(native_error) if universal.is_empty() => Err(native_error),
+        Err(_) => Ok(universal),
+    }
+}
+
 #[tauri::command]
 fn list_updates() -> Result<Vec<packages::PackageUpdate>, String> {
     let native_results: Vec<(&str, Result<Vec<packages::PackageUpdate>, String>)> = packages::detect_package_managers()
         .iter()
         .map(|manager| (manager.id(), manager.list_upgradable()))
         .collect();
-    let mut all_updates = aggregate_update_results(native_results)?;
-    all_updates.extend(packages::universal::list_universal_updates());
-    Ok(all_updates)
+    let native_outcome = aggregate_update_results(native_results);
+    let universal_updates = packages::universal::list_universal_updates();
+    combine_native_and_universal(native_outcome, universal_updates)
 }
 
 /// Returns the id of the first detected native package manager
@@ -233,5 +260,42 @@ mod tests {
     fn no_managers_detected_returns_an_empty_list_not_an_error() {
         let result = aggregate_update_results(vec![]);
         assert_eq!(result, Ok(vec![]));
+    }
+
+    fn flatpak_update(name: &str) -> PackageUpdate {
+        PackageUpdate { name: name.to_string(), current_version: String::new(), new_version: "2.0".to_string(), source: "flatpak".to_string() }
+    }
+
+    #[test]
+    fn combine_native_and_universal_appends_universal_to_a_successful_native_result() {
+        let result = combine_native_and_universal(Ok(vec![update("curl")]), vec![flatpak_update("org.mozilla.firefox")]);
+        let updates = result.expect("should succeed");
+        assert_eq!(updates.len(), 2);
+        assert_eq!(updates[0].name, "curl");
+        assert_eq!(updates[1].name, "org.mozilla.firefox");
+    }
+
+    #[test]
+    fn combine_native_and_universal_returns_universal_updates_even_when_native_fails() {
+        // Regression guard for the actual bug: list_updates() used to `?`
+        // straight through aggregate_update_results's outcome, discarding
+        // Flatpak/Snap updates entirely -- and never even querying them --
+        // whenever every native manager failed (a transient apt lock,
+        // network error, etc.), even though Flatpak/Snap are a completely
+        // independent source that had genuinely succeeded.
+        let result = combine_native_and_universal(Err("apt: permission denied".to_string()), vec![flatpak_update("org.mozilla.firefox")]);
+        let updates = result.expect("a native failure must not hide successfully-found universal updates");
+        assert_eq!(updates.len(), 1);
+        assert_eq!(updates[0].name, "org.mozilla.firefox");
+    }
+
+    #[test]
+    fn combine_native_and_universal_surfaces_the_native_error_only_when_universal_is_also_empty() {
+        // Preserves the original, still-useful single-source-of-truth error
+        // message for the overwhelmingly common case: no Flatpak/Snap
+        // updates at all (or those aren't installed), so the native error is
+        // the only real information left to show.
+        let result = combine_native_and_universal(Err("apt: permission denied".to_string()), vec![]);
+        assert_eq!(result, Err("apt: permission denied".to_string()));
     }
 }
