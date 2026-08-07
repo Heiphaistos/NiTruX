@@ -1835,3 +1835,13 @@ Vérification complète : suite frontend complète 333/333 (inchangée, aucun te
 Version 0.25.74 → 0.25.75. Commit `45ac89d`, poussé sur `origin/master`.
 
 Éléments en attente inchangés. **1 nouveau correctif fonctionnel accumulé depuis la release v0.25.74** (première depuis la coupure du cycle 211). 104 cycles cumulés 110-213.
+
+[2026-08-07T10:04:00+02:00] Cycle 214 : généralisation directe du filon du cycle 213 (scaffold jamais personnalisé) -- `README.md` (jamais relu cette session) était **intégralement le texte par défaut create-tauri-app**, aucune mention de NiTruX, sur un dépôt PUBLIC avec 500+ entrées de catalogue et de multiples releases publiées ("This template should help get you started developing with Vue 3 and TypeScript in Vite").
+
+Corrigé avec une description factuelle réutilisant les `shortDescription`/`longDescription` déjà établies dans `tauri.conf.json` (pas de contenu marketing inventé), une liste de fonctionnalités croisée mot pour mot contre `src/navigation/categories.ts`, instructions d'installation pointant vers les vraies releases GitHub, commandes de build/test correspondant exactement aux scripts réels de `package.json` et aux commandes déjà utilisées tout au long de cette session. **Auto-correction pendant la rédaction** : première ébauche affirmait "12 thèmes" de mémoire -- revérifié contre `builtin.spec.ts` ("ships exactly 13 themes") avant de committer, corrigé en 13. Section "Recommended IDE Setup" d'origine conservée (toujours exacte). Section licence délibérément omise -- aucun fichier `LICENSE` n'existe dans le dépôt, en choisir une serait une décision produit/légale hors périmètre d'un correctif automatique unilatéral (même discipline que `confirmNonDestructiveActions`).
+
+Vérification complète : `cargo check` propre (aucun fichier de code applicatif modifié, changement purement documentaire, aucun impact possible sur les suites de tests).
+
+Version 0.25.75 → 0.25.76. Commit `5718e0f`, poussé sur `origin/master`.
+
+Éléments en attente inchangés. **2 nouveaux correctifs accumulés depuis la release v0.25.74.** 105 cycles cumulés 110-214.
