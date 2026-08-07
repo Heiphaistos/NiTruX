@@ -1375,3 +1375,15 @@ Version 0.25.57 → 0.25.58. Commit `01511e5`, poussé sur `origin/master`.
 **Filon "agrégation multi-source, une erreur en masque une autre" : 2 bugs réels trouvés sur 2 cas positifs (list_updates cycle 165, run_benchmark cycle 166), le reste des candidats déjà vérifiés corrects.** Filon probablement clos, aucun autre candidat identifié par le grep `extend(`/patterns similaires.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). **21 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (57 cycles cumulés 110-166).
+
+[2026-08-07T02:24:00+02:00] Cycle 167 : `report.rs` (546 lignes) relu intégralement pour la première fois cette session -- module jamais audité en profondeur.
+
+**Confirmé (positif, sans changement de code nécessaire)** : `build_system_report` appelle `crate::list_updates()` et `crate::firewall::get_firewall_status()` -- les deux corrigés respectivement aux cycles 165 et 161 -- donc le générateur de rapport bénéficie automatiquement de ces correctifs sans modification supplémentaire. Chaque champ de `SystemReport` est indépendamment `.ok()`-é depuis sa propre source, déjà correctement isolé (une source en échec ne peut pas en masquer une autre) -- pas de régression du filon d'agrégation ici.
+
+**2 pistes envisagées puis explicitement écartées, faute de preuve suffisante** (discipline du projet : ne jamais corriger sans reproduction/preuve concrète) :
+1. `escape_html` échappe `&`/`<`/`>` mais pas les guillemets -- vérifié que les 8 sites d'appel placent TOUS la valeur échappée en contenu textuel (`<td>...</td>`, `<li>...</li>`), jamais dans un attribut HTML entre guillemets -- gap non exploitable dans l'usage actuel, et le rapport HTML est de toute façon un document généré localement pour l'utilisateur lui-même (pas de frontière de confiance traversée, pas un scénario XSS réel).
+2. `render_markdown` construit des tableaux avec `|` comme délimiteur de colonne sans échapper un `|` littéral dans les valeurs de champ (noms de paquets, descriptions PCI...) -- **écarté** car aucune preuve concrète qu'un vrai nom de paquet/description contienne un `|` (les noms de paquets sont déjà contraints par `validate_package_name`), contrairement aux bugs de locale des cycles 160-161 qui avaient été vérifiés en direct sur la vraie VM. Corriger sans preuve serait un correctif spéculatif, explicitement proscrit par la règle du projet.
+
+Aucun changement de code ce cycle -- 1er cycle négatif après une série productive (156, 157, 158... 163, 165, 166), audit honnête plutôt que de forcer un correctif non prouvé.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). 21 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (58 cycles cumulés 110-167).
