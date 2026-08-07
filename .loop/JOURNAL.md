@@ -2213,3 +2213,9 @@ Aucun bug trouvé. Négatif. Les deux scripts shell pkexec-adjacents (`nitrux-pk
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 156 cycles cumulés 110-265.
+
+[2026-08-07T17:04:00+02:00] Cycle 266 : généralisation du filon du cycle 220 (`accentSecondary` jamais utilisé visuellement) à TOUT l'espace de noms `--nx-*` plutôt qu'aux seules couleurs de thème -- cross-check automatisé (script Python jetable) de chaque `var(--nx-*)` utilisé dans les fichiers `.vue` contre chaque `--nx-*` défini n'importe où (CSS, `setProperty`, `CSS_VAR_MAP`). 17 variables utilisées, 18 définies. **Aucune variable utilisée n'est jamais indéfinie** (0 résultat dans le sens critique qui causerait un rendu visuellement cassé -- `inherit`/valeur non stylée) : seule `--nx-accent-secondary` apparaît définie mais jamais consommée, confirmant EXACTEMENT et exclusivement le signalement déjà connu du cycle 220, aucune nouvelle variable orpheline.
+
+Aucun bug trouvé. Négatif, mais cross-check exhaustif précieux fermant définitivement toute possibilité de variable CSS cassée ailleurs dans l'app.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 157 cycles cumulés 110-266.
