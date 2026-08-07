@@ -2041,3 +2041,9 @@ Aucun bug trouvé. Négatif -- 1er cycle négatif après le correctif du cycle 2
 Aucun bug trouvé. Négatif -- 2e cycle négatif après le correctif du cycle 236.
 
 Éléments en attente inchangés. **5 correctifs accumulés depuis la release v0.25.74**. 129 cycles cumulés 110-238.
+
+[2026-08-07T13:28:00+02:00] Cycle 239 : `logs.rs`/`LogsPage.vue` (jamais lus). `logs.rs` gère déjà un cas réel rencontré en direct sous WSL2 (journalctl encode `MESSAGE` en tableau d'octets JSON, pas en chaîne, quand le contenu n'est pas UTF-8 valide -- ex. lignes ANSI-colorées de `wsl-pro-service` -- géré proprement, ignoré plutôt que de planter ou produire une entrée corrompue). `LogsPage.vue` : classification par priorité syslog vérifiée correcte (≤3 erreur, ==4 avertissement, reste info, cohérent avec la convention syslog 0-7), filtre texte déjà présent avec le même raisonnement documenté que les autres listes de 200+ éléments (Processus/Logiciels installés/Désinstalleur).
+
+Aucun bug trouvé. Négatif -- 3e cycle négatif après le correctif du cycle 236.
+
+Éléments en attente inchangés. **5 correctifs accumulés depuis la release v0.25.74**. 130 cycles cumulés 110-239.
