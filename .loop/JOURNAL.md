@@ -1917,3 +1917,9 @@ Version 0.25.76 → 0.25.77. Commit `a5e3c26`, poussé sur `origin/master`.
 Aucun changement de code. Négatif, mais deux patterns dupliqués sur 3 et 5 pages respectivement vérifiés exhaustivement cohérents plutôt qu'une simple relecture superficielle.
 
 Éléments en attente inchangés. 113 cycles cumulés 110-222.
+
+[2026-08-07T11:16:00+02:00] Cycle 223 : 3e application de la technique de comparaison précise -- pattern "taper pour confirmer" (action irréversible) sur les 4 pages qui l'implémentent indépendamment (`UninstallerPage`/`DataRecoveryPage`/`AntivirusPage`/`DisksPage::format`). CSS `.xx-confirm-row` identique sur les 3 premières ; `DisksPage.vue` structurellement différent (formulaire autonome à saisie libre plutôt qu'action déclenchée depuis une ligne de liste, donc pas de booléen `confirmingX` -- justifié par l'absence de sélection de ligne, pas un oubli). Phrasé `Tapez « X » pour confirmer` identique partout. Vérifié spécifiquement que `formatConfirmText` se réinitialise bien après un formatage réussi (`runFormat`), cohérent avec le `confirmingX = null` des 3 autres pages après leur action réussie.
+
+Aucun changement de code. Négatif -- 3e pattern dupliqué (chips cycle 222, filtre texte cycle 222, confirmation cycle 223) vérifié exhaustivement cohérent sur cette session.
+
+Éléments en attente inchangés. 114 cycles cumulés 110-223.
