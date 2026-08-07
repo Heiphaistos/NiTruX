@@ -66,6 +66,25 @@ describe("ThemeEditorPage — theme tab custom themes", () => {
     await vi.waitFor(() => expect(wrapper.text()).toMatch(/JSON invalide/i));
   });
 
+  it("does not save a custom theme with a blank or whitespace-only name", async () => {
+    // Regression guard for the actual gap: handleSave had NO check on
+    // themeName at all (not even the flawed bare "" check ScriptsPage.vue
+    // had before its own fix) -- a click with an empty or whitespace-only
+    // name field would save a swatch with a blank, indistinguishable
+    // title, and nothing prevents saving several such blank-named
+    // swatches side by side (unlike ScriptsPage's addScript, which at
+    // least rejects exact-name duplicates).
+    const themeStore = useThemeStore();
+    themeStore.setTheme(builtinThemes[0]);
+
+    const wrapper = mount(ThemeEditorPage);
+    await wrapper.find(".te-name-input").setValue("   ");
+    const saveButton = wrapper.findAll(".te-actions button").find((b) => b.text() === "Sauvegarder")!;
+    await saveButton.trigger("click");
+
+    expect(themeStore.customThemes.length).toBe(0);
+  });
+
   it("clicking Sauvegarder activates the saved theme immediately, not just adds it to the unused customThemes list", async () => {
     const themeStore = useThemeStore();
     themeStore.setTheme(builtinThemes[0]); // start on a known theme
