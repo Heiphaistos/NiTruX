@@ -98,7 +98,7 @@ pub fn spawn_terminal(
         }
     });
 
-    insert_session(&mut state.0.lock().unwrap(), id, TerminalSession { master, writer, child });
+    insert_session(&mut state.0.lock().expect("terminal state mutex poisoned"), id, TerminalSession { master, writer, child });
     Ok(())
 }
 
@@ -112,13 +112,13 @@ fn write_to_session(sessions: &mut HashMap<String, TerminalSession>, id: &str, d
 
 #[tauri::command]
 pub fn write_to_terminal(id: String, data: String, state: tauri::State<TerminalState>) -> Result<(), String> {
-    let mut sessions = state.0.lock().unwrap();
+    let mut sessions = state.0.lock().expect("terminal state mutex poisoned");
     write_to_session(&mut sessions, &id, &data)
 }
 
 #[tauri::command]
 pub fn resize_terminal(id: String, rows: u16, cols: u16, state: tauri::State<TerminalState>) -> Result<(), String> {
-    let sessions = state.0.lock().unwrap();
+    let sessions = state.0.lock().expect("terminal state mutex poisoned");
     let session = sessions.get(&id).ok_or("session de terminal introuvable")?;
     session
         .master
@@ -128,7 +128,7 @@ pub fn resize_terminal(id: String, rows: u16, cols: u16, state: tauri::State<Ter
 
 #[tauri::command]
 pub fn close_terminal(id: String, state: tauri::State<TerminalState>) -> Result<(), String> {
-    let mut sessions = state.0.lock().unwrap();
+    let mut sessions = state.0.lock().expect("terminal state mutex poisoned");
     if let Some(mut session) = sessions.remove(&id) {
         let _ = session.child.kill();
     }
