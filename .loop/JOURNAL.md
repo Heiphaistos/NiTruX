@@ -1773,3 +1773,9 @@ Aucun changement de code. Balayage des deux gros catalogues de données (`appCat
 Aucun changement de code. Le fichier pkexec le plus critique de l'app est désormais lu et vérifié en entier au moins une fois cette session.
 
 Éléments en attente inchangés. 36 correctifs fonctionnels + 2 cleanups cosmétiques toujours en attente d'une release publiée depuis v0.25.24 (95 cycles cumulés 110-204).
+
+[2026-08-07T08:48:00+02:00] Cycle 205 : les 5 fichiers `.policy` polkit (jamais lus cette session) relus intégralement -- les 14 actions (comptage croisé avec `PKEXEC_BINARY_NAMES`, confirmé identique) utilisent toutes `auth_admin` sur les 3 contextes (`allow_any`/`allow_inactive`/`allow_active`), sans mise en cache (`auth_admin_keep`) ni mode plus faible (`auth_self`, `yes`) nulle part -- configuration cohérente et durcie de bout en bout. Recherche de fichiers CI (`*.yml`/`*.yaml`) : aucun présent dans ce repo.
+
+Aucun changement de code. Négatif, mais dernière zone de fichiers jamais lus (policies polkit) désormais couverte.
+
+Éléments en attente inchangés. 36 correctifs fonctionnels + 2 cleanups cosmétiques toujours en attente d'une release publiée depuis v0.25.24 (96 cycles cumulés 110-205).
