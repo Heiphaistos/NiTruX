@@ -2261,3 +2261,11 @@ Recherche du meilleur remplacement fixe : testé noir pur (`#000000`, 12/13 pass
 Vérification complète : suite frontend 334/334 (inchangée, changement CSS pur, `NxButton.spec.ts` n'a pas d'assertion de couleur), `vue-tsc --noEmit` 0 erreur. Version 0.25.80 → 0.25.81. Commit `0adda86`, poussé sur `origin/master`.
 
 Éléments en attente inchangés. **2 correctifs accumulés depuis la release v0.25.79** (InstalledSoftwarePage.vue cycle 248, NxButton danger contrast cycle 272). 163 cycles cumulés 110-272.
+
+[2026-08-08T00:12:00+02:00] Cycle 273 : généralisation du filon des cycles 271-272 -- grep `color: white` sur toute la codebase pour trouver d'autres instances du même bug de contraste. 3 trouvées : `.pkb-install` (fond fixe `#1a1a1a`, contraste 17.4:1, sûr), `NxQuickActionTile.vue` (dégradés fixes non liés au thème -- plusieurs stops individuels sous 4.5:1 contre blanc, ex. `#fb923c` 2.26:1, mais un dégradé n'est pas une couleur unique et corriger nécessiterait de redessiner 5 paires de couleurs -- une décision de design, pas un correctif mécanique -- **signalé, non corrigé**), et `.pkb-success` (`PkexecIntegrationBanner.vue`, fond `var(--nx-accent-success)`, texte blanc codé en dur).
+
+**Vrai bug trouvé, pire que celui du cycle 272** : le contraste blanc/`accentSuccess` échoue sur les **13 thèmes sans exception** (pire cas 1.37:1 `dracula`, meilleur cas 3.16:1 `solarized` -- aucun n'atteint le minimum AA 4.5:1). Le message "Fonctions privilégiées activées avec succès." (affiché après l'activation réussie de l'intégration pkexec sur une install AppImage) était donc illisible sur absolument tous les thèmes. Le noir passe les 13 thèmes proprement (6.65:1 à 15.30:1). Corrigé : `color: white` → `color: black`, raisonnement documenté en commentaire.
+
+Vérification complète : suite frontend 334/334 (inchangée), `vue-tsc --noEmit` 0 erreur. Version 0.25.81 → 0.25.82. Commit `36cea15`, poussé sur `origin/master`.
+
+Éléments en attente inchangés + nouveau signalement : dégradés fixes de `NxQuickActionTile.vue` potentiellement sous le contraste AA pour certaines couleurs de dégradé (cycle 273, décision de design de palette requise, pas corrigé). **3 correctifs accumulés depuis la release v0.25.79**. 164 cycles cumulés 110-273.
