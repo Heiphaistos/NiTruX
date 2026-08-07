@@ -1825,3 +1825,13 @@ Aucun changement de code. Négatif, mais avec une vérification post-release ras
 Aucun changement de code. Négatif, mais couverture désormais étendue à l'hygiène du dépôt lui-même (au-delà du seul code applicatif).
 
 Éléments en attente inchangés. 103 cycles cumulés 110-212.
+
+[2026-08-07T09:56:00+02:00] Cycle 213 : `index.html` (jamais relu cette session) lu intégralement -- **vrai bug de scaffolding non corrigé trouvé, oublié depuis la création du projet**. `lang="en"` alors que toute l'app est en français (véritable écart WCAG 3.1.1, un lecteur d'écran annoncerait la page dans la mauvaise langue par défaut), `<title>Tauri + Vue + Typescript App</title>` au lieu du vrai nom de l'app, favicon pointant vers le logo Vite générique alors qu'un jeu d'icônes NiTruX complet existe déjà dans `src-tauri/icons/` et est déjà utilisé partout ailleurs (icône native de fenêtre, icône des paquets .deb/.rpm).
+
+Aucun test ne couvrait ce fichier (`grep` confirmé). Corrigé : `lang="fr"`, titre "NiTruX", favicon pointant vers une copie de l'icône 32x32 du projet. `public/vite.svg`/`public/tauri.svg` supprimés après confirmation qu'ils n'étaient référencés nulle part ailleurs dans `src/` -- artefacts de scaffold morts.
+
+Vérification complète : suite frontend complète 333/333 (inchangée, aucun test ne couvrait ce fichier), `npx vue-tsc --noEmit` 0 erreur, `cargo test --lib` 308/308 (inchangée, aucun fichier Rust modifié), `cargo check` propre.
+
+Version 0.25.74 → 0.25.75. Commit `45ac89d`, poussé sur `origin/master`.
+
+Éléments en attente inchangés. **1 nouveau correctif fonctionnel accumulé depuis la release v0.25.74** (première depuis la coupure du cycle 211). 104 cycles cumulés 110-213.
