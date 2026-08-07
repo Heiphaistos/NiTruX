@@ -1585,3 +1585,13 @@ Version 0.25.67 → 0.25.68. Commit `be85570`, poussé sur `origin/master`.
 **4 cycles productifs consécutifs (180-183).**
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). **31 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (74 cycles cumulés 110-183).
+
+[2026-08-07T05:20:00+02:00] Cycle 184 : audit page-par-page continué, série positive rompue après 4 cycles (180-183). `BackupPage.vue`/`backup.rs` relues intégralement -- déjà exceptionnellement bien durcies (exclude anti-auto-référence, gestion code retour tar 0/1 vs ≥2, permissions 0600 post-création, tout couvert par des tests avec preuve de reproduction live documentée en commentaire) : rien à corriger.
+
+`FileToolsPage.vue` relue intégralement -- propre. Seul point relevé : `computeHash`/`verifyHash` n'ont aucun indicateur "en cours" ni garde anti-double-clic, contrairement au reste de la page (`duplicatesLoading`/`largeFilesLoading`) -- mais sans corruption d'état possible (chaque résultat s'auto-remplace proprement) et sans pattern de référence clair sur QUAND ce genre de garde est attendu dans cette page précise ; écarté par prudence, même catégorie que le bouton Vérifier du cycle 174.
+
+`duplicates.rs` relue -- regroupement par `HashMap<String, ...>` garantit structurellement l'unicité de `hash`, aucun risque de clé `v-for` dupliquée pour `duplicateGroups`. `ScriptsPage.vue` relue intégralement -- son `running` utilise déjà le pattern sûr `!== null` (désactive TOUS les boutons "Exécuter" pendant qu'un script tourne), pas le pattern bugué déjà corrigé aux cycles 182-183. `LogsPage.vue` relue intégralement -- propre.
+
+Aucun changement de code. 1er cycle négatif après une série productive, mais chaque page a été lue en entier avec un raisonnement explicite, pas un sweep superficiel.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). 31 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (75 cycles cumulés 110-184).
