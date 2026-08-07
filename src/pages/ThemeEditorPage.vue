@@ -39,7 +39,15 @@ function handleSave() {
   // active before the edits, even though "Sauvegarder" reported success
   // and the new swatch is visible. importTheme already gets this right
   // (see its own saveCustomTheme + setTheme pair) -- this mirrors it.
-  const theme = { ...themeStore.active, id: `custom-${Date.now()}`, name: themeName.value };
+  //
+  // A blank/whitespace-only name (unlike ScriptsPage.vue's addScript,
+  // there was previously no check here at all, not even a bare "" one)
+  // must be rejected the same way, or the swatch picker fills up with
+  // indistinguishable blank-titled entries -- nothing else here dedupes
+  // by name since each save gets its own timestamp-based id.
+  const trimmedName = themeName.value.trim();
+  if (trimmedName === "") return;
+  const theme = { ...themeStore.active, id: `custom-${Date.now()}`, name: trimmedName };
   themeStore.saveCustomTheme(theme);
   themeStore.setTheme(theme);
 }
