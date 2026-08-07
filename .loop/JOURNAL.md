@@ -2189,3 +2189,9 @@ Aucun bug trouvé. Négatif, mais re-vérification de cadence précieuse d'un in
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 152 cycles cumulés 110-261.
+
+[2026-08-07T16:32:00+02:00] Cycle 262 : `src-tauri/packaging/` (contenu réel du dossier jamais listé directement) -- confirmé que les 5 fichiers `.policy` présents sur disque correspondent exactement aux 5 `POLKIT_POLICY_FILES` de `pkexec_bootstrap.rs`, aucun fichier orphelin ni manquant. `types/layout.ts`/`types/style.ts`/`types/theme.ts` (jamais lus directement) : `LayoutId` (8 valeurs) cohérent avec les 8 layouts du cycle 231, `StyleId` (12 valeurs) cohérent avec les 12 styles du cycle 258, `ThemeColors` (11 clés) cohérent avec les 13 thèmes du cycle 258 et `themeStore.ts::CSS_VAR_MAP`.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 153 cycles cumulés 110-262.
