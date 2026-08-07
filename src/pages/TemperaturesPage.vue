@@ -38,7 +38,7 @@ function statusFor(celsius: number): "success" | "warning" | "danger" {
     </div>
 
     <div class="temp-grid" v-else-if="snapshot">
-      <NxCard v-for="t in snapshot.temperatures" :key="t.label">
+      <NxCard v-for="(t, i) in snapshot.temperatures" :key="`${t.label}-${i}`">
         <div class="temp-card-inner">
           <NxStatTile :label="t.label" :value="`${t.celsius.toFixed(0)}°C`" />
           <NxBadge :status="statusFor(t.celsius)">
