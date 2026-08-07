@@ -71,9 +71,25 @@ pub fn parse_lsblk_json(json: &str) -> Option<Vec<Disk>> {
 /// media mounted by volume label, "/media/user/My Passport") -- it is taken
 /// as everything remaining after the first 5 fixed-width columns, not a
 /// single whitespace-delimited token.
+///
+/// Only sources starting with `/dev/` are real block devices -- reproduced
+/// live (`df -k -P` on this project's own dev machine) that unfiltered `df`
+/// output is dominated by pseudo-filesystems with non-`/dev/` sources
+/// (`tmpfs`, `none`, `rootfs`, `overlay`, ...), several of which are
+/// actively misleading here: every mounted Snap package shows up as a
+/// `snapfuse` source permanently pinned at "100%" (a read-only squashfs
+/// image is always exactly as full as its own size), which a user glancing
+/// at a "Disques & partitions" usage list would very reasonably read as "my
+/// disk is full" rather than "an installed Snap app exists". Mirrors
+/// `list_disks`'s own `device_type == "disk"` filter, which already excludes
+/// non-disk entries from `lsblk` -- this closes the equivalent gap on the
+/// `df`-based usage view, which had no filter at all.
 pub fn parse_df_line(line: &str) -> Option<UsageEntry> {
     let mut fields = line.split_whitespace();
-    let _source = fields.next()?;
+    let source = fields.next()?;
+    if !source.starts_with("/dev/") {
+        return None;
+    }
     let total_kb: u64 = fields.next()?.parse().ok()?;
     let used_kb: u64 = fields.next()?.parse().ok()?;
     let _avail = fields.next()?;
@@ -149,6 +165,23 @@ mod tests {
     #[test]
     fn skips_df_header_line() {
         assert!(parse_df_line("Filesystem  1K-blocks  Used  Available  Use%  Mounted on").is_none());
+    }
+
+    // Regression guard for the actual bug: reproduced live via `df -k -P` on
+    // this project's own dev machine, which included exactly these
+    // pseudo-filesystem lines alongside the one real `/dev/sdd` entry.
+    // Before this fix, every one of these was surfaced as a real disk usage
+    // row -- most misleadingly, `snapfuse` sources are always pinned at
+    // "100%" (a read-only squashfs image being exactly as full as itself is
+    // normal, not a low-disk-space warning).
+    #[test]
+    fn rejects_non_dev_pseudo_filesystem_sources() {
+        assert!(parse_df_line("none               8130884         0   8130884       0% /usr/lib/modules/6.18.33.2").is_none());
+        assert!(parse_df_line("tmpfs              1626176        20   1626156       1% /run/user/1000").is_none());
+        assert!(parse_df_line("rootfs             8125128      2772   8122356       1% /init").is_none());
+        assert!(parse_df_line("snapfuse             10240     10240         0     100% /snap/nmap/4838").is_none());
+        assert!(parse_df_line("drivers          499152892 406887896  92264996      82% /usr/lib/wsl/drivers").is_none());
+        assert!(parse_df_line(r"C:\              499152892 406887896  92264996      82% /mnt/c").is_none());
     }
 
     #[test]
