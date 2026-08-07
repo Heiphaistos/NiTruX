@@ -1715,3 +1715,7 @@ Aucun changement de code. 4e cycle négatif consécutif (192-195). **À ce stade
 Aucun changement de code. 5e cycle négatif consécutif (192-196), mais chacun avec un travail de vérification réel et documenté (cross-checks automatisés inclus), jamais un sweep superficiel. La quasi-totalité du code lisible de l'app (Vue + composants partagés + navigation + la plupart du Rust non-pkexec) a maintenant été auditée au moins une fois durant cette session.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu) + timeout `run_pkexec_with_stdin` (cycle 193, hors périmètre). 36 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (87 cycles cumulés 110-196).
+
+[2026-08-07T07:32:00+02:00] Cycle 197 : `logs.rs`/`system.rs`/`hashcheck.rs`/`largefiles.rs` relues intégralement -- toutes propres et déjà bien durcies (cas byte-array MESSAGE de journalctl, test CPU-delta timing-sensitive marqué `#[ignore]`, vecteur SHA-256 déjà corrigé par le passé). 6e cycle négatif consécutif (192-197) -- plateau de maturité confirmé, ne pas répéter l'analyse détaillée à chaque cycle (leçon cycle 125). Toujours actif en fond : recommandation de coupure de release au niveau maximal.
+
+Éléments en attente inchangés (mêmes que cycle 196). 36 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (88 cycles cumulés 110-197).
