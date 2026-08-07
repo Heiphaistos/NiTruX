@@ -32,18 +32,24 @@ interface SmartStatus { device: string; health: string | null }
 
 const smartStatus = ref<Record<string, SmartStatus>>({});
 const smartError = ref<Record<string, string>>({});
-const smartBusy = ref<string | null>(null);
+// Per-disk, not a single shared name: a single ref would be overwritten by
+// whichever disk starts checking most recently, so an earlier disk's
+// `finally` could clear "busy" state that might now belong to a different,
+// still-checking disk -- same class of bug already fixed for
+// SystemToolsPage.vue's `running` ref.
+const smartBusy = ref<Record<string, boolean>>({});
 
 async function checkSmart(diskName: string) {
   const device = `/dev/${diskName}`;
-  smartBusy.value = diskName;
+  smartBusy.value = { ...smartBusy.value, [diskName]: true };
   delete smartError.value[diskName];
   try {
     smartStatus.value = { ...smartStatus.value, [diskName]: await invoke<SmartStatus>("get_smart_status", { device }) };
   } catch (e) {
     smartError.value = { ...smartError.value, [diskName]: String(e) };
   } finally {
-    smartBusy.value = null;
+    const { [diskName]: _removed, ...rest } = smartBusy.value;
+    smartBusy.value = rest;
   }
 }
 
@@ -137,8 +143,8 @@ function bytesToGb(bytes: number): string {
         <li v-for="p in disk.partitions" :key="p.name">{{ p.name }} ({{ p.size }}){{ p.mountpoint ? ` → ${p.mountpoint}` : "" }}</li>
       </ul>
       <div class="disks-smart-row">
-        <NxButton :disabled="smartBusy === disk.name" @click="checkSmart(disk.name)">
-          {{ smartBusy === disk.name ? "Vérification..." : "Vérifier la santé" }}
+        <NxButton :disabled="smartBusy[disk.name] === true" @click="checkSmart(disk.name)">
+          {{ smartBusy[disk.name] === true ? "Vérification..." : "Vérifier la santé" }}
         </NxButton>
         <NxBadge v-if="smartStatus[disk.name]" :status="smartStatus[disk.name].health === 'PASSED' ? 'success' : 'danger'">
           {{ smartStatus[disk.name].health ?? "inconnu" }}
