@@ -1533,3 +1533,15 @@ Sweep complémentaire : recherche de tout nouveau `Number()`/`parseInt()` non ga
 Aucun changement de code. 2e cycle négatif consécutif (178-179), mais chacun avec un focus distinct et une vérification réelle (pas un sweep redondant) -- le gap quarantine-file du prompt figé s'avère être un faux signal (déjà traité), pas une piste manquée.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). 27 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (70 cycles cumulés 110-179).
+
+[2026-08-07T04:44:00+02:00] Cycle 180 : audit page-par-page continué, série négative rompue. `DashboardPage.vue` puis `TemperaturesPage.vue` relues intégralement.
+
+**Vrai bug de type "incohérence jumelle" trouvé** : les deux pages affichent exactement le même tableau `SensorSnapshot.temperatures` (même commande backend `get_sensor_snapshot`, `sensors.rs::read_temperatures` via `sysinfo::Components`). `DashboardPage.vue` le clé déjà défensivement en `${t.label}-${i}` (cycle antérieur non documenté explicitement dans le journal mais présent dans le code) -- reconnaissant qu'un système avec 2+ disques NVMe (ou plusieurs puces hwmon exposant un nom générique) produit couramment plusieurs capteurs au label identique ("Composite" étant le nom standard NVMe, répété une fois par disque). `TemperaturesPage.vue`, la page DÉDIÉE à cet affichage, était restée sur `:key="t.label"` seul -- même catégorie de bug que `WiFiAnalyzerPage`/`NetworkPage` (cycles 150-151), jamais généralisée à cette page pourtant la plus exposée à ce risque.
+
+Corrigé en miroir exact du pattern déjà établi sur `DashboardPage.vue`. Nouveau test de régression avec deux capteurs "Composite" au label identique, vérifiant que les 2 cartes et leurs 2 valeurs distinctes s'affichent bien (même limite déjà documentée pour WiFiAnalyzerPage : le montage initial de Vue ne force pas la réconciliation qui ferait apparaître l'avertissement "Duplicate keys", donc le test garde la même vocation défensive plutôt qu'une reproduction stricte du warning).
+
+Vérification complète : `npx vitest run TemperaturesPage.spec.ts` 3/3, suite complète 326/326 frontend (325→326, +1), `npx vue-tsc --noEmit` 0 erreur, `cargo test --lib` 305/305 Rust (sanity check, aucun fichier Rust modifié).
+
+Version 0.25.64 → 0.25.65. Commit `27470c7`, poussé sur `origin/master`.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). **28 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (71 cycles cumulés 110-180).
