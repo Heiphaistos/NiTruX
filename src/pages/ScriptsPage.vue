@@ -15,8 +15,14 @@ const newContent = ref("");
 const saveError = ref<string | null>(null);
 
 function saveScript() {
-  if (newName.value === "" || newContent.value === "") return;
-  const result = store.addScript(newName.value, newContent.value);
+  // `newName.value === ""` alone lets a whitespace-only name (e.g. "   ")
+  // through -- trim first so such input is rejected the same as truly
+  // empty, instead of saving under an effectively blank, indistinguishable
+  // entry in the list (`name` is this store's only identity, per
+  // scriptsStore.ts's own doc comment on why duplicates are rejected).
+  const trimmedName = newName.value.trim();
+  if (trimmedName === "" || newContent.value === "") return;
+  const result = store.addScript(trimmedName, newContent.value);
   if (!result.ok) {
     saveError.value = result.error;
     return;
