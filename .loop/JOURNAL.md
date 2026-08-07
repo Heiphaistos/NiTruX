@@ -2341,3 +2341,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 174 cycles cumulés 110-283.
+
+[2026-08-08T01:40:00+02:00] Cycle 284 : après le milestone du cycle 283 (deux arborescences source entièrement lues), balayage de régression complet à trois -- `cargo test`, `npx vue-tsc --noEmit`, suite frontend `vitest` relancés ensemble et frais (pas seulement les sous-ensembles ciblés utilisés après chaque correctif individuel) pour confirmer que l'état combiné de toute la codebase reste sain après les 3 correctifs accumulés depuis v0.25.79 et les 174 cycles de cette session. Résultat : `cargo test` 310/310 (1 ignoré intentionnellement, cf. `system.rs` cycle 257), `vue-tsc` 0 erreur, `vitest` 334/334 sur 67 fichiers de test -- tout vert ensemble.
+
+Aucun bug trouvé. Négatif, mais confirmation de cadence précieuse de l'état de santé global combiné.
+
+Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 175 cycles cumulés 110-284.
