@@ -1785,3 +1785,9 @@ Aucun changement de code. Négatif, mais dernière zone de fichiers jamais lus (
 Aucun changement de code. Négatif.
 
 Éléments en attente inchangés. 36 correctifs fonctionnels + 2 cleanups cosmétiques toujours en attente d'une release publiée depuis v0.25.24 (97 cycles cumulés 110-206).
+
+[2026-08-07T09:04:00+02:00] Cycle 207 : généralisation automatisée du filon "dérive TS/Rust" du cycle 206 -- script Node comparant systématiquement les 49 structs Rust `#[derive(Serialize)]` contre les 60 interfaces TypeScript de tout `src/` (au lieu de vérifications manuelles ciblées). 4 signalements initiaux, tous écartés après analyse : 3 sont des sous-ensembles légitimes (une page n'utilisant que certains champs d'un snapshot plus large -- `NetworkSnapshot`/`WiFiAnalyzerPage`, `CpuInfo`+`SystemSnapshot`/`PerfHistoryPage`, aucun risque puisque les champs non utilisés ne sont simplement jamais accédés) et 1 est un faux positif de la regex du script (capture les champs du type littéral imbriqué `temperatures: { label; celsius }[]` comme s'ils étaient au niveau racine de `SensorSnapshot`). **Aucune vraie dérive de champ trouvée** sur l'ensemble de l'app -- ce filon est désormais clos par une vérification exhaustive plutôt que des sondages ponctuels.
+
+Aucun changement de code. Négatif.
+
+Éléments en attente inchangés. 36 correctifs fonctionnels + 2 cleanups cosmétiques toujours en attente d'une release publiée depuis v0.25.24 (98 cycles cumulés 110-207).
