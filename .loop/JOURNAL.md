@@ -1349,3 +1349,15 @@ Sweep large de composants UI partagés jamais relus intégralement cette session
 Aucun changement de code ce cycle -- 1er cycle négatif après une série productive (156-163), sweep honnête et large plutôt que forcer un correctif spéculatif.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). 19 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (55 cycles cumulés 110-164).
+
+[2026-08-07T02:03:00+02:00] Cycle 165 : audit module Rust `packages/*.rs` non encore relus intégralement cette session (`flatpak.rs`, `install.rs`, `universal.rs`, `mod.rs`) -- tous propres, bien testés. En traçant l'agrégation complète de `list_updates()` dans `lib.rs`, remontée jusqu'à l'appelant final.
+
+**Vrai bug d'agrégation trouvé** : `list_updates()` appelait `aggregate_update_results(native_results)?` -- le `?` propage IMMÉDIATEMENT une erreur si TOUS les gestionnaires natifs détectés échouent (ex. verrou apt transitoire, coupure réseau), et **retourne AVANT MÊME d'avoir interrogé Flatpak/Snap**, alors que ce sont des sources complètement indépendantes qui auraient pu réussir. Contredit directement la philosophie "chaque source se dégrade indépendamment" déjà documentée dans le commentaire de `aggregate_update_results` juste au-dessus -- cette philosophie s'appliquait déjà correctement ENTRE plusieurs gestionnaires natifs, mais pas ENTRE l'agrégat natif et la couche universelle par-dessus.
+
+Reproduit par construction d'un scénario de test (logique pure de contrôle de flux, pas besoin de VM/flatpak réel) : un gestionnaire natif en échec + des mises à jour universelles trouvées avec succès -- confirmé que le code actuel aurait perdu ces dernières. Corrigé en extrayant la combinaison native+universelle dans une nouvelle fonction pure testable `combine_native_and_universal` : erreur native + universel non-vide → retourne désormais les mises à jour universelles (au lieu de propager l'erreur) ; erreur native + universel vide → comportement inchangé (message d'erreur natif original préservé). 3 nouveaux tests de régression.
+
+Vérification complète : `cargo test --lib tests::` 8/8 (module `lib.rs`), suite complète 302/302 Rust (299→302, +3), `cargo clippy --all-targets` 0 avertissement, `npm run test -- --run` 319/319 frontend (inchangé, correctif Rust pur), `npx vue-tsc --noEmit` 0 erreur.
+
+Version 0.25.56 → 0.25.57. Commit `7a09f44`, poussé sur `origin/master`.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). **20 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (56 cycles cumulés 110-165).
