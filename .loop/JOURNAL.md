@@ -2097,3 +2097,13 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. 138 cycles cumulés 110-247.
+
+[2026-08-07T14:40:00+02:00] Cycle 248 : `UserAccountsPage.vue` (frontend de `accounts.rs`, déjà lu au cycle 225, jamais vu) : propre, cohérent avec la commande infaillible `get_user_accounts`. `InstalledSoftwarePage.vue` (jamais lue) : `list_installed_packages` et `get_environment_variables` étaient attendus dans le MÊME bloc `try/catch`.
+
+**Vrai bug trouvé** : `list_installed_packages` peut réellement échouer (`Err("aucun gestionnaire de paquets détecté")` quand `detect_package_managers()` ne trouve ni apt/dnf/pacman/zypper -- cas déjà géré explicitement par le `loadError` de cette page) -- mais un tel échec faisait AUSSI échouer silencieusement le chargement de "Variables d'environnement", alors que `get_environment_variables` est totalement indépendant et infaillible (`std::env::vars().collect()`, jamais d'erreur possible). `UninstallerPage.vue` a déjà établi le bon pattern pour ce même appel `list_installed_packages` : son propre `try/catch` séparé de l'appel indépendant `detect_native_manager` juste après -- confirmé en lisant son code, pas une supposition. Bug de contrôle de flux JS pur, vérifiable et corrigible par lecture de code seule (pas de sortie d'outil externe à reproduire en direct).
+
+Corrigé : les deux appels séparés en deux étapes indépendantes dans `onMounted`, miroir exact du pattern `UninstallerPage.vue`. Nouveau test de régression prouvant que les variables d'environnement s'affichent bien même quand `list_installed_packages` rejette.
+
+Vérification complète : suite frontend 334/334 (+1), `cargo test` inchangé (changement frontend pur), `vue-tsc --noEmit` 0 erreur. Version 0.25.79 → 0.25.80. Commit `097b8d9`, poussé sur `origin/master`.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 139 cycles cumulés 110-248.
