@@ -1791,3 +1791,11 @@ Aucun changement de code. Négatif.
 Aucun changement de code. Négatif.
 
 Éléments en attente inchangés. 36 correctifs fonctionnels + 2 cleanups cosmétiques toujours en attente d'une release publiée depuis v0.25.24 (98 cycles cumulés 110-207).
+
+[2026-08-07T09:12:00+02:00] Cycle 208 : nouveau cross-check automatisé, cette fois sur les commandes Tauri elles-mêmes plutôt que leurs types. Extraction des 69 commandes de `generate_handler!` (lib.rs) vs les 66 fonctions `#[tauri::command] pub fn` trouvées par grep dans les sous-modules -- écart de 3 expliqué (fausses alertes du script : `list_updates`/`detect_native_manager`/`get_environment_variables` sont définies directement dans `lib.rs` en `fn` privée, non `pub fn`, donc non capturées par le motif de recherche). **Aucune commande définie mais non enregistrée** (code mort) confirmée après correction.
+
+Deuxième vérification, plus utile : extraction de tous les appels `invoke("...")` du frontend (69 chaînes uniques) vs les 69 commandes enregistrées côté Rust -- **correspondance bidirectionnelle parfaite**, aucune commande appelée par le frontend qui n'existerait pas côté Rust (échouerait silencieusement au runtime, aucune erreur TypeScript ne pourrait l'attraper puisque `invoke()` prend une simple chaîne) et aucune commande Rust jamais appelée par aucune page.
+
+Aucun changement de code. Négatif, mais ce filon (cohérence de la surface IPC complète) est désormais clos.
+
+Éléments en attente inchangés. 36 correctifs fonctionnels + 2 cleanups cosmétiques toujours en attente d'une release publiée depuis v0.25.24 (99 cycles cumulés 110-208).
