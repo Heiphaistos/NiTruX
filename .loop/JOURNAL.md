@@ -1615,3 +1615,15 @@ Vérification complète : `npx vitest run UpdateHistoryPage.spec.ts` 4/4, suite 
 Version 0.25.68 → 0.25.69. Commit `c3bcec9`, poussé sur `origin/master`.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). **32 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (77 cycles cumulés 110-186).
+
+[2026-08-07T06:03:00+02:00] Cycle 187 : sweep transversal complet de toutes les clés `v-for` non composites (`:key="champ.simple"`) sur les ~50 occurrences de tout `src/pages/*.vue`. Chacune vérifiée contre sa source backend réelle (PCI slots, MAC Bluetooth, IDs Docker, noms de partition, IDs EFI, hash SHA-256, noms de service systemd, etc.) -- **toutes structurellement uniques**, aucune nouvelle violation du filon WiFi/Températures/Historique déjà corrigé. Ce filon est désormais formellement clos après vérification exhaustive de l'app entière.
+
+**Vrai bug trouvé sur un angle différent, en élargissant vers les stores Pinia** : `scriptsStore.ts::readPersistedScripts` ne vérifiait que `Array.isArray(parsed)` avant de caster directement en `SavedScript[]`, sans valider les champs de chaque élément -- contrairement à `themeStore.ts` (`readPersistedTheme`/`readPersistedCustomThemes`) et `preferencesStore.ts` (`isPreferences`), qui valident strictement chaque champ du JSON persisté avant de l'accepter. Une entrée `localStorage` corrompue ou d'un schéma périmé (ex: `name` manquant) traverserait directement jusqu'à `:key="s.name"` dans `ScriptsPage.vue` sous forme `undefined`, cassant la garantie d'identité unique dont `addScript`/`removeScript` dépendent (déjà documentée dans le commentaire d'`addScript`).
+
+**Reproduit EN DIRECT selon la discipline stricte** : deux tests écrits avec du JSON malformé injecté directement dans `localStorage` (champs manquants/mal typés), confirmés échouants contre le code d'origine (le store chargeait tel quel les entrées invalides). Corrigé en ajoutant un garde de type `isSavedScript`, miroir exact du pattern déjà établi par `themeStore.ts`/`preferencesStore.ts`. `layoutStore.ts`/`styleStore.ts` vérifiés en comparaison -- déjà corrects (persistent une simple chaîne validée contre un registre, pas de JSON à valider).
+
+Vérification complète : `npx vitest run scriptsStore.spec.ts` 5/5, suite complète 332/332 frontend (330→332, +2), `npx vue-tsc --noEmit` 0 erreur, `cargo check` + `cargo test --lib` 305/305 Rust (sanity check, aucun fichier Rust modifié).
+
+Version 0.25.69 → 0.25.70. Commit `e82d094`, poussé sur `origin/master`.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). **33 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (78 cycles cumulés 110-187).
