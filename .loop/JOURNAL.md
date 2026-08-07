@@ -2283,3 +2283,13 @@ Aucun changement de code. Négatif au sens strict, mais risque réel signalé ho
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 166 cycles cumulés 110-275.
+
+[2026-08-08T00:36:00+02:00] Cycle 276 : reprise du risque `NxBadge` signalé au cycle 274 (approximation seulement à l'époque) -- lu `style-tokens.css` en entier pour obtenir les vraies valeurs `--nx-style-bg` par disposition. Découverte clé : 7 des 12 dispositions (`flat-modern`/`neon-terminal`/`neumorphism`/`brutalism`/`paper`/`amber-crt`/`mono-contrast`) ont un `--nx-style-bg` OPAQUE et exactement connu (`bgElevated` ou `bgBase` directement, sans `color-mix` intermédiaire) -- seules 4 (`glass-glow`/`aero-glass`/`line-art`/`gradient-mesh`) restent translucides/en dégradé et nécessiteraient une réplication plus complexe.
+
+**Recalcul EXACT (pas une approximation) pour ces 7 dispositions** : 364 combinaisons (7 styles × 13 thèmes × 4 statuts de badge) -- **209 (57%) tombent sous le minimum WCAG AA 4.5:1**, le pire cas étant `adwaita`/`accentWarning` à 1.82:1 quelle que soit la disposition testée. Ceci confirme et renforce nettement le risque du cycle 274 : ce n'est plus une approximation incertaine mais un calcul exact montrant qu'une majorité de combinaisons thème/disposition réalistes ont un texte de badge illisible.
+
+**Volontairement PAS corrigé** : contrairement aux deux bugs déjà réglés (texte blanc fixe → noir, un remplacement mécanique sans ambiguïté), `NxBadge` utilise intentionnellement la couleur d'accent ELLE-MÊME comme texte (badge coloré = texte coloré, cohérent avec son fond légèrement teinté) -- un vrai correctif nécessiterait soit d'assombrir/éclaircir spécifiquement la couleur utilisée comme texte de badge (variante "sûre pour le texte" par thème, n'existe pas actuellement), soit d'augmenter significativement le pourcentage de teinte du fond pour plus de marge de contraste -- une décision de langage visuel, pas un simple remplacement de couleur comme les deux correctifs précédents. Escaladé clairement plutôt que deviné.
+
+Aucun changement de code. Négatif au sens strict, mais confirmation exacte (pas approximative) d'un vrai problème d'accessibilité large qui nécessite une décision de design avant correctif.
+
+Éléments en attente inchangés + signalement renforcé : `NxBadge` illisible sur 57% des combinaisons thème/disposition testées exactement (cycle 276, confirme et renforce le cycle 274 -- nécessite une décision de langage visuel avant tout correctif). **3 correctifs accumulés depuis la release v0.25.79**. 167 cycles cumulés 110-276.
