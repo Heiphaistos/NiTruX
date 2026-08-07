@@ -2323,3 +2323,13 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 172 cycles cumulés 110-281.
+
+[2026-08-08T01:24:00+02:00] Cycle 282 : sweep final -- liste exhaustive de tous les fichiers `.ts`/`.vue` non-spec de `src/` pour repérer d'éventuels derniers oubliés. Trois trouvés : `vite-env.d.ts` (fichier de déclaration de types Vite standard, trivial), `UpdatesPage.vue` (référencée constamment comme "jumelle" de `PackagesPage.vue` mais jamais lue directement dans cette fenêtre -- confirme `.upd-header { flex-wrap: wrap }` déjà présent, utilise `list_updates` déjà durci au cycle 255), `ScriptsPage.vue` (jamais lue directement).
+
+Point de renforcement du signalement du cycle 276 : `.scr-output { color: var(--nx-accent-success); }` (sortie de script affichée en texte brut sur le fond de carte normal, non teinté) reproduit exactement le même schéma que `NxBadge` -- texte en couleur d'accent pure sur un fond `--nx-style-bg` -- déjà connu comme problématique pour l'accessibilité (cycle 276). Pas une nouvelle catégorie de bug distincte, mais une preuve supplémentaire que ce schéma récurrent ("couleur d'accent brute utilisée comme texte") dépasse `NxBadge` seul -- renforce la nécessité d'une décision de langage visuel plutôt que de la traiter comme un cas isolé.
+
+**Ceci clôt la lecture directe de littéralement tous les fichiers source `.ts`/`.vue` non-spec de `src/` cette session.**
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés + renforcement du signalement `NxBadge`/couleur-accent-comme-texte (cycles 274/276, maintenant confirmé récurrent dans au moins 2 composants). **3 correctifs accumulés depuis la release v0.25.79**. 173 cycles cumulés 110-282.
