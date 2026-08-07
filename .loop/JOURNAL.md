@@ -2125,3 +2125,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 142 cycles cumulés 110-251.
+
+[2026-08-07T15:12:00+02:00] Cycle 252 : `DiskVisualizerPage.vue` (jamais lue, utilise aussi `list_disk_usage` -- confirme que le correctif du cycle 236 bénéficie à cette page également, pas seulement `DisksPage.vue`) : propre, `minSizeBytes` fixe (100 Mo, pas de champ libre ici contrairement à `FileToolsPage.vue`). `PerfHistoryPage.vue` (jamais lue, sparkline CPU/mémoire) : confirme le point déjà noté au cycle 232 -- `dashboardRefreshIntervalMs` alimente bien un `window.setInterval` ici aussi, toujours inatteignable en usage normal (sélecteur UI à 3 valeurs fixes uniquement).
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 143 cycles cumulés 110-252.
