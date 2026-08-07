@@ -2227,3 +2227,9 @@ Pivot vers `vite.config.ts`/`vitest.config.ts` (jamais lus, pilotent tout le pip
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés (WiFiAnalyzerPage toujours non vérifié -- nécessiterait `sshpass`/`expect`/`paramiko` pré-installés ou une intervention utilisateur pour les installer). **1 correctif accumulé depuis la release v0.25.79**. 158 cycles cumulés 110-267.
+
+[2026-08-07T17:20:00+02:00] Cycle 268 : vérification croisée des 5 icônes référencées dans `tauri.conf.json::bundle.icon` contre les fichiers réellement présents dans `src-tauri/icons/` -- les 5 existent bien (les autres fichiers du dossier, ex. `Square*Logo.png`/`StoreLogo.png`, sont des restes du gabarit Windows Store non référencés, jamais utilisés par les builds Linux, pas un problème). `.gitignore` lu en entier (jamais fait directement) : couvre correctement `node_modules`/`dist`/`target`/`.env`/logs/IDE ; `.loop/` y est bien listé mais volontairement force-ajouté (`git add -f`) à chaque cycle depuis le début de cette session -- pattern déjà établi et cohérent, pas un oubli.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 159 cycles cumulés 110-268.
