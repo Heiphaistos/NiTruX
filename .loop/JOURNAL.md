@@ -1387,3 +1387,15 @@ Version 0.25.57 → 0.25.58. Commit `01511e5`, poussé sur `origin/master`.
 Aucun changement de code ce cycle -- 1er cycle négatif après une série productive (156, 157, 158... 163, 165, 166), audit honnête plutôt que de forcer un correctif non prouvé.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). 21 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (58 cycles cumulés 110-167).
+
+[2026-08-07T02:33:00+02:00] Cycle 168 : `InstallProfilesPage.vue` relue intégralement.
+
+**Vrai gap d'utilisabilité trouvé** : la liste de sélection manuelle affiche les 506 entrées d'`appCatalog` (le catalogue "x10" enrichi en R14) en cases à cocher plates, SANS filtre ni catégorie -- effectivement inutilisable à cette taille (506 lignes à parcourir pour en trouver une). Contraste net avec `QuickInstallPage.vue`, qui utilise la MÊME source de données (`appCatalog`) mais a déjà résolu ce problème exact avec des chips de catégorie filtrantes (`selectedCategory`/`categories`/`filteredCatalog`).
+
+Corrigé en miroir exact du pattern déjà établi dans `QuickInstallPage.vue`, plutôt que d'inventer un nouveau mécanisme pour le même problème sous-jacent : ajout de `selectedCategory`/`categories`/`filteredCatalog` + chips `.ip-chip` (CSS identique à `.qi-chip`). L'état de sélection (`selected`, un `Set<string>` d'ids) reste indépendant du filtre visible -- les apps déjà cochées par un profil restent cochées même si elles sortent de la catégorie actuellement affichée, juste invisibles jusqu'à changer de filtre (comportement correct et attendu). Nouveau test de régression vérifiant que le filtre réduit bien le nombre de cases affichées.
+
+Vérification complète : `npx vitest run src/pages/InstallProfilesPage.spec.ts` 4/4, suite complète 321/321 frontend (320→321, +1), `npx vue-tsc --noEmit` 0 erreur, `cargo test --lib` 304/304 Rust (sanity check, aucun fichier Rust modifié).
+
+Version 0.25.58 → 0.25.59. Commit `51e3a32`, poussé sur `origin/master`.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). **22 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (59 cycles cumulés 110-168).
