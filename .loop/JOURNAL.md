@@ -1763,3 +1763,13 @@ Aucun changement de code. Balayage des deux gros catalogues de données (`appCat
 [2026-08-07T08:32:00+02:00] Cycle 203 : les 8 composants de layout jamais lus (`BentoLayout`/`CommandFirstLayout`/`CompactSidebarLayout`/`FloatingDockLayout`/`MasterDetailLayout`/`SidebarClassicLayout`/`TopNavLayout`/`WidgetsGridLayout`) relus intégralement -- tous propres. `types/theme.ts`/`layout.ts`/`style.ts` + `styles/registry.ts` relus, `StyleId` (12 valeurs) cross-vérifié contre `styleRegistry` -- identique, aucun écart. Négatif, mais couverture désormais quasi-exhaustive de tout le code source lisible de l'app (Vue + Rust + données + types).
 
 Éléments en attente inchangés. 36 correctifs fonctionnels + 2 cleanups cosmétiques toujours en attente d'une release publiée depuis v0.25.24 (94 cycles cumulés 110-203).
+
+[2026-08-07T08:41:00+02:00] Cycle 204 : lecture intégrale du script `nitrux-pkexec-helper` (415 lignes, le fichier le plus sensible de l'app) pour la première fois cette session -- jusqu'ici seulement lu par fragments. Deux hypothèses creusées et écartées après analyse :
+
+1. `write-hosts`/`set-dns` écrivent d'abord dans un fichier temporaire prévisible (`/etc/hosts.nitrux-tmp`, `/etc/resolv.conf.nitrux-tmp`) sans passer par un équivalent de `secure_temp.rs` (création exclusive + rejet des symlinks) -- même famille de risque TOCTOU déjà corrigée ailleurs. **Écarté** : contrairement à `/tmp` (monde-inscriptible), `/etc` n'est pas accessible en écriture par un utilisateur non-privilégié -- un attaquant ne peut pas pré-positionner un symlink à cet endroit sans déjà avoir les privilèges que ce script existe justement à protéger. Le modèle de menace ne s'applique pas ici.
+
+2. `quarantine-file` construit sa destination via `$(date +%s)-$(basename "$path")` (granularité à la seconde) puis fait un `mv` sans `--no-clobber` -- deux fichiers de basename identique mis en quarantaine dans la même seconde s'écraseraient silencieusement. Réel mais très marginal : le flux UI (confirmation taper-pour-valider, cycle 158) rend une collision quasi impossible en usage normal, et une modification du script pkexec exige une re-vérification VM live coûteuse pour un gain very faible -- **non corrigé, jugé insuffisamment prioritaire pour le coût/risque d'une modif pkexec**.
+
+Aucun changement de code. Le fichier pkexec le plus critique de l'app est désormais lu et vérifié en entier au moins une fois cette session.
+
+Éléments en attente inchangés. 36 correctifs fonctionnels + 2 cleanups cosmétiques toujours en attente d'une release publiée depuis v0.25.24 (95 cycles cumulés 110-204).
