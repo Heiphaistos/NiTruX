@@ -2165,3 +2165,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 148 cycles cumulés 110-257.
+
+[2026-08-07T16:00:00+02:00] Cycle 258 : `themes/builtin.ts` (jamais lu, 13 thèmes intégrés) et `styles/registry.ts` (jamais lu, 12 dispositions de style) -- données de configuration jamais examinées directement bien que référencées partout cette session. **Cross-checks automatisés** (script Python jetable) : les 13 thèmes ont tous leurs 11 clés de couleur requises complètes (aucune manquante) et aucune paire de thèmes ne partage un jeu de couleurs identique (pas de copier-coller accidentel) ; les 12 ids de `styleRegistry` correspondent exactement aux 12 sélecteurs `[data-nx-style="..."]` définis dans `style-tokens.css` -- correspondance exacte, 0 écart.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 149 cycles cumulés 110-258.
