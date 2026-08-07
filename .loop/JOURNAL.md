@@ -1425,3 +1425,17 @@ Version 0.25.59 → 0.25.60. Commit `4e22428`, poussé sur `origin/master`.
 Aucun changement de code ce cycle -- 1er cycle négatif après une série productive (168-169), plusieurs pistes réelles explorées et honnêtement écartées plutôt que de forcer un correctif hors de portée raisonnable pour un seul cycle.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). 23 correctifs fonctionnels + 1 cleanup cosmétique toujours en attente d'une release publiée depuis v0.25.24 (61 cycles cumulés 110-170).
+
+[2026-08-07T03:05:00+02:00] Cycle 171 : `trash.rs` (281 lignes) relu intégralement pour la première fois cette session.
+
+**Vrai bug d'incohérence entre deux fonctions jumelles trouvé** : `restore_trash_item` propageait l'échec de suppression du fichier `.trashinfo` (`std::fs::remove_file(&info_path).map_err(...)? `) MÊME APRÈS que le déplacement réel du fichier ait déjà réussi -- rapportant tout le restore comme un échec. Or `delete_trash_item_permanently`, juste en dessous dans le MÊME fichier, traite déjà la suppression identique du fichier `.trashinfo` comme non-bloquante (`let _ = std::fs::remove_file(&info_path);`). Incohérence directe entre deux fonctions quasi-identiques du même fichier -- l'une avait déjà le bon pattern, l'autre non.
+
+**Reproduit EN DIRECT** (discipline stricte : test lancé contre le code AVANT correctif pour confirmer l'échec, puis réappliqué après) : `unlink()` exige la permission d'écriture sur le dossier PARENT, pas sur le fichier cible -- un `chmod 555` réel sur le dossier `info/` (dans un dossier temporaire isolé, pas le vrai `$HOME`) bloque la suppression du `.trashinfo` indépendamment du déplacement du fichier réel (qui touche un dossier complètement différent, `files/`). Confirmé : le code d'avant échouait avec "Permission denied (os error 13)" malgré un déplacement de fichier parfaitement réussi. Côté frontend, `DataRecoveryPage.vue::restore` traite TOUTE erreur identiquement (garde l'élément visible dans la corbeille, affiche une erreur bloquante) -- une nouvelle tentative échouerait alors pour une raison encore plus confuse (le fichier source n'existe plus du tout dans `Trash/files`).
+
+Corrigé en extrayant la logique métier dans `restore_from_trash_paths` (paths explicites, testable sans dépendre du `$HOME` global du process -- évite le piège de mutation d'état global entre tests parallèles déjà implicitement reconnu par un commentaire existant dans ce même fichier). Nouveau test avec chmod réel reproduisant la panne, confirmé échouant avant correctif puis passant après.
+
+Vérification complète : `cargo test --lib trash::` 14/14, suite complète 305/305 Rust (304→305, +1), `npm run test -- --run` 322/322 frontend (inchangé, aucun fichier Vue/TS modifié), `npx vue-tsc --noEmit` 0 erreur.
+
+Version 0.25.60 → 0.25.61. Commit `64db389`, poussé sur `origin/master`.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). **24 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (62 cycles cumulés 110-171).
