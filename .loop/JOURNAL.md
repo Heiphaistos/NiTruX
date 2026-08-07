@@ -1571,3 +1571,17 @@ Version 0.25.66 → 0.25.67. Commit `cd7d765`, poussé sur `origin/master`.
 **3 cycles productifs consécutifs (180-182)**, tous des incohérences réelles trouvées par comparaison directe entre pages/fichiers jumeaux -- filon toujours actif, à continuer.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). **30 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (73 cycles cumulés 110-182).
+
+[2026-08-07T05:14:00+02:00] Cycle 183 : généralisation directe du correctif `SystemToolsPage.vue::running` du cycle 182 -- `smartBusy` de `DisksPage.vue` avait exactement le même défaut (`ref<string | null>` retenant au plus un seul nom de disque en vérification SMART, écrasé si un 2e disque démarre sa propre vérification pendant que le 1er est encore en vol, ce qui réactive à tort le bouton du 1er).
+
+**Reproduit EN DIRECT selon la discipline stricte** : test à deux disques avec promesses contrôlables, démarrage du 1er puis du 2e avant résolution du 1er, confirmé échouant contre le code d'origine (`expected undefined to be defined`). Corrigé en `Record<string, boolean>`, miroir exact du correctif `running` et du pattern déjà utilisé pour `smartStatus`/`smartError` dans ce même fichier.
+
+**Sweep complémentaire pour clore le filon** : recherche de tout autre "id unique en cours" (`ref<string | null>`) comparé directement à un champ d'élément dans un `v-for` ailleurs dans `src/pages/`. Trouvé `AntivirusPage.vue::quarantining` et `UninstallerPage.vue::uninstalling` -- tous deux utilisent en réalité un pattern DIFFÉRENT et sûr (`quarantining !== null` / `uninstalling !== null` désactive TOUS les boutons de la liste, pas seulement celui qui correspond -- sérialise correctement au lieu de risquer une course). `DisksPage.vue` était la seule autre occurrence du vrai bug -- filon clos après 2 correctifs (182-183).
+
+Vérification complète : `npx vitest run DisksPage.spec.ts` 8/8, suite complète 329/329 frontend (328→329, +1), `npx vue-tsc --noEmit` 0 erreur, `cargo check` + `cargo test --lib` 305/305 Rust (sanity check, aucun fichier Rust modifié).
+
+Version 0.25.67 → 0.25.68. Commit `be85570`, poussé sur `origin/master`.
+
+**4 cycles productifs consécutifs (180-183).**
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). **31 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (74 cycles cumulés 110-183).
