@@ -78,10 +78,14 @@ async function install() {
 .pkb-install { background: #1a1a1a; color: white; }
 .pkb-dismiss { background: transparent; color: #1a1a1a; text-decoration: underline; }
 .pkb-error { width: 100%; font-size: 12px; color: #7f1d1d; }
+/* Black, not white: computed WCAG contrast of white text against every
+   built-in theme's accentSuccess fails all 13 (worst 1.37:1, best 3.16:1 --
+   none clear the 4.5:1 AA minimum). Black clears all 13 cleanly (6.65:1 to
+   15.30:1) -- same class of bug already fixed for NxButton--danger. */
 .pkb-success {
   padding: 8px 16px;
   background: var(--nx-accent-success);
-  color: white;
+  color: black;
   font-size: 13px;
 }
 </style>
