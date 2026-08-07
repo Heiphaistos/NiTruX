@@ -1439,3 +1439,15 @@ Vérification complète : `cargo test --lib trash::` 14/14, suite complète 305/
 Version 0.25.60 → 0.25.61. Commit `64db389`, poussé sur `origin/master`.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). **24 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (62 cycles cumulés 110-171).
+
+[2026-08-07T03:10:00+02:00] Cycle 172 : filon "nettoyage après succès traité comme bloquant" du cycle 171 généralisé (`grep -n "remove_file(.*map_err\|remove_dir_all(.*map_err"`) -- seule autre occurrence trouvée est dans `delete_trash_item_permanently` elle-même, où c'est correct (l'opération de suppression EST l'action principale, pas un nettoyage secondaire). Filon clos, 1 seul bug trouvé au total (déjà corrigé cycle 171).
+
+Pivot vers `portscan.rs` puis son consommateur `NetworkPage.vue`. **Vrai bug de validation d'entrée trouvé, même famille qu'un bug déjà documenté ailleurs dans ce projet** : le champ "Ports, séparés par virgule" parse chaque segment avec `parseInt` puis filtre uniquement `!Number.isNaN(p)` -- mais `parseInt` n'a aucune limite de plage intrinsèque, donc taper `99999` (ou un nombre négatif) produit une valeur numérique valide (pas `NaN`) qui passe le filtre. Le paramètre backend `scan_ports_cmd(ports: Vec<u16>)` ne peut représenter que 0-65535 -- une valeur hors plage fait échouer la désérialisation JSON de l'IPC Tauri elle-même, AVANT même que le corps de la commande Rust ne s'exécute, avec un message brut et cryptique plutôt qu'un message actionnable. **Exactement la même classe de bug déjà documentée dans le commentaire existant de `FileToolsPage.vue::scanLargeFiles`** ("Number() silently produces NaN and the invoke call fails with a raw Tauri IPC deserialization error instead of a message the user can act on") -- généralisée ici à une valeur dans un tableau plutôt qu'un champ seul.
+
+**Reproduit EN DIRECT selon la discipline stricte** : test écrit avec des valeurs `99999`/`-5`/`65536` dans le champ, confirmé échouant contre le filtre d'origine (`!Number.isNaN(p)` seul) -- ces 3 valeurs étaient bien transmises telles quelles à `invoke()`. Corrigé en bornant explicitement à la plage `u16` (`p >= 0 && p <= 65535`) avant l'appel, empêchant l'erreur IPC de se produire du tout plutôt que d'essayer de la reformuler après coup.
+
+Vérification complète : `npx vitest run src/pages/NetworkPage.spec.ts` 9/9, suite complète 323/323 frontend (322→323, +1), `npx vue-tsc --noEmit` 0 erreur, `cargo test --lib` 305/305 Rust (sanity check, aucun fichier Rust modifié).
+
+Version 0.25.61 → 0.25.62. Commit `92bf7cb`, poussé sur `origin/master`.
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit). **25 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (63 cycles cumulés 110-172).
