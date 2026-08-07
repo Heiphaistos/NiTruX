@@ -1861,3 +1861,13 @@ Aucun changement de code. Négatif, mais avec vérification visuelle réelle plu
 Aucun changement de code -- négatif au sens strict (aucun bug trouvé), mais c'est la première vérification RUNTIME/visuelle de toute la campagne 110-216 (jusqu'ici 100% audit statique par lecture de code). Confirme que la maturité observée par lecture de code se traduit bien en un rendu réel sain.
 
 Éléments en attente inchangés. 107 cycles cumulés 110-216.
+
+[2026-08-07T10:28:00+02:00] Cycle 217 : poursuite de la vérification runtime du cycle 216 -- navigation interactive réelle testée pour la première fois cette session. `xdotool` absent de l'environnement WSL2 dev, extrait sans root via `apt-get download`+`dpkg-deb -x` (même technique déjà établie cycle 107), aucune bibliothèque manquante.
+
+**Fausse alerte sérieuse rencontrée et élucidée méthodiquement, jamais corrigée à l'aveugle** : clic simulé sur l'item de nav "Températures" → le style actif de l'item de nav change bien immédiatement, MAIS une capture d'écran prise ~1-1.5s après montre encore le contenu du Tableau de bord -- signature d'un vrai bug de navigation cassée si prise pour argent comptant. Plutôt que corriger de façon spéculative, hypothèse alternative testée : décalage de rafraîchissement du buffer composé WebKitGTK sous ce montage WSLg+XWayland improvisé (jamais utilisé avant ce cycle), pas un vrai bug applicatif. **Confirmé par 3 captures à intervalles croissants (T+1s/T+4s/T+9s, toutes identiques en octets)** : la page affiche bel et bien `TemperaturesPage.vue` correctement rendue -- titre "Températures", description exacte, et **message d'état vide "Aucun capteur de température détecté sur ce système." vérifié EN DIRECT pour la première fois** (ce laptop de dev n'expose aucun capteur thermique lisible par `sysinfo::Components`). Navigation interactive confirmée fonctionnelle de bout en bout.
+
+**Nouveau piège d'infra documenté dans `.loop/LESSONS.md`** : toute capture `import -window <id>` sous ce montage doit attendre 3-5s minimum après une interaction avant d'être digne de confiance, sous peine de voir un décalage de rendu confondu avec un vrai bug -- comparer plusieurs captures à intervalles croissants plutôt que de conclure sur une seule capture précoce.
+
+Aucun changement de code -- négatif, mais avec une discipline "jamais spéculatif" appliquée dans le sens inverse habituel (un soupçon de bug sérieux écarté par re-vérification patiente plutôt qu'un correctif appliqué à la hâte). 2e vérification runtime consécutive de toute la campagne, la première ayant révélé un vrai piège d'outillage à documenter pour tout futur cycle de test GUI live.
+
+Éléments en attente inchangés. 108 cycles cumulés 110-217.
