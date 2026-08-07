@@ -2061,3 +2061,9 @@ Aucun bug trouvé. Négatif -- 4e cycle négatif après le correctif du cycle 23
 Aucun changement de code. Négatif au sens strict, mais un vrai risque potentiel signalé plutôt que silencieusement ignoré ou corrigé à l'aveugle.
 
 Éléments en attente inchangés + nouveau signalement : `WiFiAnalyzerPage.vue::securityStatus` pourrait mal classer un réseau ouvert si `nmcli` terse produit `--` plutôt qu'une chaîne vide pour SECURITY (cycle 241, nécessite vérification sur une vraie machine avec Wi-Fi). **5 correctifs accumulés depuis la release v0.25.74**. 132 cycles cumulés 110-241.
+
+[2026-08-07T13:52:00+02:00] Cycle 242 : `DnsSwitcherPage.vue` (jamais lue) : conversion IP brute → lignes `nameserver` centralisée en un seul point avant l'appel `set_dns_servers`, cohérent avec la validation backend déjà revue. Absence de validation de format IP côté client notée mais pas nouvelle -- même philosophie déjà établie pour `write_hosts_file` (validation minimale, confiance à l'utilisateur pour une action déjà gardée par pkexec). `QuickInstallPage.vue` (seule sa CSS `.qi-chip` avait été comparée au cycle 222) : gestion de race correcte entre détection du gestionnaire et clic d'installation (`managerReady` promise réutilisée), 3 méthodes d'installation (apt/flatpak/snap) correctement routées. `packages/flatpak.rs` (jamais lu, checkpoint le signalait "vérification live bloquée par bibliothèques transitives manquantes") : `remote-add --if-not-exists` idempotent avant chaque install (contourne l'absence de dépôt sur une install flatpak fraîche, déjà vérifié en direct sur la VM per son propre commentaire), scope `--user` explicitement non-privilégié (pas de pkexec).
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés (dont le signalement WiFiAnalyzerPage du cycle 241). **5 correctifs accumulés depuis la release v0.25.74**. 133 cycles cumulés 110-242.
