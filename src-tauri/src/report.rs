@@ -244,6 +244,19 @@ pub fn render_html(report: &SystemReport) -> String {
         report.system.process_count
     ));
 
+    body.push_str("<h2>Capteurs</h2><ul>");
+    match report.sensors.battery_percent {
+        Some(p) => body.push_str(&format!(
+            "<li><strong>Batterie</strong> : {p}%{}</li>",
+            if report.sensors.battery_charging == Some(true) { " (en charge)" } else { "" }
+        )),
+        None => body.push_str("<li><strong>Batterie</strong> : aucune détectée</li>"),
+    }
+    for t in &report.sensors.temperatures {
+        body.push_str(&format!("<li><strong>Température {}</strong> : {:.1}°C</li>", escape_html(&t.label), t.celsius));
+    }
+    body.push_str("</ul>");
+
     body.push_str("<h2>Périphériques PCI</h2>");
     match &report.pci_devices {
         Some(devices) if !devices.is_empty() => {
@@ -522,6 +535,19 @@ mod tests {
         assert!(html.contains("<!DOCTYPE html>") || html.contains("<html"));
         assert!(html.contains("Test CPU"));
         assert!(html.contains("curl"));
+    }
+
+    #[test]
+    fn render_html_includes_the_sensors_section_like_render_txt_and_render_markdown_already_do() {
+        // render_txt/render_markdown both have a "Capteurs"/"CAPTEURS"
+        // section (battery + temperatures) -- render_html had none at all,
+        // silently dropping this data for both the HTML export AND the PDF
+        // export (render_pdf is just render_html fed through printpdf), the
+        // only two formats where render_txt/render_markdown's own coverage
+        // doesn't already guarantee the data reaches the user.
+        let report = fixture_report(); // battery_percent: Some(80)
+        let html = render_html(&report);
+        assert!(html.contains("80%"), "HTML report must include battery data like the other formats do");
     }
 
     #[test]
