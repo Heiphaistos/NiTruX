@@ -2085,3 +2085,9 @@ Aucun bug trouvé. Négatif.
 **Les 5 correctifs fonctionnels accumulés depuis v0.25.74 (index.html, README.md, PackagesPage.vue, validate_port_proto, list_disk_usage) sont désormais tous dans une release publiée.** Plus aucun backlog de correctifs non livrés.
 
 Éléments en attente inchangés (non bloquants) : `clone-disk` (cycle 120) + `confirmNonDestructiveActions` (cycle 148) + bouton Vérifier non désactivé (cycle 174) + timeout `run_pkexec_with_stdin` (cycle 193) + doublons de catalogue (cycles 201-202) + risque `WiFiAnalyzerPage.vue::securityStatus` (cycle 241, non vérifiable sans Wi-Fi réel). 136 cycles cumulés 110-245.
+
+[2026-08-07T14:24:00+02:00] Cycle 246 : premier cycle après la publication de v0.25.79, retour à la cadence normale. `RestorePointsPage.vue` (frontend de `snapshots.rs`/`security_write.rs::create_snapshot`, déjà lus aux cycles 225/228, jamais vu le frontend) : simple, cohérent avec les deux backends. `HardwareDetailsPage.vue` (frontend de `hardware_details.rs`, déjà lu au cycle 226) : distingue déjà correctement "aucun GPU PCI détecté" de "l'appel `get_pci_devices` a échoué" via un `gpuError` dédié (contrairement à `get_hardware_details` qui est infaillible et n'a donc pas besoin de ce traitement).
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. 137 cycles cumulés 110-246.
