@@ -2079,3 +2079,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **5 correctifs accumulés depuis la release v0.25.74**. 135 cycles cumulés 110-244.
+
+[2026-08-07T14:16:00+02:00] Cycle 245 (hors cadence normale) : **utilisateur a explicitement demandé la publication** ("cree la nouvelle release") après 5 correctifs accumulés depuis v0.25.74. `npm run tauri build` (WSL2) → 3 bundles générés sans erreur (`Nitrux_0.25.79_amd64.deb`, `Nitrux-0.25.79-1.x86_64.rpm`, `Nitrux_0.25.79_amd64.AppImage`), vérifiés présents sur disque avant publication. Tag annoté `v0.25.79` poussé, release GitHub créée avec les 3 assets et des notes organisées par catégorie (Corrections : pare-feu/disques/PackagesPage ; Finitions : index.html/README.md ; Sous le capot : ampleur de l'audit). Vérifié via `gh release view` que la release est bien publiée (non-draft) avec les 3 assets attachés et les notes correctes.
+
+**Les 5 correctifs fonctionnels accumulés depuis v0.25.74 (index.html, README.md, PackagesPage.vue, validate_port_proto, list_disk_usage) sont désormais tous dans une release publiée.** Plus aucun backlog de correctifs non livrés.
+
+Éléments en attente inchangés (non bloquants) : `clone-disk` (cycle 120) + `confirmNonDestructiveActions` (cycle 148) + bouton Vérifier non désactivé (cycle 174) + timeout `run_pkexec_with_stdin` (cycle 193) + doublons de catalogue (cycles 201-202) + risque `WiFiAnalyzerPage.vue::securityStatus` (cycle 241, non vérifiable sans Wi-Fi réel). 136 cycles cumulés 110-245.
