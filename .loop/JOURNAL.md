@@ -2233,3 +2233,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 159 cycles cumulés 110-268.
+
+[2026-08-07T17:28:00+02:00] Cycle 269 : `tsconfig.json`/`tsconfig.node.json` (jamais lus) : configuration TypeScript stricte (`strict`, `noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`) qui explique la robustesse des garanties `vue-tsc` déjà constatées tout au long de cette session, alias `@/*` cohérent avec celui de `vite.config.ts`. `tsconfig.node.json` correctement scopé au seul `vite.config.ts` (contexte Node, séparé des fichiers navigateur de `src/`).
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.79**. 160 cycles cumulés 110-269.
