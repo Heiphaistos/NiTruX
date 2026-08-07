@@ -1497,3 +1497,17 @@ Vérification complète : `npx vitest run src/pages/ScriptsPage.spec.ts` 5/5, su
 Version 0.25.62 → 0.25.63. Commit `81353c7`, poussé sur `origin/master`.
 
 Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). **26 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (67 cycles cumulés 110-176).
+
+[2026-08-07T04:12:00+02:00] Cycle 177 : généralisation directe du filon "nom vide après normalisation non vérifié" du cycle 176 -- j'avais déjà repéré `ThemeEditorPage.vue::handleSave` comme candidat identique lors de l'exploration du cycle 176.
+
+**Vrai bug confirmé, PIRE que le cas ScriptsPage** : `handleSave()` n'avait AUCUNE vérification de nom vide -- pas même la version défaillante (`=== ""` sans trim) que `ScriptsPage.vue` avait avant son propre correctif. Un clic sur "Sauvegarder" avec un champ nom vide ou composé uniquement d'espaces sauvegardait un swatch au titre vide et indiscernable -- et contrairement à `addScript` (qui rejette au moins les doublons de nom exact), rien ici ne déduplique par nom puisque chaque sauvegarde reçoit son propre id basé sur un timestamp -- plusieurs swatches au titre vide pourraient s'accumuler côte à côte sans aucun garde-fou.
+
+**Reproduit EN DIRECT selon la discipline stricte** : test écrit avec `"   "` comme nom de thème, confirmé échouant contre le code d'origine (1 thème personnalisé sauvegardé au lieu de 0 attendu). Corrigé avec le MÊME pattern trim-puis-vérification déjà appliqué à `ScriptsPage.vue::saveScript` au cycle précédent -- cohérence directe entre les deux correctifs consécutifs.
+
+Vérification complète : `npx vitest run src/pages/ThemeEditorPage.spec.ts` 7/7, suite complète 325/325 frontend (324→325, +1), `npx vue-tsc --noEmit` 0 erreur, `cargo test --lib` 305/305 Rust (sanity check, aucun fichier Rust modifié).
+
+Version 0.25.63 → 0.25.64. Commit `6ea9389`, poussé sur `origin/master`.
+
+**Filon "nom vide après normalisation non vérifié" : 2 bugs réels trouvés sur les 2 seuls flux "nommer et sauvegarder un élément personnalisé" de toute l'app** (scripts, thèmes) -- taux de réussite de 100%, filon désormais clos (aucun autre flux de ce type identifié dans le reste de l'application).
+
+Éléments en attente inchangés : `clone-disk` (cycle 120, action humaine) + `confirmNonDestructiveActions` (cycle 148, décision produit) + bouton Vérifier non désactivé (cycle 174, non retenu). **27 correctifs fonctionnels + 1 cleanup cosmétique désormais en attente d'une release publiée** depuis v0.25.24 (68 cycles cumulés 110-177).
