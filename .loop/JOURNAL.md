@@ -1799,3 +1799,9 @@ Deuxième vérification, plus utile : extraction de tous les appels `invoke("...
 Aucun changement de code. Négatif, mais ce filon (cohérence de la surface IPC complète) est désormais clos.
 
 Éléments en attente inchangés. 36 correctifs fonctionnels + 2 cleanups cosmétiques toujours en attente d'une release publiée depuis v0.25.24 (99 cycles cumulés 110-208).
+
+[2026-08-07T09:20:00+02:00] Cycle 209 : maintenance d'infrastructure plutôt qu'un nouveau sweep de code -- `.loop/CHECKPOINT.md` n'avait pas reçu de vraie mise à jour depuis le cycle 160, soit 48 cycles de dérive (161-208) non reflétés dans sa "section finale" que chaque prompt de déclenchement demande de lire en premier. Ajouté un résumé condensé consolidant les 10 correctifs fonctionnels + 1 cosmétique réels de cette période, la liste des vérifications transversales exhaustives déjà closes (clippy/audit/npm/TODO/dérive TS-Rust/surface IPC/pkexec/policies), et les 9 doublons de catalogue signalés pour curation. Détail complet laissé dans JOURNAL.md, non dupliqué.
+
+Aucun changement de code fonctionnel -- mise à jour de documentation interne au projet.
+
+Éléments en attente inchangés. 36 correctifs fonctionnels + 2 cleanups cosmétiques toujours en attente d'une release publiée depuis v0.25.24 (100 cycles cumulés 110-209).
