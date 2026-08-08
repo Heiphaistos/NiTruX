@@ -2495,3 +2495,9 @@ Aucun bug trouvé. Négatif, mais vérification ciblée et rigoureuse de la mêm
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **9 correctifs/améliorations accumulés depuis la release v0.25.79**. 201 cycles cumulés 110-310.
+
+[2026-08-08T06:28:00+02:00] Cycle 311 : `smart.rs` relu en entier (référencé par `benchmark.rs::collect_disk_health`, jamais confirmé lu en entier cette session). Module déjà exemplaire : gestion bitmask correcte des codes de sortie `smartctl` (bits 0-2 = échec de communication réel, bits 3-5 = données de santé réelles malgré un code non-zéro -- notamment bit 3 = "disque en train de tomber en panne", le cas le plus critique que cette commande existe pour détecter), extraction de la raison d'échec déjà vérifiée en direct sur un vrai binaire `smartctl` (`apt-get download`+`dpkg-deb -x`, sans root). Tests couvrant précisément chaque combinaison de bits pertinente. Aucune faille de logique trouvée.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **9 correctifs/améliorations accumulés depuis la release v0.25.79**. 202 cycles cumulés 110-311.
