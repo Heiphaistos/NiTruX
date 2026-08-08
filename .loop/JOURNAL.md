@@ -2583,3 +2583,9 @@ Aucun bug trouvé. Négatif -- clôture d'un axe d'investigation méthodique ent
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **12 correctifs/améliorations accumulés depuis la release v0.25.79**. 217 cycles cumulés 110-326.
+
+[2026-08-08T08:36:00+02:00] Cycle 327 : 3 cycles négatifs consécutifs atteints (324-326) -- bascule vers audit page-par-page. `DriversPage.vue` (backend `drivers.rs` déjà vérifié, consommateur jamais revu). Page bien construite : `try/catch` correct autour de l'unique `invoke()`, tableau déjà dans un conteneur scroll (`overflow-x:auto`), clés `v-for` stables (slot PCI unique, nom de module unique), badge "aucun" cohérent pour `driver: null` ou chaîne vide (v-if sur truthiness).
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **12 correctifs/améliorations accumulés depuis la release v0.25.79**. 218 cycles cumulés 110-327.
