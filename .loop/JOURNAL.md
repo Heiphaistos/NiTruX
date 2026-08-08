@@ -2589,3 +2589,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **12 correctifs/améliorations accumulés depuis la release v0.25.79**. 218 cycles cumulés 110-327.
+
+[2026-08-08T08:44:00+02:00] Cycle 328 : `TroubleshootPage.vue` auditée. Page simple et propre : `:disabled="troubleshootBusy !== null"` désactive TOUS les boutons pendant qu'une action tourne (pas seulement celui cliqué), empêchant tout clic concurrent sur les 4 actions de dépannage. `troubleshootResult`/`troubleshootError` correctement réinitialisés au début de chaque nouvelle action -- pas de la classe de bug "résultat périmé" du cycle 297 (ici un seul résultat partagé, effacé par toute action, comme le pattern déjà confirmé sûr pour `NetworkPage.vue::firewallResult`).
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **12 correctifs/améliorations accumulés depuis la release v0.25.79**. 219 cycles cumulés 110-328.
