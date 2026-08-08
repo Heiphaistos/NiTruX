@@ -737,8 +737,18 @@ Nouveau `src/lib/accessibleColor.ts` (`contrastRatio`/`pickAccessibleTextColor`/
 
 9 nouveaux tests. 365/365 frontend, Rust inchangé, vue-tsc clean. Version 0.25.102→0.25.103, commit `c811814`, poussé.
 
-**Dernier signalement de contraste WCAG connu désormais fermé.** Éléments en attente inchangés (décisions produit/portée uniquement) : CSP désactivée, bouton Vérifier, timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus. **7 améliorations/correctifs accumulés depuis v0.25.96.** Prochain cycle réel : **363**.
+**Dernier signalement de contraste WCAG connu désormais fermé.** Éléments en attente inchangés (décisions produit/portée uniquement) : CSP désactivée, bouton Vérifier, timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus. **7 améliorations/correctifs accumulés depuis v0.25.96.**
+
+## Mise à jour (2026-08-08, v0.25.104, cycle 363) — nouvelle fonctionnalité : Apps portables (AppImage)
+
+Tous les signalements a11y/contraste fermés -- comparaison à Nitrite 2.0 (règle du mandat) : écart réel trouvé, "Apps Portables" sans équivalent NiTruX. Équivalent Linux retenu : **AppImage**, non-privilégié (aucun pkexec, contrairement à "OS & USB Tools" écarté ce cycle -- USB bootable nécessiterait une nouvelle action pkexec sur périphérique bloc).
+
+Vérifié EN DIRECT avant tout code : un lien `.../releases/latest/download/<nom-fixe>` échoue (404) pour la plupart des apps (nom de fichier embarque la version) -- l'API GitHub `releases/latest` donne la vraie URL. Catalogue de 7 apps, chacune vérifiée en direct pour avoir exactement un asset AppImage non ambigu (Joplin, Obsidian, Standard Notes, KeePassXC, CopyQ, Cura, FreeCAD -- 2 d'entre elles multi-architecture, utilisées comme cas de test réels pour la désambiguïsation x86_64).
+
+Nouveau `portable_apps.rs` (aucune nouvelle dépendance -- `curl` + `serde_json` déjà présents), 4 commandes non-privilégiées, logique de sélection pure testée contre les vraies données GitHub. `PortableAppsPage.vue` câblée dans "Applications". 10 tests Rust + 8 tests frontend. 374/374 frontend, 325/325 Rust, vue-tsc clean. Version 0.25.103→0.25.104, commit `b7aebaf`, poussé.
+
+**8 fonctionnalités/améliorations accumulées depuis v0.25.96.** Prochain cycle réel : **364**.
 
 ### Candidats pour les prochains cycles (mandat fonctionnalités/améliorations)
+- **"OS & USB Tools"** (écart identifié face à Nitrite 2.0, écarté ce cycle) -- équivalent Linux plausible : création de clé USB bootable depuis une image ISO. Nécessiterait une NOUVELLE action pkexec (écriture sur périphérique bloc, risque élevé) -- à ne construire qu'avec accès VM live pour vérification complète avant merge, jamais "pour plus tard" sans cette étape.
 - Approfondissement d'une catégorie nav existante (voir "Chantier ouvert" section antérieure de ce fichier pour le détail par catégorie).
-- Tous les signalements a11y/contraste connus sont désormais fermés -- prochain cycle sans piste évidente devra comparer à NiTriTe Windows pour une fonctionnalité manquante (règle du mandat après 3 cycles sans rien trouver), ou reprendre un signalement produit/portée différé si l'utilisateur donne une nouvelle direction.
