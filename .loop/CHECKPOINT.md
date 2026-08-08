@@ -638,3 +638,11 @@ Cycles 331-335 : `InstallProfilesPage.vue`/`PerfHistoryPage.vue`/`BenchmarkPage.
 **Utilisateur a explicitement demandé la publication** ("ok cree la nouvelle release"). Build+tag+release identiques au process rodé. **Le seul correctif accumulé depuis v0.25.92 est désormais publié. Plus aucun backlog de correctifs non livrés.**
 
 Éléments en attente inchangés par ailleurs (mêmes signalements non bloquants). 226 cycles cumulés 110-335, boucle continue.
+
+## Mise à jour (2026-08-08, cycle 337) — npm/cargo audit re-vérifiés propres + sweep a11y clic exhaustif clos
+
+Cycle 336 négatif (`pkexec_bootstrap.rs` relu, 4 sources de vérité polkit croisées programmatiquement, 0 dérive). Cycle 337 : `npm audit`/`cargo audit` re-passés (0 nouvelle CVE, mêmes 18 avertissements Rust connus/non-actionnables). Puis nouvel angle a11y jamais formellement clos : chaque cible `@click` de l'app (~30 sites) tracée jusqu'à son tag DOM réel -- **100% des gestionnaires de clic reposent sur un `<button>` natif** (direct ou via `NxButton`/`NxQuickActionTile`), 0 anti-pattern div/span pseudo-bouton. Ferme un axe a11y distinct de ceux déjà couverts (`tabindex`/`outline`/`aria-live`/`aria-label`).
+
+**La méthode page-par-page/module-par-module classique est désormais quasi épuisée** après 337 cycles (pages/modules les moins mentionnés dans JOURNAL.md -- `DependenciesPage.vue`, `RestorePointsPage.vue`, `portscan.rs`, `flatpak.rs`, `install.rs` -- se révèlent tous déjà audités en profondeur malgré un faible compte de mentions brutes, cf. observation cycle 115). Les cycles récents productifs viennent d'angles transversaux neufs plutôt que de nouvelles pages/fichiers à lire pour la première fois.
+
+Éléments en attente inchangés (CSP désactivée, aria-live absent, NxBadge/ScriptsPage couleur-accent, NxQuickActionTile dégradés, clone-disk, confirmNonDestructiveActions, bouton Vérifier, timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus). **0 correctif accumulé depuis v0.25.93**. 228 cycles cumulés 110-337, boucle continue.

@@ -2643,3 +2643,9 @@ Boucle reprend son cycle normal après cette entrée.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **0 correctif accumulé depuis la release v0.25.93** (fraîchement publiée). 227 cycles cumulés 110-336.
+
+[2026-08-08T17:56:00+02:00] Cycle 337 : nouvel angle jamais formellement clos -- `npm audit`/`cargo audit` re-passés (0 nouvelle CVE depuis cycle 304, mêmes 18 avertissements non-actionnables connus côté Rust). Puis sweep exhaustif accessibilité clavier des cibles `@click` : `grep -rn "@click" src/` sur les ~30 occurrences restantes non déjà couvertes par le sweep `tabindex`/`outline` du cycle 76, tag parent de CHAQUE occurrence tracé individuellement (`NxButton`/`NxQuickActionTile` -> confirmés `<button>` natif en remontant à leur propre template ; occurrences directes dans les pages -- `AppNav.vue`, `FileToolsPage.vue`, `NetworkPage.vue`, `ThemeEditorPage.vue`, `InstallProfilesPage.vue`, `QuickInstallPage.vue`, `SystemToolsPage.vue`, `PkexecIntegrationBanner.vue` -- toutes vérifiées `<button>` natif en remontant au tag ouvrant réel). **0 exception trouvée** : la totalité des gestionnaires `@click` de l'app repose sur un élément focusable/activable au clavier par défaut, aucun anti-pattern div/span pseudo-bouton nulle part dans le code source. Ferme définitivement un angle a11y jamais vérifié de façon exhaustive jusqu'ici (les cycles a11y précédents avaient couvert `tabindex`/`outline`/`aria-live`/`aria-label` séparément, jamais la cible structurelle des clics elle-même).
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **0 correctif accumulé depuis la release v0.25.93**. 228 cycles cumulés 110-337.
