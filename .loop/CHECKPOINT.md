@@ -766,7 +766,7 @@ Extraction DRY en cours de route : `averageCpuPercent`/`memoryUsedPercent` dupli
 **10 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Prochain cycle réel : **366**.
 
 ### Candidats pour les prochains cycles (mandat fonctionnalités/améliorations)
-- **Reste du chantier StatsReportsPage** : liste de rapports générés (à recroiser avec `ReportGeneratorPage` existant avant de dupliquer). (Seuils d'alerte configurables faits cycle 366, comparaison inter-session faite cycle 367.)
+- **Chantier StatsReportsPage : CLOS** (score cycle 365, seuils cycle 366, comparaison inter-session cycle 367, liste de rapports générés cycle 368). Plus rien de porté d'identifié depuis NiTriTe sur cette page précise.
 - **"OS & USB Tools"** (écart identifié face à Nitrite 2.0, écarté cycle 363) -- équivalent Linux plausible : création de clé USB bootable depuis une image ISO. Nécessiterait une NOUVELLE action pkexec (écriture sur périphérique bloc, risque élevé) -- à ne construire qu'avec accès VM live pour vérification complète avant merge, jamais "pour plus tard" sans cette étape.
 - Approfondissement d'une catégorie nav existante (voir "Chantier ouvert" section antérieure de ce fichier pour le détail par catégorie).
 
@@ -791,3 +791,17 @@ Porté à l'identique dans `DashboardPage.vue`, à côté du score système exis
 3 nouveaux tests (aucune puce à la toute première visite, puces correctement colorées + écart <1% masqué avec des valeurs asymétriques succès/danger, persistance vérifiée en relisant `localStorage` après montage). 395/395 frontend (392→395, +3), 325/325 Rust (inchangé, aucune commande ajoutée), `vue-tsc` clean. Version 0.25.107→0.25.108, commit `547020b`, poussé.
 
 **12 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Chantier StatsReportsPage : reste uniquement la liste de rapports générés (à recroiser avec `ReportGeneratorPage` avant de dupliquer -- possiblement déjà entièrement couvert, à vérifier en premier au prochain cycle avant d'écrire du code). Prochain cycle réel : **368**.
+
+## Mise à jour (2026-08-09, v0.25.109, cycle 368) — bibliothèque de rapports persistée : chantier StatsReportsPage entièrement clos
+
+Recroisement fait en premier (comme prévu) : `ReportGeneratorPage.vue` ne fait qu'un téléchargement navigateur ponctuel (Blob + `<a download>`), rien n'est jamais conservé côté disque -- écart réel confirmé, pas déjà couvert.
+
+Nouveau module dans `report.rs` (`reports_dir`/`validate_report_filename`/`list_reports_in`/`write_report_bytes_in`/`delete_report_in`, + 4 commandes `list_reports`/`save_text_report`/`save_pdf_report`/`delete_report`), mirroring exact des conventions déjà établies par `portable_apps.rs` (répertoire `~/.local/share/nitrux/reports`, non-privilégié, appartenant à l'utilisateur). Persistance déclenchée uniquement au **téléchargement explicite** (`Télécharger`/`Télécharger en PDF`), jamais à la simple prévisualisation (`Générer`) -- décision UX délibérée, différente de NiTriTe qui semble tout sauvegarder au clic "Générer".
+
+**Piège anticipé avant qu'il ne devienne un bug** : la fonction d'écriture utilise un nom de fichier basé sur l'epoch en secondes ; deux téléchargements dans la même seconde (double-clic plausible) auraient collisionné et silencieusement écrasé le premier rapport -- exactement la classe de bug `Date.now()` déjà trouvée et corrigée deux fois ailleurs dans ce projet (`profilesStore`, `ThemeEditorPage`). Corrigée dès la conception avec une boucle de désambiguïsation `-N`, testée en direct (`two_writes_in_the_same_second_never_overwrite_each_other`).
+
+**2 bugs de test préexistants trouvés et corrigés en vérifiant** (même classe que le correctif DashboardPage.spec.ts du cycle 366, pas des bugs applicatifs) : deux tests de `ReportGeneratorPage.spec.ts` remplaçaient `mockImplementation` sans jamais le restaurer, contaminant tous les tests suivants -- corrigé à la racine (`vi.hoisted()` + reset `beforeEach`), et les deux tests d'origine réécrits pour déléguer explicitement au mock par défaut au lieu de retourner `null` pour toute commande non prévue (l'un d'eux, `mockRejectedValueOnce`, testait en réalité le mauvais appel `invoke` depuis que `onMounted` déclenche aussi `list_reports` -- passait pour la mauvaise raison, corrigé).
+
+8 nouveaux tests Rust + 6 nouveaux tests frontend. 401/401 frontend (395→401, +6), 333/333 Rust (325→333, +8), `vue-tsc` clean. Version 0.25.108→0.25.109, commit `1169bf3`, poussé.
+
+**Chantier "StatsReportsPage" (score cycle 365, seuils cycle 366, comparaison cycle 367, rapports cycle 368) désormais entièrement clos.** Éléments en attente inchangés (décisions produit/portée uniquement, non liés à ce chantier) : CSP désactivée, bouton Vérifier UpdatesPage/PackagesPage non désactivé pendant une mise à jour (cycle 174, sévérité faible, non retenu), timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus, "OS & USB Tools" (nécessite VM + nouvelle action pkexec). **13 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Prochain cycle réel : **369** -- chantier ouvert clos, retour à la comparaison systématique NiTriTe/approfondissement de catégorie nav ou reprise d'un signalement différé.
