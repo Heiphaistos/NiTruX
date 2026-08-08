@@ -183,7 +183,7 @@ function bytesToGb(bytes: number): string {
         </NxButton>
       </div>
       <NxCard v-if="formatError" danger>{{ formatError }}</NxCard>
-      <NxBadge v-if="formatResult" status="success">{{ formatResult }}</NxBadge>
+      <NxBadge v-if="formatResult" status="success" live>{{ formatResult }}</NxBadge>
     </NxCard>
 
     <NxCard>
@@ -195,7 +195,7 @@ function bytesToGb(bytes: number): string {
         <NxButton :disabled="extendBusy" @click="runExtend">{{ extendBusy ? "Extension..." : "Étendre" }}</NxButton>
       </div>
       <NxCard v-if="extendError" danger>{{ extendError }}</NxCard>
-      <NxBadge v-if="extendResult" status="success">{{ extendResult }}</NxBadge>
+      <NxBadge v-if="extendResult" status="success" live>{{ extendResult }}</NxBadge>
     </NxCard>
 
     <NxCard>
@@ -206,7 +206,7 @@ function bytesToGb(bytes: number): string {
         <NxButton :disabled="cloneBusy" @click="runClone">{{ cloneBusy ? "Clonage..." : "Cloner" }}</NxButton>
       </div>
       <NxCard v-if="cloneError" danger>{{ cloneError }}</NxCard>
-      <NxBadge v-if="cloneResult" status="success">{{ cloneResult }}</NxBadge>
+      <NxBadge v-if="cloneResult" status="success" live>{{ cloneResult }}</NxBadge>
     </NxCard>
   </div>
 </template>

@@ -68,7 +68,7 @@ async function confirmUninstall(name: string) {
 
     <NxCard v-if="loadError" danger>{{ loadError }}</NxCard>
     <NxCard v-if="uninstallError" danger>{{ uninstallError }}</NxCard>
-    <NxBadge v-if="uninstallResult" status="success">{{ uninstallResult }}</NxBadge>
+    <NxBadge v-if="uninstallResult" status="success" live>{{ uninstallResult }}</NxBadge>
 
     <NxInput v-model="searchText" placeholder="Rechercher un paquet..." aria-label="Rechercher un paquet" />
 

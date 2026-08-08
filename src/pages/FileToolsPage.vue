@@ -157,8 +157,8 @@ function bytesToMb(bytes: number): string {
       </div>
       <NxCard v-if="hashError" danger>{{ hashError }}</NxCard>
       <div v-if="hashResult" class="ft-hash-result">{{ hashResult }}</div>
-      <NxBadge v-if="verifyMatch === true" status="success">Le hash correspond</NxBadge>
-      <NxBadge v-else-if="verifyMatch === false" status="danger">Le hash ne correspond pas</NxBadge>
+      <NxBadge v-if="verifyMatch === true" status="success" live>Le hash correspond</NxBadge>
+      <NxBadge v-else-if="verifyMatch === false" status="danger" live>Le hash ne correspond pas</NxBadge>
     </NxCard>
   </div>
 </template>

@@ -12,4 +12,16 @@ describe("NxBadge", () => {
     const wrapper = mount(NxBadge, { props: { status }, slots: { default: "x" } });
     expect(wrapper.classes()).toContain(`nx-badge--${status}`);
   });
+
+  it("does not set live-region semantics by default", () => {
+    const wrapper = mount(NxBadge, { slots: { default: "x" } });
+    expect(wrapper.attributes("role")).toBeUndefined();
+    expect(wrapper.attributes("aria-live")).toBeUndefined();
+  });
+
+  it("announces the badge to screen readers when live is set", () => {
+    const wrapper = mount(NxBadge, { props: { live: true }, slots: { default: "Sauvegarde créée" } });
+    expect(wrapper.attributes("role")).toBe("status");
+    expect(wrapper.attributes("aria-live")).toBe("polite");
+  });
 });

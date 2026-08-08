@@ -62,7 +62,7 @@ async function apply(servers: string[]) {
     <NxSectionHeader title="DNS Switcher" :description="`Serveurs actuels : ${currentDns.join(', ') || 'aucun'}`" />
 
     <NxCard v-if="applyError" danger>{{ applyError }}</NxCard>
-    <NxBadge v-if="applySuccess" status="success">DNS mis à jour.</NxBadge>
+    <NxBadge v-if="applySuccess" status="success" live>DNS mis à jour.</NxBadge>
 
     <NxCard class="dns-presets">
       <NxButton v-for="p in PRESETS" :key="p.label" :disabled="applying" @click="apply(p.servers)">
