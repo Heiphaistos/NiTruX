@@ -2417,3 +2417,9 @@ Aucun changement de code. Négatif du point de vue "bug corrigé", mais nouveau 
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 186 cycles cumulés 110-295.
+
+[2026-08-08T03:16:00+02:00] Cycle 296 : seuil des 3 cycles négatifs consécutifs atteint (293-295) -- bascule vers une lecture approfondie module-par-module plutôt qu'un nouveau sweep transversal. `duplicates.rs` relu en entier pour la logique elle-même (pas juste en sweep de surface) : bucketing en deux passes (par taille d'abord, sans lecture de contenu, puis hash SHA-256 uniquement sur les buckets à 2+ fichiers) confirmé correct, symlinks exclus (évite les cycles), dossiers inaccessibles ignorés silencieusement sans avorter tout le scan, 4 tests couvrant les cas limites (dont la non-contamination croisée entre buckets de tailles différentes). Consommateur frontend `FileToolsPage.vue` vérifié en parallèle : affichage strictement en lecture seule des groupes de doublons (liste des chemins, aucun bouton de suppression) -- confirme qu'aucun risque de "supprimer tous les exemplaires d'un groupe" n'existe, la fonctionnalité est intentionnellement non destructive.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 187 cycles cumulés 110-296.
