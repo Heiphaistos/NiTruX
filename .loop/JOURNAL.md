@@ -2709,3 +2709,9 @@ Réexaminé `NxQuickActionTile dégradés`/`NxBadge couleur-accent` (les 2 derni
 Aucun bug trouvé ce cycle. Négatif mais vérifications réelles, pas un sweep redondant.
 
 Éléments en attente inchangés. **2 correctifs accumulés depuis la release v0.25.94**. 237 cycles cumulés 110-346.
+
+[2026-08-08T20:36:00+02:00] Cycle 347 : angle jamais vérifié explicitement -- les 5 fichiers `.policy` polkit (`org.heiphaistos.nitrux.{disks,network,packages,security,system-tools}.policy`, 14 actions au total) validés XML bien formé (`ET.parse`, les 5 OK). Le cycle 336 avait déjà croisé les 4 sources de vérité (noms Rust/deb.files/rpm.files/fichiers `.policy` référencés) pour l'ABSENCE DE DÉRIVE de nommage, mais jamais vérifié le CONTENU d'autorisation lui-même. Vérifié ce cycle : `grep` sur `allow_any`/`allow_inactive`/`allow_active` des 14 actions, en excluant `auth_admin` -- **0 résultat**, confirmant qu'AUCUNE des 14 actions privilégiées n'a un niveau d'autorisation affaibli (`auth_self`, ou pire `yes` qui contournerait complètement l'authentification) -- toutes exigent explicitement une authentification admin complète, à chaque fois (pas même `auth_admin_keep` qui mettrait en cache l'autorisation). Correspondance 1:1 action_id↔exec.path re-confirmée par une méthode indépendante (association directe par paires plutôt que le script de cycle 336) -- les 14 paires cohérentes.
+
+Aucun bug trouvé. Négatif mais ferme un axe de vérification de sécurité jamais formellement couvert (force d'autorisation, distincte de la synchronisation des noms déjà vérifiée).
+
+Éléments en attente inchangés. **2 correctifs accumulés depuis la release v0.25.94**. 238 cycles cumulés 110-347.
