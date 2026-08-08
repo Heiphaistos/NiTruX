@@ -2387,3 +2387,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 181 cycles cumulés 110-290.
+
+[2026-08-08T02:36:00+02:00] Cycle 291 : miroir du cycle 290 côté Rust -- même détection de dépendances circulaires, cette fois sur le graphe des `use crate::...` entre les 49 fichiers `src-tauri/src/`. **0 cycle trouvé** également. Nuance notée par honnêteté : contrairement à TS/Vue où un cycle d'imports peut causer un bug d'exécution subtil (valeur `undefined` au premier accès), le compilateur Rust empêcherait déjà toute structure circulaire réellement illégale de compiler (`cargo build`/`cargo test` réussissent systématiquement tout au long de cette session) -- ce check confirme surtout un découplage propre entre modules plutôt que de fermer un risque d'exécution comparable au côté JS.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 182 cycles cumulés 110-291.
