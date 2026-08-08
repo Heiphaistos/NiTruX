@@ -4,33 +4,47 @@ import { setActivePinia, createPinia } from "pinia";
 import DashboardPage from "./DashboardPage.vue";
 import { usePreferencesStore } from "@/stores/preferencesStore";
 
+// `vi.hoisted` so this is reachable both from the hoisted `vi.mock` factory
+// below AND from `beforeEach` -- a later test overriding `invoke`'s
+// implementation with `mockImplementation(...)` (to simulate a rejected
+// list_disk_usage call, see "does not show a health score...") otherwise
+// permanently replaces it for every test that runs afterward in this file,
+// since `mockImplementation` has no automatic per-test scope. Reproduced
+// live: adding tests after that one that rely on the default
+// list_disk_usage behavior failed, not because of anything wrong in
+// DashboardPage.vue itself, but because they silently inherited the prior
+// test's rejection instead of the default resolved value.
+const defaultInvokeImpl = vi.hoisted(() => (cmd: string) => {
+  if (cmd === "get_system_snapshot") {
+    return Promise.resolve({
+      cpus: [{ name: "Test CPU", usage_percent: 12.5, usage_display: "12.5%" }],
+      memory_used_bytes: 4_000_000_000,
+      memory_total_bytes: 8_000_000_000,
+      process_count: 210,
+    });
+  }
+  if (cmd === "get_sensor_snapshot") {
+    return Promise.resolve({ battery_percent: 80, battery_charging: true, temperatures: [] });
+  }
+  if (cmd === "list_disk_usage") {
+    return Promise.resolve([
+      { mountpoint: "/", total_bytes: 100_000_000_000, used_bytes: 20_000_000_000, used_percent: 20 },
+      { mountpoint: "/boot", total_bytes: 1_000_000_000, used_bytes: 900_000_000, used_percent: 90 },
+    ]);
+  }
+  return Promise.resolve(null);
+});
+
 vi.mock("@tauri-apps/api/core", () => ({
-  invoke: vi.fn((cmd: string) => {
-    if (cmd === "get_system_snapshot") {
-      return Promise.resolve({
-        cpus: [{ name: "Test CPU", usage_percent: 12.5, usage_display: "12.5%" }],
-        memory_used_bytes: 4_000_000_000,
-        memory_total_bytes: 8_000_000_000,
-        process_count: 210,
-      });
-    }
-    if (cmd === "get_sensor_snapshot") {
-      return Promise.resolve({ battery_percent: 80, battery_charging: true, temperatures: [] });
-    }
-    if (cmd === "list_disk_usage") {
-      return Promise.resolve([
-        { mountpoint: "/", total_bytes: 100_000_000_000, used_bytes: 20_000_000_000, used_percent: 20 },
-        { mountpoint: "/boot", total_bytes: 1_000_000_000, used_bytes: 900_000_000, used_percent: 90 },
-      ]);
-    }
-    return Promise.resolve(null);
-  }),
+  invoke: vi.fn(defaultInvokeImpl),
 }));
 
 describe("DashboardPage", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     setActivePinia(createPinia());
     localStorage.clear();
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation(defaultInvokeImpl);
   });
 
   it("polls at the user's configured dashboardRefreshIntervalMs, not a hardcoded value", async () => {
@@ -105,6 +119,40 @@ describe("DashboardPage", () => {
     const wrapper = mount(DashboardPage);
     await vi.waitFor(() => expect(wrapper.text()).toContain("Test CPU"));
     expect(wrapper.text()).not.toContain("Score système");
+  });
+
+  it("renders a disk usage tile for the root (/) mountpoint", async () => {
+    const wrapper = mount(DashboardPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Disque (/)"));
+    const diskCard = wrapper.findAll(".nx-card").find((c) => c.text().includes("Disque (/)"))!;
+    expect(diskCard.text()).toContain("20%");
+  });
+
+  it("shows no exceeded-threshold indicator when usage stays under the configured (default) thresholds", async () => {
+    const wrapper = mount(DashboardPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Test CPU"));
+    expect(wrapper.find(".nx-stat-tile__dot--danger").exists()).toBe(false);
+  });
+
+  it("shows an exceeded-threshold indicator on CPU/RAM/disk tiles once usage crosses the user's configured thresholds", async () => {
+    // Mock usage: CPU 12.5%, RAM 50%, disk (/) 20% -- all comfortably under
+    // the defaults (80/80/85), so dropping the thresholds below each of
+    // those values is what must flip the indicator on, not the usage
+    // itself changing.
+    const preferences = usePreferencesStore();
+    preferences.setCpuAlertThreshold(10);
+    preferences.setRamAlertThreshold(40);
+    preferences.setDiskAlertThreshold(15);
+
+    const wrapper = mount(DashboardPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Test CPU"));
+
+    const cpuCard = wrapper.findAll(".nx-card").find((c) => c.text().includes("Test CPU"))!;
+    expect(cpuCard.find(".nx-stat-tile__dot--danger").exists()).toBe(true);
+    const ramCard = wrapper.findAll(".nx-card").find((c) => c.text().includes("Mémoire"))!;
+    expect(ramCard.find(".nx-stat-tile__dot--danger").exists()).toBe(true);
+    const diskCard = wrapper.findAll(".nx-card").find((c) => c.text().includes("Disque (/)"))!;
+    expect(diskCard.find(".nx-stat-tile__dot--danger").exists()).toBe(true);
   });
 
   it("every quick-action gradient stop meets WCAG AA contrast against the tile's white text", async () => {
