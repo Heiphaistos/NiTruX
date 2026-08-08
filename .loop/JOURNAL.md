@@ -2571,3 +2571,9 @@ Aucun changement de code. Cycle d'investigation qui clôt un signalement précé
 Aucun changement de code. Négatif, mais sweep méthodique confirmant que la couverture `LC_ALL=C` du codebase est déjà complète et correcte là où c'est réellement nécessaire.
 
 Éléments en attente inchangés. **12 correctifs/améliorations accumulés depuis la release v0.25.79**. 215 cycles cumulés 110-324.
+
+[2026-08-08T08:20:00+02:00] Cycle 325 : achèvement du sweep `LC_ALL=C` initié au cycle 324 sur tous les sites `run_with_timeout` restants. `optimizations.rs`/`drivers.rs` (systemctl/lsmod) : n'extraient que des noms d'unités/modules littéraux jamais traduits, même motif sûr que `processes.rs`. `disks.rs` : `lsblk -J` en JSON (sûr par construction), `parse_df_line` purement positionnel/numérique (aucun mot anglais matché). `docker.rs` : `--format {{json .}}`, JSON pur. `system_tools.rs`/`security_write.rs`/`packages/install.rs` : résultat brut de pkexec transmis tel quel au frontend, aucun parsing de mot-clé côté Rust. **Sweep désormais exhaustif sur tous les appels sans `LC_ALL=C`** -- tous confirmés soit déjà corrigés (apt/ufw), soit sûrs par conception (JSON/positionnel/noms littéraux), soit réfutés par preuve directe (bluetoothctl, lpstat, xrandr).
+
+Aucun bug trouvé. Négatif -- clôture d'un axe d'investigation méthodique entamé au cycle 324, plutôt qu'une simple vérification isolée.
+
+Éléments en attente inchangés. **12 correctifs/améliorations accumulés depuis la release v0.25.79**. 216 cycles cumulés 110-325.
