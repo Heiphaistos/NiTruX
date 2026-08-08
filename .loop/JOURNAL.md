@@ -2627,3 +2627,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.92**. 225 cycles cumulés 110-334.
+
+[2026-08-08T11:36:00+02:00] Cycle 335 : `UpdatesPage.vue` auditée. Piste : pendant le chargement initial (`loading===true`, `updates` encore vide), aucune branche `v-if`/`v-else-if` ne matche un état "chargement" dédié -- le `v-else` final retombe sur un tableau vide (juste les en-têtes, 0 ligne). Vérifié si c'est un oubli isolé ou un motif établi : **`PackagesPage.vue` (page jumelle) reproduit exactement la même structure** (`v-else-if="!loading && updates.length===0"` puis `v-else` tableau) -- choix cohérent répliqué sur au moins 2 pages jumelles, l'indicateur de chargement passe par le texte du bouton ("Vérification...") plutôt que par le corps de page. Pas un bug, un choix de design minimal mais intentionnel et cohérent.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.92**. 226 cycles cumulés 110-335.
