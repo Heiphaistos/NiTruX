@@ -39,6 +39,22 @@ describe("DnsSwitcherPage", () => {
     await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("set_dns_servers", { content: "nameserver 9.9.9.9" }));
   });
 
+  it("does not double-prefix a manually entered line that already starts with 'nameserver '", async () => {
+    // A user familiar with resolv.conf syntax may paste an existing line
+    // verbatim (e.g. copied from /etc/resolv.conf) instead of a bare IP.
+    // toResolvConfContent must not blindly prepend a second "nameserver "
+    // prefix, which would produce an invalid "nameserver nameserver X"
+    // line -- validate_dns_content would still accept it (it does start
+    // with "nameserver "), but resolv.conf itself would silently fail to
+    // use that entry for DNS resolution.
+    const { invoke } = await import("@tauri-apps/api/core");
+    const wrapper = mount(DnsSwitcherPage);
+    await wrapper.find("textarea").setValue("nameserver 9.9.9.9");
+    const button = wrapper.findAll("button").find((b) => b.text() === "Appliquer")!;
+    await button.trigger("click");
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("set_dns_servers", { content: "nameserver 9.9.9.9" }));
+  });
+
   it("skips blank lines from the manual textarea instead of sending an empty nameserver entry", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     const wrapper = mount(DnsSwitcherPage);
