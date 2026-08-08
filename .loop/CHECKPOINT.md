@@ -695,10 +695,16 @@ Cycles 346-355 : 10 cycles négatifs consécutifs après les correctifs 343-345 
 
 `aria-live` (cycle 317, différé faute d'autorisation) **fermé** : `NxCard danger` marque désormais `role="alert" aria-live="assertive"` -- comme ~49 des ~50 usages de `danger` dans toute l'app sont déjà le pattern `v-if="xxxError" danger>{{ ... }}</NxCard>` (message transitoire après une action), un seul correctif composant couvre les ~30 pages concernées sans y toucher individuellement. 1 exception traitée : `DisksPage.vue` (section format-partition, contient de vrais champs de formulaire, pas un message transitoire -- `role="alert"` déconseillé sur du contenu interactif) bascule sur un nouveau prop d'échappatoire `staticDanger` (garde le style, sans la sémantique alert). 3 nouveaux tests. 337/337 frontend, Rust inchangé, vue-tsc clean. Version 0.25.96→0.25.97, commit `74c89cf`, poussé.
 
-**`aria-live` retiré des éléments en attente.** Restent (décisions produit/portée) : CSP désactivée, NxBadge/ScriptsPage couleur-accent, NxQuickActionTile dégradés, bouton Vérifier, timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus. **1 amélioration accumulée depuis v0.25.96.** Prochain cycle réel : **357**.
+**`aria-live` (cartes d'erreur) retiré des éléments en attente.** Restent (décisions produit/portée) : CSP désactivée, NxBadge/ScriptsPage couleur-accent, NxQuickActionTile dégradés, bouton Vérifier, timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus. **1 amélioration accumulée depuis v0.25.96.**
+
+## Mise à jour (2026-08-08, v0.25.98, cycle 357) — aria-live étendu à NxBadge (résultats de succès)
+
+Suite directe du cycle 356. `NxBadge` mélange badges statiques (colonne source de tableau, statut courant en `v-for`) et résultats transitoires dans le même composant -- contrairement à `NxCard::danger`, un blanket sur `status` aurait créé du bruit. Nouveau prop opt-in `live` (`role="status" aria-live="polite"`), appliqué aux 13 usages réellement transitoires sur 9 pages (recensement exhaustif des 32 usages de `NxBadge`, classés un par un). Cas distinct repéré et volontairement différé : `InstallProfilesPage.vue` a une liste de résultats en `v-for` -- marquer chaque badge individuellement créerait N annonces simultanées, nécessite une annonce groupée de la section plutôt qu'un `live` par badge. 2 nouveaux tests. 339/339 frontend, Rust inchangé, vue-tsc clean. Version 0.25.97→0.25.98, commit `32e7fec`, poussé.
+
+**2 améliorations accumulées depuis v0.25.96** (aria-live NxCard + NxBadge). Prochain cycle réel : **358**.
 
 ### Candidats pour les prochains cycles (mandat fonctionnalités/améliorations)
-- **NxBadge -- annonce des résultats de succès** : angle distinct d'aria-live sur NxCard, plus délicat (badges statiques de table vs badges de résultat transitoire mélangés dans le même composant) -- nécessite un opt-in explicite (prop dédiée) plutôt qu'un blanket comme NxCard, pas encore fait.
+- **Annonce groupée pour `InstallProfilesPage.vue`** (liste de résultats d'installation multi-app) -- mécanisme distinct du `live` par badge (cycle 357), à concevoir.
 - **Équivalent ProfilesPage** (sauvegarde/chargement/export/import de profils de config nommés) -- écart identifié de longue date face à NiTriTe Windows, jamais spécifié ni codé.
-- **Contrastes WCAG NxQuickActionTile/NxBadge** (dégradés/couleurs d'accent) -- nécessite de choisir de nouvelles couleurs, jugement esthétique maintenant autorisé par l'utilisateur.
+- **Contrastes WCAG NxQuickActionTile/NxBadge** (dégradés/couleurs d'accent, distinct de l'aria-live déjà fait) -- nécessite de choisir de nouvelles couleurs, jugement esthétique maintenant autorisé par l'utilisateur.
 - Approfondissement d'une catégorie nav existante (voir "Chantier ouvert" section antérieure de ce fichier pour le détail par catégorie).
