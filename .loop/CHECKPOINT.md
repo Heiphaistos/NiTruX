@@ -707,9 +707,15 @@ Suite directe du cycle 356. `NxBadge` mélange badges statiques (colonne source 
 
 Clôture de la piste laissée au cycle 357 : `installSelection` insère les résultats un par un (boucle séquentielle) -- marquer chaque badge par-app `live` aurait déclenché une annonce par app, pas un signal utile. Ajouté `installSummary`, calculé une seule fois après la fin complète de la boucle ("Installation terminée : N réussie(s), M échouée(s)."), rendu dans un badge dédié `live`, distinct des badges par-app qui restent silencieux. Bénéfice aussi pour les utilisateurs voyants (résumé rapide sans compter les badges). 1 nouveau test. 340/340 frontend, Rust inchangé, vue-tsc clean. Version 0.25.98→0.25.99, commit `49520e5`, poussé.
 
-**3 améliorations accumulées depuis v0.25.96** (aria-live NxCard + NxBadge + annonce groupée InstallProfilesPage). Prochain cycle réel : **359**.
+**3 améliorations accumulées depuis v0.25.96** (aria-live NxCard + NxBadge + annonce groupée InstallProfilesPage).
+
+## Mise à jour (2026-08-08, v0.25.100, cycle 359) — contraste WCAG des dégradés NxQuickActionTile corrigé
+
+`NxQuickActionTile` (cycle 273, signalé mais non corrigé faute d'autorisation esthétique) **fermé** : les 5 dégradés du tableau de bord échouaient tous WCAG AA contre le texte blanc fixe (pire cas 2.26:1, minimum 4.5:1) -- recalculé avec la formule officielle de luminance relative, pas supposé. Corrigé en assombrissant chaque paire jusqu'au seuil AA tout en conservant la teinte/saturation d'origine (les 5 actions restent identifiables par couleur). Nouveau test de régression permanent (implémente la formule WCAG dans le spec, vérifie le contraste réel rendu par jsdom -- piège trouvé : jsdom normalise en `rgb()`, pas en hex). 341/341 frontend, Rust inchangé, vue-tsc clean. Version 0.25.99→0.25.100, commit `dab16cc`, poussé.
+
+**`NxQuickActionTile dégradés` retiré des éléments en attente.** Restent (décisions produit/portée) : CSP désactivée, NxBadge/ScriptsPage couleur-accent (contraste distinct, pas encore traité), bouton Vérifier, timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus. **4 améliorations accumulées depuis v0.25.96.** Prochain cycle réel : **360**.
 
 ### Candidats pour les prochains cycles (mandat fonctionnalités/améliorations)
 - **Équivalent ProfilesPage** (sauvegarde/chargement/export/import de profils de config nommés) -- écart identifié de longue date face à NiTriTe Windows, jamais spécifié ni codé.
-- **Contrastes WCAG NxQuickActionTile/NxBadge** (dégradés/couleurs d'accent, distinct de l'aria-live déjà fait) -- nécessite de choisir de nouvelles couleurs, jugement esthétique maintenant autorisé par l'utilisateur.
+- **Contraste WCAG NxBadge couleur-accent** (badges statiques, texte de la couleur d'accent sur fond `color-mix` translucide -- distinct des dégradés déjà corrigés, plus complexe car dépend de `--nx-style-bg` par disposition, cf. cycles 274/276).
 - Approfondissement d'une catégorie nav existante (voir "Chantier ouvert" section antérieure de ce fichier pour le détail par catégorie).
