@@ -67,12 +67,16 @@ function bytesToGb(bytes: number): string {
   return (bytes / 1024 / 1024 / 1024).toFixed(1);
 }
 
+// Both stops of every gradient are darkened to the same hue's darkest shade
+// that still clears WCAG AA (>=4.5:1) against the tile's white text -- the
+// original bright stops (e.g. #fb923c, 2.26:1) failed AA outright.
+// Regenerated with the official relative-luminance formula, not eyeballed.
 const QUICK_ACTIONS = [
-  { label: "Diagnostic", icon: Stethoscope, gradient: "linear-gradient(135deg,#f97316,#fb923c)", target: "diagnostic" },
-  { label: "Installation rapide", icon: Download, gradient: "linear-gradient(135deg,#3b82f6,#2563eb)", target: "quick-install" },
-  { label: "Mises à jour", icon: RefreshCw, gradient: "linear-gradient(135deg,#22c55e,#16a34a)", target: "updates" },
-  { label: "Dépannage", icon: Wrench, gradient: "linear-gradient(135deg,#ef4444,#dc2626)", target: "troubleshoot" },
-  { label: "Générateur de rapport", icon: FileText, gradient: "linear-gradient(135deg,#8b5cf6,#7c3aed)", target: "report-generator" },
+  { label: "Diagnostic", icon: Stethoscope, gradient: "linear-gradient(135deg,#bb5604,#934403)", target: "diagnostic" },
+  { label: "Installation rapide", icon: Download, gradient: "linear-gradient(135deg,#316cec,#1554e0)", target: "quick-install" },
+  { label: "Mises à jour", icon: RefreshCw, gradient: "linear-gradient(135deg,#12873d,#0d632d)", target: "updates" },
+  { label: "Dépannage", icon: Wrench, gradient: "linear-gradient(135deg,#dd2e2e,#c32020)", target: "troubleshoot" },
+  { label: "Générateur de rapport", icon: FileText, gradient: "linear-gradient(135deg,#8a50ef,#722aec)", target: "report-generator" },
 ];
 </script>
 
