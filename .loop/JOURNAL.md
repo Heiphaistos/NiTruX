@@ -2737,3 +2737,11 @@ Aucun bug trouvé. 4e cycle négatif consécutif (346-349) -- confirme la maturi
 Aucun bug trouvé mais vérification concrète et méthode identique à celle qui a trouvé 2 vraies failles cette session -- confirme cette fois que le code est déjà correct plutôt que d'en révéler un troisième. 5e cycle négatif consécutif (346-350).
 
 Éléments en attente inchangés. **2 correctifs accumulés depuis la release v0.25.94**. 241 cycles cumulés 110-350.
+
+[2026-08-08T21:24:00+02:00] Cycle 351 : couverture exhaustive de la piste TOCTOU/symlink confirmée -- recensement des 14 actions pkexec par argument : seules 2 acceptent un CHEMIN choisi par l'utilisateur (`clone-disk::dest_path`, corrigé cycle 343 ; `quarantine-file::path`, déjà examiné cycle 344, contraint par la chaîne d'appel réelle). Les 12 autres prennent des noms de paquets/périphériques/actions fixes, jamais un chemin arbitraire -- angle désormais formellement clos sur l'ensemble de la surface pkexec, pas seulement les cas déjà trouvés. `nitrux-postrm-cleanup.sh` (cycle 350) était le dernier script root restant à vérifier sous cet angle.
+
+Vérification de clôture de session plutôt qu'un nouveau grep : `cargo test` (315/315, 0 échec) et intégrité des assets de la release `v0.25.94` sur GitHub (`gh release view` -- 3 assets, tailles cohérentes avec le build, état "uploaded") re-confirmés.
+
+Aucun bug trouvé. 6e cycle négatif consécutif (346-351). Le filon TOCTOU/symlink qui a produit 2 correctifs réels cette session est maintenant démontrablement épuisé (couverture exhaustive, pas juste une absence de nouvelle piste). Sans nouveau signal externe, les prochains cycles risquent un rendement marginal très faible -- recommandation à l'utilisateur : publier une release groupant les 2 correctifs en attente, ou fournir une nouvelle direction/retour testeur, plutôt que de continuer un balayage sans cible fraîche.
+
+Éléments en attente inchangés. **2 correctifs accumulés depuis la release v0.25.94**. 242 cycles cumulés 110-351.
