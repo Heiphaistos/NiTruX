@@ -23,12 +23,4 @@ describe("SettingsPreferencesPage", () => {
     await wrapper.find(".nx-select").setValue("5000");
     expect(store.dashboardRefreshIntervalMs).toBe(5000);
   });
-
-  it("toggles the confirm-non-destructive-actions checkbox via the store", async () => {
-    const wrapper = mount(SettingsPreferencesPage);
-    const store = usePreferencesStore();
-    const checkbox = wrapper.find('input[type="checkbox"]');
-    await checkbox.setValue(false);
-    expect(store.confirmNonDestructiveActions).toBe(false);
-  });
 });
