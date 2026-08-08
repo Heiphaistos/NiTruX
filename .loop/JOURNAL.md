@@ -2355,3 +2355,9 @@ Aucun bug trouvé. Négatif, mais confirmation de cadence précieuse de l'état 
 Aucun changement de code. Négatif, mais analyse affinée qui confirme avec des chiffres précis (pas seulement des stops individuels) que ce signalement nécessite une vraie décision de design.
 
 Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 176 cycles cumulés 110-285.
+
+[2026-08-08T01:56:00+02:00] Cycle 286 : nouvelle technique jamais appliquée cette session -- recherche de code mort parmi les items `pub` du backend Rust. `cargo clippy` (0 avertissement, re-vérifié cycle 261) ne signale PAS les items `pub` inutilisés même dans un crate binaire où rien d'externe ne les consomme réellement -- un angle mort connu de `dead_code` que 0 avertissement clippy ne couvre pas. Script Python jetable : les 159 `pub fn` et les 56 `pub struct`/`pub enum` du backend comparés à leurs occurrences dans tout `src-tauri/src/` -- **0 suspect dans les deux cas** (chaque item référencé au moins une fois au-delà de sa propre définition, que ce soit comme commande Tauri enregistrée, appelé depuis un autre module, ou utilisé dans les tests).
+
+Aucun bug trouvé. Négatif, mais ferme un angle mort réel que le résultat "0 avertissement clippy" ne couvrait pas.
+
+Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 177 cycles cumulés 110-286.
