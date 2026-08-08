@@ -2595,3 +2595,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **12 correctifs/améliorations accumulés depuis la release v0.25.79**. 219 cycles cumulés 110-328.
+
+[2026-08-08T08:52:00+02:00] Cycle 329 : `TemperaturesPage.vue` auditée. Piste initiale : `SensorSnapshot` inclut `battery_percent`/`battery_charging` mais le template ne les affiche jamais, seulement `temperatures` -- vérifié si c'est une donnée récupérée mais jamais montrée nulle part (gap réel) ou affichée ailleurs. **Confirmé affiché sur `DashboardPage.vue`** (ligne 107-108, badge "Batterie X% ⚡") -- design intentionnel où le même snapshot backend alimente deux pages, chacune affichant le sous-ensemble pertinent à son propre thème (Dashboard = vue d'ensemble incluant batterie, Températures = purement thermique). Pas un bug. Seuils `statusFor` (>80 danger, >=60 warning) cohérents, clé `v-for` stable (`label-index`).
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **12 correctifs/améliorations accumulés depuis la release v0.25.79**. 220 cycles cumulés 110-329.
