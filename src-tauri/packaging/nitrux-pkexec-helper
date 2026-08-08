@@ -78,6 +78,23 @@ validate_port_proto() {
     [0-9]*/tcp|[0-9]*/udp) : ;;
     *) die "invalid port/protocol format (expected e.g. 22/tcp): $1" ;;
   esac
+  # The glob above accepts any digit string, with no 1-65535 bound -- same
+  # gap already fixed on the Rust side (network_write.rs, upstream of
+  # every real call into this script) but never mirrored here. Reject
+  # anything 10+ digits long BEFORE the arithmetic comparison below: that
+  # keeps the operand always well within any POSIX shell's native integer
+  # range, so `[ "$port" -lt 1 ]`/`-gt 65535` can never itself error out on
+  # an oversized literal. Verified live (2026-08-08, unprivileged, this
+  # function only, never reaching ufw): old glob-only check wrongly
+  # accepted "0/tcp", "99999999/tcp", "65536/tcp"; this rejects all three
+  # while still accepting "65535/tcp", "1/tcp", and a leading-zero port.
+  port="${1%%/*}"
+  case "$port" in
+    ??????????*) die "port number too long: $1" ;;
+  esac
+  if [ "$port" -lt 1 ] || [ "$port" -gt 65535 ]; then
+    die "port out of range 1-65535: $1"
+  fi
 }
 
 validate_troubleshoot_action() {
