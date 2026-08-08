@@ -2501,3 +2501,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **9 correctifs/améliorations accumulés depuis la release v0.25.79**. 202 cycles cumulés 110-311.
+
+[2026-08-08T06:36:00+02:00] Cycle 312 : `PeripheralsPage.vue` réexaminée sous l'angle du cycle 301 (4 `invoke()` séquentiels dans `onMounted` sans `try/catch` individuel -- même structure que `ProcessesPage.vue`). Vérifié le contrat de type des 4 commandes backend (`get_monitors`/`get_usb_devices`/`get_audio_sinks`/`get_printers` dans `peripherals.rs`) : toutes retournent un `Vec<...>` nu, pas un `Result` -- infaillibles par construction, même motif déjà confirmé sûr au cycle 301. Aucun risque de couplage (un échec du premier appel empêchant les suivants), puisqu'aucun de ces appels ne peut normalement échouer.
+
+Aucun bug trouvé. Négatif. Quatrième cycle négatif consécutif (309-312) -- plateau de maturité extrême confirmé une fois de plus.
+
+Éléments en attente inchangés. **9 correctifs/améliorations accumulés depuis la release v0.25.79**. 203 cycles cumulés 110-312.
