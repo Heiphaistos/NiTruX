@@ -753,8 +753,19 @@ Nouveau `portable_apps.rs` (aucune nouvelle dépendance -- `curl` + `serde_json`
 
 Auto-revue de la fonctionnalité livrée au cycle 363. **Bug réel confirmé** : `curl` sans `-f` traite un 404 comme un succès (code 0, corps de l'erreur écrit dans le fichier de destination) -- `download_portable_app` aurait donc `chmod +x` une fausse page d'erreur et rapporté un téléchargement réussi. Reproduit EN DIRECT dans les deux sens (URL 404 → échec propre avec `-f`, vrai téléchargement CopyQ 47 696 376 octets → toujours identique) avant de committer. Piège de capture `$?` rencontré et évité en cours de route (script `Write`-é plutôt qu'inline `wsl.exe bash -lc`, cf. LESSONS.md). Correctif Rust d'un seul argument, aucun fichier frontend touché. Version 0.25.104→0.25.105, commit `e1d99aa`, poussé.
 
-**9 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Prochain cycle réel : **365**.
+**9 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.**
+
+## Mise à jour (2026-08-08, v0.25.106, cycle 365) — score système ajouté au Dashboard (StatsReportsPage NiTriTe, partiellement porté)
+
+Reprise du "Chantier ouvert" (`StatsReportsPage` NiTriTe, "à recroiser plus sérieusement" depuis longtemps). Page source ~840 lignes (score/seuils/comparaison session/sparklines/partitions/rapports) -- trop pour un cycle, portée la pièce la plus autonome : **score système 0-100**, concept réellement absent de NiTruX (confirmé par grep).
+
+Réutilise `get_system_snapshot`+`list_disk_usage` déjà pollés par Dashboard/DisksPage -- zéro nouvelle commande Rust. Pondération identique à NiTriTe (CPU 34/RAM 33/disque 33, seuils bon/moyen/mauvais). Cible spécifiquement `/`, pas `disks[0]` -- vérifié par un test où l'entrée `/boot` à 90% est placée en premier et ferait chuter le score si le code prenait naïvement le premier élément.
+
+Extraction DRY en cours de route : `averageCpuPercent`/`memoryUsedPercent` dupliqués depuis `PerfHistoryPage.vue` vers `src/lib/systemMetrics.ts` (2e consommateur = seuil d'extraction de la convention du projet). 12 nouveaux tests. 380/380 frontend, Rust inchangé, vue-tsc clean (piège trouvé et corrigé : double import `vue` accidentel). Version 0.25.105→0.25.106, commit `f7e2f1e`, poussé.
+
+**10 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Prochain cycle réel : **366**.
 
 ### Candidats pour les prochains cycles (mandat fonctionnalités/améliorations)
+- **Reste du chantier StatsReportsPage** : seuils d'alerte configurables (persistés, mirroring preferencesStore), comparaison inter-session (deltas vs snapshot précédent), liste de rapports générés (à recroiser avec `ReportGeneratorPage` existant avant de dupliquer).
 - **"OS & USB Tools"** (écart identifié face à Nitrite 2.0, écarté cycle 363) -- équivalent Linux plausible : création de clé USB bootable depuis une image ISO. Nécessiterait une NOUVELLE action pkexec (écriture sur périphérique bloc, risque élevé) -- à ne construire qu'avec accès VM live pour vérification complète avant merge, jamais "pour plus tard" sans cette étape.
 - Approfondissement d'une catégorie nav existante (voir "Chantier ouvert" section antérieure de ce fichier pour le détail par catégorie).
