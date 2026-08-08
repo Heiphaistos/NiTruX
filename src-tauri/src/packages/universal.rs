@@ -19,13 +19,24 @@ pub fn parse_flatpak_line(line: &str) -> Option<PackageUpdate> {
 
 /// Parses one line of `snap refresh --list` output, e.g.:
 /// "firefox    121.0    2000    latest/stable    canonical**"
-/// Skips the header row (starts with "Name").
+/// Skips the header row (starts with "Name"). Also skips the plain-sentence
+/// summary snap prints instead of a table when there is nothing to
+/// refresh -- confirmed live on the VM: `snap refresh --list` exits 0 and
+/// prints exactly "All snaps up to date." (no header, no table) in that
+/// case. That sentence has the same 5-whitespace-token shape as a real
+/// update row, so a field-count check alone can't tell them apart; instead
+/// require the would-be version field to contain a digit, which every real
+/// snap version does ("121.0", "2000", "2.76.1") and no English word in
+/// that sentence ever does.
 pub fn parse_snap_line(line: &str) -> Option<PackageUpdate> {
     if line.trim_start().starts_with("Name") {
         return None;
     }
     let fields: Vec<&str> = line.split_whitespace().collect();
     if fields.len() < 2 {
+        return None;
+    }
+    if !fields[1].chars().any(|c| c.is_ascii_digit()) {
         return None;
     }
     Some(PackageUpdate {
@@ -95,5 +106,14 @@ mod tests {
     #[test]
     fn skips_snap_header_line() {
         assert!(parse_snap_line("Name      Version  Rev   Tracking       Publisher").is_none());
+    }
+
+    #[test]
+    fn skips_the_all_up_to_date_sentence_snap_prints_when_there_is_nothing_to_refresh() {
+        // Real output captured live from `snap refresh --list` on the VM
+        // (snapd 2.76.1) when no snap has an update: no header, no table,
+        // just this one sentence, exit code 0. Without a fix this parses as
+        // a fake update for a package named "All" version "snaps".
+        assert!(parse_snap_line("All snaps up to date.").is_none());
     }
 }
