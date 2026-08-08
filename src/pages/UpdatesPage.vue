@@ -64,7 +64,7 @@ async function upgradeAll() {
     </div>
 
     <NxCard v-if="upgradeError" danger>{{ upgradeError }}</NxCard>
-    <NxBadge v-if="upgradeResult" status="success">Mise à jour terminée.</NxBadge>
+    <NxBadge v-if="upgradeResult" status="success" live>Mise à jour terminée.</NxBadge>
 
     <NxCard v-if="error" danger>{{ error }}</NxCard>
 

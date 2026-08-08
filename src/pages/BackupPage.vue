@@ -37,7 +37,7 @@ async function createBackup() {
         <NxButton :disabled="creating || sourceDir === ''" @click="createBackup">{{ creating ? "Sauvegarde en cours..." : "Créer la sauvegarde" }}</NxButton>
       </div>
       <NxCard v-if="error" danger>{{ error }}</NxCard>
-      <NxBadge v-if="resultPath" status="success">Sauvegarde créée : {{ resultPath }}</NxBadge>
+      <NxBadge v-if="resultPath" status="success" live>Sauvegarde créée : {{ resultPath }}</NxBadge>
     </NxCard>
   </div>
 </template>

@@ -1,9 +1,24 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ status?: "success" | "warning" | "danger" | "info" }>(), { status: "info" });
+// `live`: this badge is a one-off announcement of an action's outcome
+// (e.g. "Sauvegarde créée", a `v-if`-gated success/failure result), not
+// part of an ongoing state display or a table cell -- opt in explicitly
+// rather than defaulting every badge to a live region, since most
+// NxBadge usages in this app are static labels (a table's source column,
+// a device's current status in a v-for loop) that would just add noise
+// for screen reader users if announced on every render.
+withDefaults(defineProps<{ status?: "success" | "warning" | "danger" | "info"; live?: boolean }>(), {
+  status: "info",
+  live: false,
+});
 </script>
 
 <template>
-  <span class="nx-badge" :class="`nx-badge--${status}`">
+  <span
+    class="nx-badge"
+    :class="`nx-badge--${status}`"
+    :role="live ? 'status' : undefined"
+    :aria-live="live ? 'polite' : undefined"
+  >
     <slot />
   </span>
 </template>

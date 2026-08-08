@@ -37,7 +37,7 @@ async function runTroubleshootAction(actionId: string) {
 
     <NxCard>
       <NxCard v-if="troubleshootError" danger>{{ troubleshootError }}</NxCard>
-      <NxBadge v-if="troubleshootResult" status="success">{{ troubleshootResult }}</NxBadge>
+      <NxBadge v-if="troubleshootResult" status="success" live>{{ troubleshootResult }}</NxBadge>
       <div v-for="a in TROUBLESHOOT_ACTIONS" :key="a.id" class="ts-form-row">
         <span class="ts-action-label">{{ a.label }}</span>
         <NxButton :disabled="troubleshootBusy !== null" @click="runTroubleshootAction(a.id)">

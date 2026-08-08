@@ -99,9 +99,9 @@ async function upgradeAll() {
         <NxButton :disabled="upgrading || updates.length === 0" @click="upgradeAll">{{ upgrading ? "Mise à jour..." : "Tout mettre à jour" }}</NxButton>
       </div>
       <NxCard v-if="installError" danger>{{ installError }}</NxCard>
-      <NxBadge v-if="installResult" status="success">Installation terminée.</NxBadge>
+      <NxBadge v-if="installResult" status="success" live>Installation terminée.</NxBadge>
       <NxCard v-if="upgradeError" danger>{{ upgradeError }}</NxCard>
-      <NxBadge v-if="upgradeResult" status="success">Mise à jour terminée.</NxBadge>
+      <NxBadge v-if="upgradeResult" status="success" live>Mise à jour terminée.</NxBadge>
     </NxCard>
 
     <NxCard v-if="error" danger>{{ error }}</NxCard>

@@ -61,7 +61,7 @@ async function runAction(action: "clean-cache" | "vacuum-logs") {
 
     <NxCard>
       <NxCard v-if="actionError" danger>{{ actionError }}</NxCard>
-      <NxBadge v-if="result" status="success">{{ result }}</NxBadge>
+      <NxBadge v-if="result" status="success" live>{{ result }}</NxBadge>
       <div class="cln-action-row">
         <span class="cln-action-label">Cache des paquets</span>
         <NxButton :disabled="busy !== null" @click="runAction('clean-cache')">{{ busy === "clean-cache" ? "En cours..." : "Vider le cache" }}</NxButton>
