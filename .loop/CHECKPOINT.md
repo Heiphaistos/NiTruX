@@ -719,9 +719,14 @@ Clôture de la piste laissée au cycle 357 : `installSelection` insère les rés
 
 **Équivalent ProfilesPage fermé** : nouveau `profilesStore.ts` compose `themeStore`/`layoutStore`/`styleStore`/`preferencesStore` (pas de duplication de logique) -- `saveCurrentAs()`/`apply()`/`remove()`/`exportProfile()`/`importProfile()`. Nouvelle page `ConfigProfilesPage.vue` dans "Paramètres" (3e page), export/import fichier JSON miroir du pattern déjà établi par `ThemeEditorPage.vue`. **Vrai bug trouvé par le test avant publication** : `profile-${Date.now()}` collisionne si deux profils sont créés dans la même milliseconde (motif d'id déjà présent ailleurs dans le projet, ex. thèmes personnalisés) -- corrigé avec `crypto.randomUUID()` (déjà utilisé par `TerminalPage.vue`). 16 nouveaux tests + 1 test navigation. 358/358 frontend, Rust inchangé (aucune action pkexec impliquée), vue-tsc clean. Version 0.25.100→0.25.101, commit `46904a1`, poussé.
 
-**`Équivalent ProfilesPage` retiré du "Chantier ouvert".** Éléments en attente inchangés (CSP désactivée, NxBadge/ScriptsPage couleur-accent, bouton Vérifier, timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus). **5 améliorations/fonctionnalités accumulées depuis v0.25.96.** Prochain cycle réel : **361**.
+**5 améliorations/fonctionnalités accumulées depuis v0.25.96.**
+
+## Mise à jour (2026-08-08, v0.25.102, cycle 361) — collision d'id ThemeEditorPage corrigée, sweep Date.now() clos
+
+Clôture de la piste laissée au cycle 360 : `custom-${Date.now()}` (`ThemeEditorPage.vue::handleSave`) avait le même défaut que `profilesStore.ts` -- reproduit EN DIRECT (mock `Date.now`, deux sauvegardes rapprochées, la première disparaît silencieusement, `saveCustomTheme` traite un id dupliqué comme une mise à jour pas une nouvelle entrée). Corrigé avec `crypto.randomUUID()`, même fix que le cycle précédent. 1 nouveau test de régression. 359/359 frontend, Rust inchangé, vue-tsc clean. Version 0.25.101→0.25.102, commit `ec7253e`, poussé.
+
+**Sweep `Date.now()`-comme-id clos sur tout le projet** (2 sites trouvés au total, 2 corrigés -- `grep` confirmé, plus aucun autre site). **6 améliorations/correctifs accumulés depuis v0.25.96.** Prochain cycle réel : **362**.
 
 ### Candidats pour les prochains cycles (mandat fonctionnalités/améliorations)
 - **Contraste WCAG NxBadge couleur-accent** (badges statiques, texte de la couleur d'accent sur fond `color-mix` translucide -- distinct des dégradés déjà corrigés, plus complexe car dépend de `--nx-style-bg` par disposition, cf. cycles 274/276).
 - Approfondissement d'une catégorie nav existante (voir "Chantier ouvert" section antérieure de ce fichier pour le détail par catégorie).
-- Le même piège de collision d'id (`Date.now()` seul) existe potentiellement ailleurs dans le projet (ex. `custom-${Date.now()}` dans `ThemeEditorPage.vue::handleSave`) -- repéré en passant au cycle 360, pas encore vérifié/corrigé pour ce site précis.
