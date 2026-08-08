@@ -831,3 +831,19 @@ Corrigé : `parse_ss_line` reconnaît aussi `UNCONN`, `ListeningPort` gagne un c
 1 test Rust remplacé (l'ancien verrouillait le bug, le nouveau prouve le contraire) + 1 assertion ajoutée à un test existant + 1 nouveau test frontend. 404/404 frontend (403→404, +1), 333/333 Rust (inchangé en nombre, un test remplacé pour un autre), `vue-tsc` clean. Version 0.25.110→0.25.111, commit `174c561`, poussé.
 
 **15 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Éléments en attente inchangés par ailleurs. Prochain cycle réel : **371**.
+
+## Mise à jour (2026-08-09, v0.25.112, cycle 371) — nouvelle page Certificats (comparaison NiTriTe, tab DiagTabCertificates)
+
+Suite de la comparaison systématique NiTriTe/NiTruX (cycle 370). Repéré `DiagTabCertificates.vue` (visionneuse de magasin de certificats Windows, `certmgr.msc`) parmi les onglets Diagnostic de NiTriTe jamais évalués individuellement. Écarté `DiagTabShares` (entièrement `net session`/`fsmgmt.msc` Windows, aucun équivalent Linux pertinent pour un outil desktop généraliste) mais retenu Certificats : le magasin de confiance CA Linux (`/etc/ssl/certs/*.pem`) est un vrai équivalent fonctionnel, lisible sans privilège par tout utilisateur sur une install Debian standard.
+
+**Implémenté sans nouvelle dépendance Rust** : `openssl x509` (déjà supposé présent, comme tous les autres outils système déjà utilisés par l'app) plutôt qu'une crate de parsing X.509 pour une seule page. État d'expiration dérivé du code de sortie de `-checkend` (0 = valide au-delà de la fenêtre, non-zéro = expire dans la fenêtre ou déjà expiré) plutôt que de parser le format texte ASN1_TIME d'OpenSSL nous-mêmes (espacement irrégulier documenté, ex: "May  5" pour un jour à un chiffre -- exactement le genre de format mieux laissé à l'outil qui le comprend déjà).
+
+**Vérifié en direct sur cette machine avant tout code** : `/etc/ssl/certs/*.pem` = 121 certificats réels distincts (les entrées non-`.pem` du même répertoire sont des alias de recherche par hash OpenSSL vers les mêmes fichiers -- exclues par le simple filtre d'extension, aucune déduplication supplémentaire nécessaire). Sweep complet chronométré : ~800ms pour 121 certificats × 2 appels `openssl` chacun, largement acceptable pour un chargement de page à la demande.
+
+**Piège d'infra rencontré et évité en cours de route** : une première tentative de boucle shell inline (`for f in /etc/ssl/certs/*.pem; do ...; done`) via `wsl.exe bash -lc "..."` a échoué avec des erreurs `openssl` sur un nom de fichier vide -- exactement la corruption de substitution déjà documentée dans LESSONS.md, pas limitée aux heredocs. Corrigé en écrivant le script dans un fichier via `Write` puis exécuté par chemin.
+
+Nouvelle page dans la catégorie "Diagnostic" (`certificates`), badge coloré par certificat (vert/orange/rouge), bannière de résumé si au moins un certificat expiré ou expirant sous 30 jours, filtre par sujet.
+
+5 nouveaux tests Rust (parsing pur + contrat `-checkend` + 2 tests d'intégration réels contre le vrai magasin de cette machine) + 5 nouveaux tests frontend. 409/409 frontend (404→409, +5), 338/338 Rust (333→338, +5), `vue-tsc` clean. Corrigé au passage l'unique avertissement `cargo clippy --all-targets` trouvé (introduit cycle précédent, `unnecessary_sort_by` dans `report.rs`). Version 0.25.111→0.25.112, commit `48597ff`, poussé.
+
+**16 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools"). Prochain cycle réel : **372** -- reste plusieurs onglets Diagnostic NiTriTe non encore évalués (`DiagTabNetTools`, `DiagTabRepair`) pour une future comparaison, aucun autre gap confirmé pour l'instant.
