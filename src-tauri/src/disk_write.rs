@@ -231,14 +231,16 @@ pub fn extend_partition(device: String, disk: String, part_number: String) -> Re
 }
 
 /// A destination file that already exists at `dest_path` would be
-/// silently truncated and overwritten by `dd` with zero warning -- the
-/// pkexec helper's `clone-disk` subcommand has no such check (and
-/// shouldn't try to be clever about it while running as root; a
-/// leftover/stale file at that exact path is common, e.g. re-running a
-/// clone into the same path from a previous session). Checked here,
-/// non-privileged, before pkexec is ever invoked -- the privileged
-/// `clone-disk` invocation itself is unchanged, so this does not require
-/// a live VM re-test.
+/// silently truncated and overwritten by `dd` with zero warning. Checked
+/// here, non-privileged, before pkexec is ever invoked, purely for a fast
+/// and friendly error message -- the actual security boundary lives in
+/// the pkexec helper's `clone-disk` subcommand itself, which now refuses
+/// (via an exclusive `set -C; exec 3>`) to write through anything already
+/// at that path, symlink or regular file alike, closing the TOCTOU window
+/// this non-privileged check alone cannot (a file/symlink could still
+/// appear at `dest_path` between this check returning and pkexec actually
+/// running). This function existing or not does not change that
+/// privileged behavior, so editing it does not require a live VM re-test.
 fn check_dest_path_available(dest_path: &str) -> Result<(), String> {
     if std::path::Path::new(dest_path).exists() {
         return Err(format!(
