@@ -725,8 +725,20 @@ Clôture de la piste laissée au cycle 357 : `installSelection` insère les rés
 
 Clôture de la piste laissée au cycle 360 : `custom-${Date.now()}` (`ThemeEditorPage.vue::handleSave`) avait le même défaut que `profilesStore.ts` -- reproduit EN DIRECT (mock `Date.now`, deux sauvegardes rapprochées, la première disparaît silencieusement, `saveCustomTheme` traite un id dupliqué comme une mise à jour pas une nouvelle entrée). Corrigé avec `crypto.randomUUID()`, même fix que le cycle précédent. 1 nouveau test de régression. 359/359 frontend, Rust inchangé, vue-tsc clean. Version 0.25.101→0.25.102, commit `ec7253e`, poussé.
 
-**Sweep `Date.now()`-comme-id clos sur tout le projet** (2 sites trouvés au total, 2 corrigés -- `grep` confirmé, plus aucun autre site). **6 améliorations/correctifs accumulés depuis v0.25.96.** Prochain cycle réel : **362**.
+**Sweep `Date.now()`-comme-id clos sur tout le projet** (2 sites trouvés au total, 2 corrigés -- `grep` confirmé, plus aucun autre site). **6 améliorations/correctifs accumulés depuis v0.25.96.**
+
+## Mise à jour (2026-08-08, v0.25.103, cycle 362) — contraste WCAG NxBadge résolu (dernier signalement de contraste connu)
+
+**`NxBadge couleur-accent` fermé** (cycles 274/276, bloqué depuis par un fond non calculable). Débloqué en mixant le fond sur `--nx-bg-elevated` du thème (opaque, connu) au lieu de `transparent` (montrait ce qu'il y a derrière, dépendant de 12 dispositions dont 4 en dégradé/flou). Mesuré AVANT correctif : 31/52 combinaisons thème×statut échouaient WCAG AA avec l'accent brut comme texte (Adwaita succès 1.98:1) ; 15/52 échouaient même au cas limite (accent pur vs bgElevated pur), confirmant qu'il fallait ajuster la couleur de texte, pas seulement la transparence.
+
+Nouveau `src/lib/accessibleColor.ts` (`contrastRatio`/`pickAccessibleTextColor`/`mixHex`) -- calcule EN DIRECT une teinte de texte accessible par thème (même teinte, luminosité ajustée), s'auto-corrige pour tout thème personnalisé. Les 52 combinaisons re-vérifiées : 0 échec après correctif.
+
+**Effet de bord géré avant de committer** : `NxBadge` nécessite maintenant un store Pinia actif -- ~20 specs de pages existantes ne l'initialisaient jamais. Plutôt que de toucher 20 fichiers sans rapport, `NxBadge` retombe sur l'ancien style CSS statique si Pinia n'est pas actif (chemin jamais emprunté en production, `main.ts` initialise toujours Pinia). Suite complète re-passée après ce repli : 0 régression (365/365, contre 53 erreurs à la première tentative naïve).
+
+9 nouveaux tests. 365/365 frontend, Rust inchangé, vue-tsc clean. Version 0.25.102→0.25.103, commit `c811814`, poussé.
+
+**Dernier signalement de contraste WCAG connu désormais fermé.** Éléments en attente inchangés (décisions produit/portée uniquement) : CSP désactivée, bouton Vérifier, timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus. **7 améliorations/correctifs accumulés depuis v0.25.96.** Prochain cycle réel : **363**.
 
 ### Candidats pour les prochains cycles (mandat fonctionnalités/améliorations)
-- **Contraste WCAG NxBadge couleur-accent** (badges statiques, texte de la couleur d'accent sur fond `color-mix` translucide -- distinct des dégradés déjà corrigés, plus complexe car dépend de `--nx-style-bg` par disposition, cf. cycles 274/276).
 - Approfondissement d'une catégorie nav existante (voir "Chantier ouvert" section antérieure de ce fichier pour le détail par catégorie).
+- Tous les signalements a11y/contraste connus sont désormais fermés -- prochain cycle sans piste évidente devra comparer à NiTriTe Windows pour une fonctionnalité manquante (règle du mandat après 3 cycles sans rien trouver), ou reprendre un signalement produit/portée différé si l'utilisateur donne une nouvelle direction.
