@@ -2521,3 +2521,9 @@ Aucun bug trouvé. Négatif. Quatrième cycle négatif consécutif (309-312) -- 
 Aucun changement de code. Négatif, mais deux vérifications utiles avec un jugement documenté sur la limite entre "sûr à supprimer" et "ambigu, laissé tel quel".
 
 Éléments en attente inchangés. **11 correctifs/améliorations accumulés depuis la release v0.25.79**. 206 cycles cumulés 110-315.
+
+[2026-08-08T07:08:00+02:00] Cycle 316 : nouvel angle jamais tenté cette session -- recherche de tout fichier Rust exposant au moins une commande `#[tauri::command]` mais sans AUCUN bloc `#[cfg(test)]` du tout (plancher minimal de couverture, distinct des sweeps déjà faits sur la couverture ligne-par-ligne). **0 fichier trouvé** -- chaque module qui expose une commande Tauri a au moins un test, confirmant qu'aucun module entier n'a été laissé totalement non testé au fil de cette session étendue.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **11 correctifs/améliorations accumulés depuis la release v0.25.79**. 207 cycles cumulés 110-316.
