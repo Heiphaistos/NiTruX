@@ -27,6 +27,7 @@ mod optimizations;
 mod packages;
 mod peripherals;
 mod pkexec_bootstrap;
+mod portable_apps;
 mod portscan;
 mod processes;
 mod report;
@@ -212,6 +213,10 @@ pub fn run() {
             terminal::close_terminal,
             pkexec_bootstrap::is_pkexec_integration_installed,
             pkexec_bootstrap::install_pkexec_integration,
+            portable_apps::list_portable_apps,
+            portable_apps::download_portable_app,
+            portable_apps::launch_portable_app,
+            portable_apps::remove_portable_app,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
