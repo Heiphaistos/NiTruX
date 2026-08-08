@@ -525,7 +525,7 @@ fn list_reports_in(dir: &str) -> Result<Vec<ReportFile>, String> {
             ReportFile { filename, size_bytes: metadata.len(), created_at: format_epoch_utc(modified_epoch) },
         ));
     }
-    reports.sort_by(|a, b| b.0.cmp(&a.0)); // most recent first
+    reports.sort_by_key(|r| std::cmp::Reverse(r.0)); // most recent first
     Ok(reports.into_iter().map(|(_, r)| r).collect())
 }
 

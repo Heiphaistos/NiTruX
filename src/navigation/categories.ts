@@ -29,6 +29,7 @@ export const navigationCategories: NavCategory[] = [
       { id: "installed-software", label: "Logiciels installés", icon: "list" },
       { id: "user-accounts", label: "Comptes utilisateurs", icon: "users" },
       { id: "update-history", label: "Historique des mises à jour", icon: "history" },
+      { id: "certificates", label: "Certificats", icon: "lock" },
     ],
   },
   {
