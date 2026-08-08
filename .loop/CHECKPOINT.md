@@ -620,3 +620,13 @@ Cycle 321 négatif : `hardware_details.rs` (lscpu/dmi/meminfo) vérifié en dire
 **Cycle 323 -- signalement du cycle 322 résolu par extraction du vrai catalogue de traduction** (même technique que `firewall.rs`'s fix historique cycle 97/ufw) : `apt-get download cups-client cups-common x11-xserver-utils` + `dpkg-deb -x`, sans root. Découverte que CUPS utilise son propre format `.po` custom (pas gettext `.mo` standard) -- le vrai `cups_fr.po` existe et contient les 3 msgid utilisés par `lpstat -p`, mais avec `msgstr ""` (traduction vide) pour les 3 : ces chaînes restent en anglais même sur un poste français, par choix des traducteurs CUPS eux-mêmes. `x11-xserver-utils` (xrandr) : 0 fichier de traduction du tout. **Ni `lpstat` ni `xrandr` ne présentent de risque réel** -- signalement retiré de la liste.
 
 Éléments en attente : CSP désactivée, aria-live absent, NxBadge/ScriptsPage, NxQuickActionTile, clone-disk, confirmNonDestructiveActions, bouton Vérifier, timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus. **12 correctifs/améliorations accumulés depuis v0.25.79** (inchangé, ce cycle a clos un signalement sans en ajouter). 214 cycles cumulés 110-323.
+
+## Mise à jour (2026-08-08, v0.25.92, cycle 330) — RELEASE PUBLIÉE, backlog livré
+
+Cycles 324-329 : sweep exhaustif `LC_ALL=C` complété (0 bug supplémentaire trouvé, bluetoothctl/lpstat/xrandr tous confirmés sûrs par preuve directe), `network_write.rs`/`DriversPage.vue`/`TroubleshootPage.vue`/`TemperaturesPage.vue` audités en profondeur, tous propres.
+
+**Utilisateur a explicitement demandé la publication** ("oui build e publie la nouvelle release et continue la boucle"). `npm run tauri build` (WSL2) → 3 bundles (deb/rpm/AppImage) générés sans erreur. Script `postrm` empaqueté vérifié identique au source. Tag annoté `v0.25.92` + release GitHub créée avec les 3 assets et notes organisées par catégorie (sécurité en tête).
+
+**Les 12 correctifs/améliorations accumulés depuis v0.25.79 sont désormais tous dans une release publiée. Plus aucun backlog de correctifs non livrés.**
+
+Éléments en attente inchangés (non bloquants, décisions produit/portée en attente) : CSP désactivée (cycle 294), aria-live absent (cycle 317), NxBadge/ScriptsPage couleur-accent (cycles 274/276/282), NxQuickActionTile dégradés (cycle 273), clone-disk (cycle 120), confirmNonDestructiveActions (cycle 148), bouton Vérifier (cycle 174), timeout run_pkexec_with_stdin (cycle 193), doublons catalogue (cycles 201-202/259), WiFiAnalyzerPage::securityStatus (cycle 241, non vérifiable sans matériel Wi-Fi réel). 221 cycles cumulés 110-330 depuis la reprise.

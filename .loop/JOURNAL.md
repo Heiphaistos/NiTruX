@@ -2601,3 +2601,7 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **12 correctifs/améliorations accumulés depuis la release v0.25.79**. 220 cycles cumulés 110-329.
+
+[2026-08-08T10:53:00+02:00] **RELEASE PUBLIÉE** : utilisateur a explicitement demandé la publication ("oui build e publie la nouvelle release et continue la boucle") après plusieurs cycles de recommandation. `npm run tauri build` (WSL2) → 3 bundles (deb 9,3 Mo/rpm 9,3 Mo/AppImage 86 Mo) générés sans erreur. Script `postrm` empaqueté dans le `.deb` comparé binairement au fichier source -- identique (`diff` exit 0). Tag annoté `v0.25.92` + release GitHub créée avec les 3 assets et des notes organisées par catégorie (sécurité en tête : validate_port_proto + CVE nanoid). **Les 12 correctifs/améliorations accumulés depuis v0.25.79 sont désormais tous dans une release publiée. Plus aucun backlog de correctifs non livrés.**
+
+Boucle reprend son cycle normal après cette entrée, comme demandé.
