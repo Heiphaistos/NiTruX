@@ -37,7 +37,7 @@ function toResolvConfContent(rawServers: string[]): string {
   return rawServers
     .map((s) => s.trim())
     .filter((s) => s !== "")
-    .map((ip) => `nameserver ${ip}`)
+    .map((s) => (s.startsWith("nameserver ") ? s : `nameserver ${s}`))
     .join("\n");
 }
 
