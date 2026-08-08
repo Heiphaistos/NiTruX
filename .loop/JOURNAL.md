@@ -2347,3 +2347,11 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif, mais confirmation de cadence précieuse de l'état de santé global combiné.
 
 Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 175 cycles cumulés 110-284.
+
+[2026-08-08T01:48:00+02:00] Cycle 285 : deux tentatives. (1) Recherche d'une clé SSH déjà configurée pour la VM Debian (`~/.ssh/`) qui aurait permis de contourner le blocage `sshpass`/`expect`/`paramiko` du cycle 267 pour enfin vérifier le risque `WiFiAnalyzerPage` -- aucune clé ni config trouvée, seul un `known_hosts` existant. Abandonné à nouveau rapidement, cohérent avec le cycle 267.
+
+(2) Reprise du signalement `NxQuickActionTile` du cycle 273 (dégradés fixes potentiellement sous AA) avec un calcul précis cette fois : contraste blanc ET noir contre les deux couleurs de chaque dégradé, pour les 5 tuiles. **Résultat ambigu, contrairement aux deux bugs déjà corrigés** (où le noir gagnait nettement 12/13 ou 13/13) : "Diagnostic" et "Mises à jour" favorisent nettement le noir (7.49-9.28 vs 2.26-3.30), mais "Générateur de rapport" est en réalité LÉGÈREMENT MEILLEUR en blanc (4.23-5.70 vs 3.69-4.96), et "Installation rapide"/"Dépannage" restent proches de la limite avec les deux couleurs. Aucun remplacement de couleur unique ne résout proprement les 5 tuiles à la fois -- confirme qu'il s'agit bien d'une décision de design par tuile (ou de redessiner certains dégradés), pas un correctif mécanique comme les deux précédents. Toujours volontairement pas corrigé.
+
+Aucun changement de code. Négatif, mais analyse affinée qui confirme avec des chiffres précis (pas seulement des stops individuels) que ce signalement nécessite une vraie décision de design.
+
+Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 176 cycles cumulés 110-285.
