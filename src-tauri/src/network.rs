@@ -19,6 +19,7 @@ pub struct WifiNetwork {
 pub struct ListeningPort {
     pub port: u16,
     pub process: Option<String>,
+    pub protocol: Option<String>,
 }
 
 #[derive(Serialize, Clone)]
@@ -74,29 +75,39 @@ pub fn parse_nmcli_wifi_line(line: &str) -> Option<WifiNetwork> {
     })
 }
 
-/// Parses one line of `ss -tulnp` output for the local port and owning
-/// process name.
+/// Parses one line of `ss -tulnp` output for the local port, owning
+/// process name, and protocol.
 ///
 /// Real `ss -tulnp` output (verified on this machine, iproute2 5.15) has a
 /// leading Netid column (`tcp`/`udp`) before the state column, e.g.:
 /// `"tcp   LISTEN 0      4096    127.0.0.53%lo:53         0.0.0.0:*"`.
-/// The local-address field is always 3 tokens after the `LISTEN` token
+/// The local-address field is always 3 tokens after the state token
 /// (Recv-Q, Send-Q, then Local Address:Port) regardless of whether a Netid
-/// column precedes it, so we locate `LISTEN` positionally rather than
-/// assuming a fixed field index — this also correctly skips header lines
-/// (no `LISTEN` token present) and non-LISTEN rows (e.g. `UNCONN` UDP
-/// sockets).
+/// column precedes it, so we locate the state token positionally rather
+/// than assuming a fixed field index.
+///
+/// UDP has no formal "listening" state -- a bound-but-unconnected UDP
+/// socket (which `-l` restricts UDP output to) is reported as `UNCONN`,
+/// not `LISTEN`. Matching only `LISTEN` silently dropped every UDP entry
+/// from the app's own "Ports en écoute" list, confirmed live on this
+/// machine's real `ss -tulnp` output (4 real UDP listeners, e.g. DNS on
+/// 127.0.0.53:53, invisible) before this fix.
 pub fn parse_ss_line(line: &str) -> Option<ListeningPort> {
     let fields: Vec<&str> = line.split_whitespace().collect();
-    let listen_idx = fields.iter().position(|&f| f == "LISTEN")?;
-    let local_addr = fields.get(listen_idx + 3)?;
+    let state_idx = fields.iter().position(|&f| f == "LISTEN" || f == "UNCONN")?;
+    let local_addr = fields.get(state_idx + 3)?;
     let port: u16 = local_addr.rsplit(':').next()?.parse().ok()?;
+    let protocol = match state_idx.checked_sub(1).and_then(|i| fields.get(i)) {
+        Some(&"tcp") => Some("tcp".to_string()),
+        Some(&"udp") => Some("udp".to_string()),
+        _ => None,
+    };
     let process = line
         .find("users:((\"")
         .map(|idx| &line[idx + 9..])
         .and_then(|rest| rest.split('"').next())
         .map(|s| s.to_string());
-    Some(ListeningPort { port, process })
+    Some(ListeningPort { port, process, protocol })
 }
 
 /// Extracts `nameserver` entries from `/etc/resolv.conf` content, in order.
@@ -306,6 +317,9 @@ mod tests {
         let port = parse_ss_line(line).expect("should parse");
         assert_eq!(port.port, 22);
         assert_eq!(port.process.as_deref(), Some("sshd"));
+        // No Netid column in this hand-written line -- protocol is
+        // genuinely unknown, not a wrong guess.
+        assert_eq!(port.protocol, None);
     }
 
     #[test]
@@ -383,11 +397,20 @@ mod real_ss_output_regression {
         let line = "tcp   LISTEN 0      4096    127.0.0.53%lo:53         0.0.0.0:*          ";
         let port = parse_ss_line(line).expect("should parse real ss line with netid column");
         assert_eq!(port.port, 53);
+        assert_eq!(port.protocol.as_deref(), Some("tcp"));
     }
 
     #[test]
-    fn skips_real_udp_unconn_line() {
+    fn parses_a_real_udp_unconn_line_instead_of_silently_dropping_it() {
+        // Regression guard for the actual bug: UDP has no LISTEN state --
+        // `ss -tulnp -l` reports a bound UDP socket as UNCONN, and the
+        // original code only recognized LISTEN, silently excluding every
+        // UDP entry from the app's "Ports en écoute" list. Captured live
+        // on this project's own dev machine (4 real UDP listeners were
+        // invisible before this fix, including DNS on 127.0.0.53:53).
         let line = "udp   UNCONN 0      0       127.0.0.53%lo:53         0.0.0.0:*          ";
-        assert!(parse_ss_line(line).is_none());
+        let port = parse_ss_line(line).expect("a bound UDP socket must parse, not be dropped");
+        assert_eq!(port.port, 53);
+        assert_eq!(port.protocol.as_deref(), Some("udp"));
     }
 }
