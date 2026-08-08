@@ -138,7 +138,6 @@ fn get_environment_variables() -> Vec<(String, String)> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
         // Held for the app's lifetime so CPU usage deltas can be computed
         // across repeated refreshes (see system::build_snapshot doc comment).
         .manage(Mutex::new(System::new_all()))

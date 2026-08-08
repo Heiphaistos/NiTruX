@@ -1,6 +1,6 @@
 [package]
 name = "nitrux"
-version = "0.25.88"
+version = "0.25.89"
 description = "NiTruX — couteau suisse de maintenance et diagnostic pour Linux"
 authors = ["Heiphaistos"]
 edition = "2021"
@@ -19,7 +19,6 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
-tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sysinfo = "0.32"

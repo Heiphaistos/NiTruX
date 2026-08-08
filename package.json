@@ -1,7 +1,7 @@
 {
   "name": "tauri-app",
   "private": true,
-  "version": "0.25.88",
+  "version": "0.25.89",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-opener": "^2",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "lucide-vue-next": "^0.474.0",
