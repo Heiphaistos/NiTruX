@@ -2577,3 +2577,9 @@ Aucun changement de code. Négatif, mais sweep méthodique confirmant que la cou
 Aucun bug trouvé. Négatif -- clôture d'un axe d'investigation méthodique entamé au cycle 324, plutôt qu'une simple vérification isolée.
 
 Éléments en attente inchangés. **12 correctifs/améliorations accumulés depuis la release v0.25.79**. 216 cycles cumulés 110-325.
+
+[2026-08-08T08:28:00+02:00] Cycle 326 : `network_write.rs` relu en entier (au-delà du seul `validate_port_proto` déjà fixé cycle 227). Module déjà très mature : `validate_hosts_content`/`validate_dns_content` bien conçues (rejettent contenu vide ou sans entrée localhost/nameserver), aucune fausse acceptation trouvée (les commentaires contenant "localhost" comme texte ne matchent pas le préfixe IP requis). Seul gap connu (`run_pkexec_with_stdin` sans timeout d'expiration) déjà documenté et volontairement hors périmètre depuis le cycle 193, pas une découverte nouvelle.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **12 correctifs/améliorations accumulés depuis la release v0.25.79**. 217 cycles cumulés 110-326.
