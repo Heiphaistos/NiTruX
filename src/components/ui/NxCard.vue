@@ -1,9 +1,22 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ danger?: boolean }>(), { danger: false });
+// `danger` styles the card AND, by default, marks it as an ARIA alert
+// (announced to screen readers the moment it appears) -- correct for the
+// overwhelming majority of usages, which are `v-if`-gated one-line error
+// messages. A `danger` card that wraps interactive controls (inputs,
+// selects, buttons) is a static section, not a transient alert, and
+// `role="alert"` is explicitly discouraged on regions containing
+// focusable content per WAI-ARIA authoring practices -- set `staticDanger`
+// on that rare case to keep the red styling without the alert semantics.
+withDefaults(defineProps<{ danger?: boolean; staticDanger?: boolean }>(), { danger: false, staticDanger: false });
 </script>
 
 <template>
-  <div class="nx-card" :class="{ 'nx-card--danger': danger }">
+  <div
+    class="nx-card"
+    :class="{ 'nx-card--danger': danger || staticDanger }"
+    :role="danger ? 'alert' : undefined"
+    :aria-live="danger ? 'assertive' : undefined"
+  >
     <slot />
   </div>
 </template>
