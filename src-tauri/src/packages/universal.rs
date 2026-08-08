@@ -2,8 +2,20 @@ use super::{binary_exists, PackageUpdate};
 use crate::subprocess;
 use std::time::Duration;
 
-/// Parses one tab-separated line of `flatpak remote-ls --updates` output,
-/// e.g.: "org.mozilla.firefox\tFirefox\t121.0\tstable\tflathub"
+/// Parses one tab-separated line of `flatpak remote-ls --updates` output.
+/// Real column order (confirmed live on the VM, flatpak 1.16.6): display
+/// name, then app ID, then version, then branch, then arch -- e.g.
+/// "GitKraken\tcom.axosoft.GitKraken\t12.3.1\tstable\tx86_64". This
+/// function only reads fields[0] (name) and fields[2] (version), both of
+/// which the previous synthetic doc example/test fixture (app ID first,
+/// display name second, "flathub" as a 5th "remote" column) had backwards
+/// relative to the real tool -- coincidentally harmless since neither the
+/// swapped fields[0]/[1] order nor the mislabeled unused fields[4] changed
+/// what gets extracted, but corrected here so a future reader doesn't
+/// trust the wrong column semantics. Runtime/platform packages (e.g.
+/// "org.gnome.Platform") have an empty version field in real output --
+/// left as an empty string, a known limitation mirroring dnf.rs's/
+/// zypper.rs's own documented version-column gaps, not a parsing bug.
 pub fn parse_flatpak_line(line: &str) -> Option<PackageUpdate> {
     let fields: Vec<&str> = line.split('\t').collect();
     if fields.len() < 3 {
@@ -82,11 +94,27 @@ mod tests {
 
     #[test]
     fn parses_flatpak_remote_ls_updates_line() {
-        let line = "org.mozilla.firefox\tFirefox\t121.0\tstable\tflathub";
+        // Real column order captured live from `flatpak remote-ls
+        // --updates` on the VM (flatpak 1.16.6): name, app ID, version,
+        // branch, arch -- not the app-ID-first order this fixture used to
+        // assume.
+        let line = "GitKraken\tcom.axosoft.GitKraken\t12.3.1\tstable\tx86_64";
         let update = parse_flatpak_line(line).expect("should parse");
-        assert_eq!(update.name, "org.mozilla.firefox");
-        assert_eq!(update.new_version, "121.0");
+        assert_eq!(update.name, "GitKraken");
+        assert_eq!(update.new_version, "12.3.1");
         assert_eq!(update.source, "flatpak");
+    }
+
+    #[test]
+    fn handles_a_runtime_platform_line_with_an_empty_version_field() {
+        // Real output captured live on the VM: runtime/platform packages
+        // report an empty version field (only a branch number). Must not
+        // panic or drop the entry -- current_version/new_version limits
+        // are already a known, accepted gap (mirrors dnf.rs/zypper.rs).
+        let line = "GNOME Application Platform version 49\torg.gnome.Platform\t\t49\tx86_64";
+        let update = parse_flatpak_line(line).expect("should still parse despite the empty version field");
+        assert_eq!(update.name, "GNOME Application Platform version 49");
+        assert_eq!(update.new_version, "");
     }
 
     #[test]
