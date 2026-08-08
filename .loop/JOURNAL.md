@@ -2621,3 +2621,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.92**. 224 cycles cumulés 110-333.
+
+[2026-08-08T11:28:00+02:00] Cycle 334 : `BenchmarkPage.vue` auditée. Page bien conçue : disclaimer sur le cache disque déjà présent (décision de conception résolue depuis, cf. mémoire v0.24.14), `disk_error` correctement isolé sans invalider CPU/mémoire (cohérent avec `resolve_disk_benchmark` revu au cycle 310), `healthStatus` cohérent avec le jeu fermé de valeurs réelles que `smart.rs::parse_health_line` peut produire (PASSED/FAILED!, déjà vérifié en profondeur cycle 311).
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.92**. 225 cycles cumulés 110-334.
