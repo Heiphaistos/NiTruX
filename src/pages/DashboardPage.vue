@@ -30,6 +30,7 @@ interface DiskUsageEntry {
   used_bytes: number;
   used_percent: number;
 }
+interface DashboardSnapshot { cpu: number; ram: number; disk: number }
 
 const emit = defineEmits<{ navigate: [string] }>();
 
@@ -40,6 +41,48 @@ const sensors = ref<SensorSnapshot | null>(null);
 const sensorsError = ref<string | null>(null);
 const diskUsage = ref<DiskUsageEntry[]>([]);
 let intervalId: number | undefined;
+
+// Inter-session comparison (NiTriTe Windows concept): the snapshot saved
+// here is deliberately the LAST one seen, not a rolling history -- one
+// comparison point ("since I last looked") is what the sibling app shows,
+// not a full timeline (PerfHistoryPage already covers that separately).
+const SNAPSHOT_KEY = "nitrux-dashboard-snapshot";
+const prevSnapshot = ref<DashboardSnapshot | null>(null);
+let snapshotSaved = false;
+
+function loadPrevSnapshot() {
+  try {
+    const raw = localStorage.getItem(SNAPSHOT_KEY);
+    if (raw) prevSnapshot.value = JSON.parse(raw);
+  } catch {
+    prevSnapshot.value = null;
+  }
+}
+
+function saveSnapshotIfReady() {
+  // Only once per mount, and only once every metric actually resolved --
+  // saving a partial snapshot (e.g. disk usage failed) would silently
+  // compare against incomplete data on the next visit.
+  if (snapshotSaved || !snapshot.value || rootDiskPercent.value === null) return;
+  snapshotSaved = true;
+  const snap: DashboardSnapshot = {
+    cpu: averageCpuPercent(snapshot.value.cpus),
+    ram: ramPercent.value ?? 0,
+    disk: rootDiskPercent.value,
+  };
+  localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
+}
+
+function delta(current: number, prev: number): string {
+  const d = current - prev;
+  if (Math.abs(d) < 1) return "";
+  return (d > 0 ? "+" : "") + d.toFixed(1) + "%";
+}
+
+function deltaVariant(current: number, prev: number): "success" | "danger" | "neutral" {
+  if (Math.abs(current - prev) < 1) return "neutral";
+  return current > prev ? "danger" : "success";
+}
 
 async function refresh() {
   try {
@@ -71,10 +114,14 @@ async function refreshDiskUsage() {
   }
 }
 
-onMounted(() => {
-  refresh();
-  refreshSensors();
-  refreshDiskUsage();
+onMounted(async () => {
+  loadPrevSnapshot();
+  // Each refresher already catches its own errors and resolves normally
+  // (see refreshDiskUsage above), so Promise.all here never rejects --
+  // awaiting it just means the comparison snapshot is saved from real
+  // first-load data instead of racing the initial fetch.
+  await Promise.all([refresh(), refreshSensors(), refreshDiskUsage()]);
+  saveSnapshotIfReady();
   intervalId = window.setInterval(() => {
     refresh();
     refreshSensors();
@@ -188,6 +235,23 @@ const QUICK_ACTIONS = [
       <span class="dash-score-label">Score système</span>
       <span class="dash-score-value">{{ systemScore }}<span class="dash-score-max">/100</span></span>
       <NxBadge :status="scoreStatus(systemScore)">{{ scoreLabel(systemScore) }}</NxBadge>
+      <div v-if="prevSnapshot" class="dash-score-delta">
+        <span
+          v-if="delta(averageCpuPercent(snapshot!.cpus), prevSnapshot.cpu)"
+          class="delta-chip"
+          :class="deltaVariant(averageCpuPercent(snapshot!.cpus), prevSnapshot.cpu)"
+        >CPU {{ delta(averageCpuPercent(snapshot!.cpus), prevSnapshot.cpu) }}</span>
+        <span
+          v-if="ramPercent !== null && delta(ramPercent, prevSnapshot.ram)"
+          class="delta-chip"
+          :class="deltaVariant(ramPercent!, prevSnapshot.ram)"
+        >RAM {{ delta(ramPercent!, prevSnapshot.ram) }}</span>
+        <span
+          v-if="rootDiskPercent !== null && delta(rootDiskPercent, prevSnapshot.disk)"
+          class="delta-chip"
+          :class="deltaVariant(rootDiskPercent!, prevSnapshot.disk)"
+        >Disque {{ delta(rootDiskPercent!, prevSnapshot.disk) }}</span>
+      </div>
     </NxCard>
 
     <div class="dash-grid" v-if="snapshot">
@@ -225,4 +289,9 @@ const QUICK_ACTIONS = [
 .dash-score-label { font-size: 13px; color: var(--nx-text-secondary); }
 .dash-score-value { font-size: 28px; font-weight: 700; font-family: var(--nx-style-font-family); margin-right: auto; }
 .dash-score-max { font-size: 14px; font-weight: 400; color: var(--nx-text-secondary); }
+.dash-score-delta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.delta-chip { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 99px; }
+.delta-chip.success { background: rgba(34, 197, 94, 0.15); color: #16a34a; }
+.delta-chip.danger { background: rgba(239, 68, 68, 0.15); color: #dc2626; }
+.delta-chip.neutral { background: var(--nx-bg-elevated); color: var(--nx-text-secondary); }
 </style>

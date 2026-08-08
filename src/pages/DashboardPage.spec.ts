@@ -155,6 +155,37 @@ describe("DashboardPage", () => {
     expect(diskCard.find(".nx-stat-tile__dot--danger").exists()).toBe(true);
   });
 
+  it("shows no comparison chips on the very first visit (no snapshot saved yet)", async () => {
+    const wrapper = mount(DashboardPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Score système"));
+    expect(wrapper.find(".delta-chip").exists()).toBe(false);
+  });
+
+  it("compares against the previously saved snapshot: hides a sub-1% delta, shows danger for a worsened metric and success for an improved one", async () => {
+    // Mock is CPU 12.5% / RAM 50% / disk(/) 20%. Disk's prior value is only
+    // 0.5 points off (must stay hidden); CPU got worse (danger, red);
+    // RAM got better (success, green).
+    localStorage.setItem("nitrux-dashboard-snapshot", JSON.stringify({ cpu: 5, ram: 70, disk: 19.5 }));
+    const wrapper = mount(DashboardPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Score système"));
+
+    const chips = wrapper.findAll(".delta-chip");
+    expect(chips.length).toBe(2);
+    const cpuChip = chips.find((c) => c.text().includes("CPU"))!;
+    expect(cpuChip.text()).toContain("+7.5%");
+    expect(cpuChip.classes()).toContain("danger");
+    const ramChip = chips.find((c) => c.text().includes("RAM"))!;
+    expect(ramChip.text()).toContain("-20.0%");
+    expect(ramChip.classes()).toContain("success");
+  });
+
+  it("persists the current snapshot to localStorage for the next visit", async () => {
+    const wrapper = mount(DashboardPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Score système"));
+    const saved = JSON.parse(localStorage.getItem("nitrux-dashboard-snapshot")!);
+    expect(saved).toEqual({ cpu: 12.5, ram: 50, disk: 20 });
+  });
+
   it("every quick-action gradient stop meets WCAG AA contrast against the tile's white text", async () => {
     // Regression guard for the actual bug: the original gradients (e.g.
     // #fb923c) were 2.26:1 against white, well under the 4.5:1 AA minimum
