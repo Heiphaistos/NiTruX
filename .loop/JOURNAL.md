@@ -2445,3 +2445,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé (hypothèse initiale réfutée par la documentation primaire, pas juste non-vérifiée). Négatif, mais investigation rigoureuse évitant un correctif spéculatif incorrect.
 
 Éléments en attente inchangés. **4 correctifs accumulés depuis la release v0.25.79**. 191 cycles cumulés 110-300.
+
+[2026-08-08T04:56:00+02:00] Cycle 301 : `ProcessesPage.vue` auditée en profondeur (jamais fait sous cet angle, backend `processes.rs` déjà couvert mais pas ce consommateur). Page strictement en lecture seule (aucune action "tuer un processus" contrairement à l'hypothèse initiale), filtre par nom insensible à la casse correct, clés `v-for` uniques (pid/nom). Piste creusée : les 4 appels `invoke()` de `onMounted` sont séquentiels sans `try/catch` individuel -- suspicion initiale de la même classe de bug que le cycle 248 (un échec du premier appel empêcherait les 3 suivants, logiquement indépendants, de s'exécuter). **Vérifiée et écartée** : les 4 commandes backend (`get_processes`/`get_systemd_services`/`get_autostart_entries`/`get_scheduled_tasks`) retournent toutes un `Vec<...>` nu, pas un `Result` -- infaillibles par construction côté Rust (dégradation déjà gérée en interne), contrairement à `list_installed_packages` du cycle 248 qui pouvait légitimement échouer (absence de gestionnaire de paquets natif détecté). L'absence de `try/catch` par appel ici est donc sûre, pas un bug.
+
+Aucun bug trouvé. Négatif, mais hypothèse vérifiée par lecture du contrat de type plutôt que supposée.
+
+Éléments en attente inchangés. **4 correctifs accumulés depuis la release v0.25.79**. 192 cycles cumulés 110-301.
