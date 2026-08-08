@@ -805,3 +805,17 @@ Nouveau module dans `report.rs` (`reports_dir`/`validate_report_filename`/`list_
 8 nouveaux tests Rust + 6 nouveaux tests frontend. 401/401 frontend (395→401, +6), 333/333 Rust (325→333, +8), `vue-tsc` clean. Version 0.25.108→0.25.109, commit `1169bf3`, poussé.
 
 **Chantier "StatsReportsPage" (score cycle 365, seuils cycle 366, comparaison cycle 367, rapports cycle 368) désormais entièrement clos.** Éléments en attente inchangés (décisions produit/portée uniquement, non liés à ce chantier) : CSP désactivée, bouton Vérifier UpdatesPage/PackagesPage non désactivé pendant une mise à jour (cycle 174, sévérité faible, non retenu), timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus, "OS & USB Tools" (nécessite VM + nouvelle action pkexec). **13 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Prochain cycle réel : **369** -- chantier ouvert clos, retour à la comparaison systématique NiTriTe/approfondissement de catégorie nav ou reprise d'un signalement différé.
+
+## Mise à jour (2026-08-09, v0.25.110, cycle 369) — bouton Vérifier UpdatesPage/PackagesPage désactivé pendant une mise à jour (signalement cycle 174 fermé)
+
+Repris un signalement différé plutôt qu'une nouvelle comparaison NiTriTe (chantier ouvert désormais clos). Le signalement du cycle 174 avait été explicitement laissé de côté faute de "pattern de référence clair" pour arbitrer la décision UX -- ce blocage n'existe plus : le codebase a depuis accumulé plusieurs précédents "désactiver un bouton pendant une opération en cours" (`SystemToolsPage`, `PortableAppsPage`, etc.), donnant une référence claire à suivre.
+
+**Root cause identifiée, pas juste un défaut cosmétique** : `upgradeAll()` appelle déjà `refresh()` en interne une fois la mise à jour terminée -- le bouton "Vérifier" n'étant désactivé que par son propre `loading`, un clic manuel pendant une mise à jour en cours déclenche un second `refresh()` concurrent, les deux écrivant `updates`/`loading` sans garantie sur lequel des deux résultats reste affiché en dernier. Corrigé sur les deux pages jumelles (`UpdatesPage.vue`/`PackagesPage.vue`) : `:disabled="loading || upgrading"`.
+
+**2 tests de régression écrits avec une promesse contrôlable** (le pattern déjà établi côté `SystemToolsPage.spec.ts`) : déclenche l'upgrade, vérifie que "Vérifier" devient indisponible pendant que la promesse `upgrade_all_packages` reste en attente, la résout, confirme que le bouton redevient disponible.
+
+**Durci en même temps les deux fichiers de specs contre la même classe de contamination inter-tests déjà corrigée ailleurs** (`vi.hoisted()` + reset `beforeEach`) -- nécessaire pour que mes nouveaux tests, ajoutés en fin de fichier après des tests existants qui remplaçaient déjà `mockImplementation` sans le restaurer, ne héritent pas silencieusement d'un mock périmé.
+
+10 tests touchés/ajoutés. 403/403 frontend (401→403, +2), 333/333 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.109→0.25.110, commit `ce79726`, poussé.
+
+**Signalement "bouton Vérifier non désactivé pendant mise à jour" (cycle 174) fermé.** Éléments en attente restants : CSP désactivée, timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus (non vérifiable sans Wi-Fi réel), "OS & USB Tools" (nécessite VM + nouvelle action pkexec). **14 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Prochain cycle réel : **370**.
