@@ -108,6 +108,29 @@ mod tests {
     }
 
     #[test]
+    fn does_not_truncate_a_very_long_single_line_install_block() {
+        // Investigated a suspected bug: does apt wrap long Install:/
+        // Upgrade: lines across multiple physical lines (continuation
+        // lines starting with whitespace, no repeated prefix), which this
+        // parser would silently drop since it only matches lines starting
+        // with one of SUMMARY_PREFIXES? Verified live against a real
+        // history.log on the VM: a genuine `apt full-upgrade` Install:
+        // line there is 96287 characters long, entirely on ONE physical
+        // line -- apt never wraps history.log entries, no matter how many
+        // packages are listed. The hypothesis was wrong; this pins the
+        // real, verified behavior as a regression guard instead.
+        let mut install_line = String::from("Install: ");
+        for i in 0..500 {
+            install_line.push_str(&format!("pkg{i}:amd64 (1.0-{i}, automatic), "));
+        }
+        let content = format!("Start-Date: 2026-08-04  12:00:00\nCommandline: apt-get full-upgrade -y\n{install_line}\nEnd-Date: 2026-08-04  12:00:30\n");
+        let entries = parse_apt_history(&content);
+        assert_eq!(entries.len(), 1);
+        assert!(entries[0].summary.contains("pkg0:amd64"), "first package must be present");
+        assert!(entries[0].summary.contains("pkg499:amd64"), "last package must be present, not truncated");
+    }
+
+    #[test]
     fn recognizes_a_downgrade_only_block() {
         let content = "Start-Date: 2026-08-04  10:10:00\nCommandline: apt-get install -y curl=7.88.1-9\nDowngrade: curl:amd64 (7.88.1-10, 7.88.1-9)\nEnd-Date: 2026-08-04  10:10:01\n";
         let entries = parse_apt_history(content);
