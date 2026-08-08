@@ -67,6 +67,11 @@ const upgrading = ref(false);
 const upgradeResult = ref<string | null>(null);
 const upgradeError = ref<string | null>(null);
 
+// "Vérifier les mises à jour" is also disabled while an upgrade is running
+// (not just its own `loading`): upgradeAll() already calls refresh()
+// internally once the upgrade finishes -- a manual click mid-upgrade would
+// race a second refresh() against that one, both writing
+// `updates`/`loading` concurrently with no guarantee which write lands last.
 async function upgradeAll() {
   upgrading.value = true;
   upgradeError.value = null;
@@ -86,7 +91,7 @@ async function upgradeAll() {
   <div class="pkg-page">
     <div class="pkg-header">
       <NxSectionHeader title="Gestionnaire de paquets" description="Installation directe et mises à jour via le gestionnaire de paquets du système." />
-      <NxButton :disabled="loading" @click="refresh">
+      <NxButton :disabled="loading || upgrading" @click="refresh">
         {{ loading ? "Vérification..." : "Vérifier les mises à jour" }}
       </NxButton>
     </div>
