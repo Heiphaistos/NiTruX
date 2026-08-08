@@ -766,6 +766,18 @@ Extraction DRY en cours de route : `averageCpuPercent`/`memoryUsedPercent` dupli
 **10 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Prochain cycle réel : **366**.
 
 ### Candidats pour les prochains cycles (mandat fonctionnalités/améliorations)
-- **Reste du chantier StatsReportsPage** : seuils d'alerte configurables (persistés, mirroring preferencesStore), comparaison inter-session (deltas vs snapshot précédent), liste de rapports générés (à recroiser avec `ReportGeneratorPage` existant avant de dupliquer).
+- **Reste du chantier StatsReportsPage** : comparaison inter-session (deltas vs snapshot précédent), liste de rapports générés (à recroiser avec `ReportGeneratorPage` existant avant de dupliquer). (Seuils d'alerte configurables faits cycle 366.)
 - **"OS & USB Tools"** (écart identifié face à Nitrite 2.0, écarté cycle 363) -- équivalent Linux plausible : création de clé USB bootable depuis une image ISO. Nécessiterait une NOUVELLE action pkexec (écriture sur périphérique bloc, risque élevé) -- à ne construire qu'avec accès VM live pour vérification complète avant merge, jamais "pour plus tard" sans cette étape.
 - Approfondissement d'une catégorie nav existante (voir "Chantier ouvert" section antérieure de ce fichier pour le détail par catégorie).
+
+## Mise à jour (2026-08-09, v0.25.107, cycle 366) — seuils d'alerte configurables (Dashboard)
+
+Suite du chantier StatsReportsPage : **seuils d'alerte CPU/RAM/disque configurables** fermés. `preferencesStore.ts` gagne 3 champs (défauts 80/80/85, `clampThreshold()` 1-100 -- même garde-fou déjà utilisé pour éviter le piège NiTriTe des attributs `min`/`max` décoratifs) + section Paramètres dédiée. Dashboard réutilise le prop `status` déjà existant de `NxStatTile` (point danger coloré) plutôt qu'un nouveau mécanisme, et gagne une tuile "Disque (/)" qui manquait totalement (la donnée était déjà pollée pour le score système du cycle 365 mais jamais affichée).
+
+**2 bugs réels trouvés et corrigés pendant la vérification, aucun des deux dans le nouveau code métier lui-même** :
+- `SettingsPreferencesPage.vue` : `Number("")` vaut `0`, pas `NaN` -- vider un champ pour le retaper écrivait silencieusement un `0` (clampé à `1` côté store) au lieu d'être ignoré. Corrigé en vérifiant la chaîne vide avant conversion.
+- `DashboardPage.spec.ts` (bug d'infra de test préexistant, pas applicatif) : un test antérieur réassignait `mockImplementation` de `invoke` sans jamais le restaurer -- tout test ajouté après lui héritait silencieusement du mauvais mock. Diagnostiqué en isolant le test en échec (`vitest run -t`, passait seul) puis corrigé à la racine via `vi.hoisted()` + reset dans `beforeEach`, pas juste contourné pour les nouveaux tests.
+
+392/392 frontend (+12), 325/325 Rust (inchangé), vue-tsc clean. Version 0.25.106→0.25.107, commit `3474f72`, poussé.
+
+**11 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Prochain cycle réel : **367**.
