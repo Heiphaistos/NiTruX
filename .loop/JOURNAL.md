@@ -2399,3 +2399,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 183 cycles cumulés 110-292.
+
+[2026-08-08T02:52:00+02:00] Cycle 293 : deux vérifications ciblées. (1) Cohérence de version entre `Cargo.toml`, `package.json`, `tauri.conf.json` et `Cargo.lock` -- les 4 sources affichent `0.25.82` sans écart, discipline de bump respectée à chaque cycle. (2) Sweep formatage d'octets -- recherche des 5 implémentations locales (`bytesToMb`/`bytesToGb` dans `DisksPage.vue`/`ProcessesPage.vue`/`FileToolsPage.vue`/`DashboardPage.vue`/`HardwareDetailsPage.vue`) pour vérifier qu'aucune page ajoutée après le sweep de localisation des cycles 81-82 n'a réintroduit une unité anglaise (KB/MB/GB) -- toutes utilisent correctement "Mo"/"Go". Duplication mineure notée (5 fonctions quasi-identiques) mais pas un bug fonctionnel -- pas de correctif spéculatif, cohérent avec la discipline établie de cette session.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 184 cycles cumulés 110-293.
