@@ -146,9 +146,18 @@ pub fn download_portable_app(owner: String, repo: String) -> Result<PortableAppF
     std::fs::create_dir_all(&dir).map_err(|e| format!("impossible de créer {dir} : {e}"))?;
     let dest_path = format!("{dir}/{filename}");
 
+    // `-f`: without it, curl treats an HTTP error response (e.g. a 404 if
+    // the resolved asset moved or was deleted between resolve_appimage_asset
+    // querying the API and this actual download) as a "successful" transfer
+    // -- exit code 0, with the error page's body written to dest_path as
+    // if it were the real file. Reproduced live before this fix: a 404 URL
+    // produced a 9-byte "Not Found" file and a 0 exit code, which chmod +x
+    // would then happily mark executable and report as a successful
+    // download. `-f` makes curl exit non-zero and write no file at all on
+    // an HTTP error instead.
     subprocess::run_with_timeout(
         "curl",
-        &["-sL", "--max-time", "300", "-o", &dest_path, &url],
+        &["-sfL", "--max-time", "300", "-o", &dest_path, &url],
         Duration::from_secs(310),
     )?;
 
