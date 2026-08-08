@@ -162,7 +162,7 @@ function bytesToGb(bytes: number): string {
       <div v-if="!disksError && usage.length === 0" class="disks-empty">Aucune information d'utilisation disque.</div>
     </NxCard>
 
-    <NxCard danger>
+    <NxCard staticDanger>
       <NxSectionHeader title="Formater une partition" description="Cette action efface DÉFINITIVEMENT toutes les données de la partition. Aucune récupération possible." />
       <div class="disks-form-row">
         <NxInput v-model="formatDevice" placeholder="Périphérique (ex: /dev/sda1)" aria-label="Périphérique à formater" />
