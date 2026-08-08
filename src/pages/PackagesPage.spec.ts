@@ -2,12 +2,24 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import PackagesPage from "./PackagesPage.vue";
 
+// `vi.hoisted` so this default is reachable both from the hoisted
+// `vi.mock` factory below and from `beforeEach` -- otherwise a test further
+// down that calls `mockImplementation(...)` (not the `Once` variant) would
+// permanently replace it for every test running after it, since
+// `vi.clearAllMocks()` clears call history but not the implementation
+// (same contamination bug class already found and fixed elsewhere).
+const defaultInvokeImpl = vi.hoisted(() => () => Promise.resolve([]));
+
 vi.mock("@tauri-apps/api/core", () => ({
-  invoke: vi.fn().mockResolvedValue([]),
+  invoke: vi.fn(defaultInvokeImpl),
 }));
 
 describe("PackagesPage", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation(defaultInvokeImpl);
+  });
 
   it("calls list_updates on mount", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
@@ -66,5 +78,28 @@ describe("PackagesPage", () => {
 
     const listUpdatesCallsAfter = vi.mocked(invoke).mock.calls.filter((c) => c[0] === "list_updates").length;
     expect(listUpdatesCallsAfter).toBeGreaterThan(listUpdatesCallsBefore);
+  });
+
+  it("disables 'Vérifier les mises à jour' while an upgrade is in flight, to avoid racing upgradeAll's own trailing refresh()", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    let resolveUpgrade!: (value: string) => void;
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "list_updates") return Promise.resolve([{ name: "curl", current_version: "1.0", new_version: "1.1", source: "apt" }]);
+      if (cmd === "upgrade_all_packages") return new Promise<string>((resolve) => { resolveUpgrade = resolve; });
+      return Promise.resolve(null);
+    });
+
+    const wrapper = mount(PackagesPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("curl"));
+
+    const verifyButton = wrapper.findAll("button").find((b) => b.text() === "Vérifier les mises à jour")!;
+    expect(verifyButton.attributes("disabled")).toBeUndefined();
+
+    const upgradeButton = wrapper.findAll("button").find((b) => b.text() === "Tout mettre à jour")!;
+    await upgradeButton.trigger("click");
+    expect(verifyButton.attributes("disabled")).toBeDefined();
+
+    resolveUpgrade("2 paquets mis à jour");
+    await vi.waitFor(() => expect(verifyButton.attributes("disabled")).toBeUndefined());
   });
 });
