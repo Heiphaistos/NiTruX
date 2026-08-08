@@ -2457,3 +2457,9 @@ Aucun bug trouvé. Négatif, mais hypothèse vérifiée par lecture du contrat d
 Aucun bug trouvé. Négatif -- confirmation qu'un correctif de sécurité déjà appliqué (2026-08-06) couvre bien tous les appelants réels, pas seulement son site d'origine.
 
 Éléments en attente inchangés. **4 correctifs accumulés depuis la release v0.25.79**. 193 cycles cumulés 110-302.
+
+[2026-08-08T05:12:00+02:00] Cycle 303 : `cache_size.rs` relu en entier (jamais fait cette session). Module déjà exemplaire : `directory_size_bytes` gère dossiers manquants/permissions refusées/course de suppression concurrente en dégradation gracieuse (retourne 0 plutôt que d'échouer, cohérent avec son usage purement informatif). Piste que j'aurais soulevée -- absence de garde `is_symlink()` explicite, contrairement à `duplicates.rs`/`largefiles.rs` -- **déjà investiguée et fermée par une session antérieure** : commentaire + test de régression dédié prouvent que `DirEntry::metadata()` utilise `lstat` (ne suit pas les symlinks) sur Unix, donc un dossier symlinké ne peut jamais satisfaire `is_dir()` ici, zéro risque de cycle malgré l'absence du garde explicite. Aucune piste nouvelle trouvée.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **4 correctifs accumulés depuis la release v0.25.79**. 194 cycles cumulés 110-303.
