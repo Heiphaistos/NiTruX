@@ -2375,3 +2375,9 @@ Aucun bug trouvé. Négatif.
 Aucun changement de code. Négatif, mais vérification honnêtement documentée plutôt que silencieusement ignorée ou appliquée sans réflexion.
 
 Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 179 cycles cumulés 110-288.
+
+[2026-08-08T02:20:00+02:00] Cycle 289 : cross-check `README.md` (rédigé au cycle 214, jamais re-vérifié depuis) contre les scripts réels de `package.json` -- toutes les commandes documentées (`npm run tauri dev`/`build`, `npm run test`, `cargo test --manifest-path ...`, `npx vue-tsc --noEmit`) correspondent exactement aux scripts définis (`"tauri": "tauri"`, `"test": "vitest run"`), aucune dérive depuis la rédaction. Les scripts internes non documentés (`dev`/`build`/`preview` bruts de Vite) sont intentionnellement omis -- corrects pour un projet Tauri où le workflow principal passe par le wrapper CLI Tauri, pas Vite directement.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 180 cycles cumulés 110-289.
