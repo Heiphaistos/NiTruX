@@ -5,6 +5,7 @@ import NxCard from "@/components/ui/NxCard.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 import NxSparkline from "@/components/ui/NxSparkline.vue";
 import { usePreferencesStore } from "@/stores/preferencesStore";
+import { averageCpuPercent, memoryUsedPercent } from "@/lib/systemMetrics";
 
 interface CpuInfo { usage_percent: number }
 interface SystemSnapshot { cpus: CpuInfo[]; memory_used_bytes: number; memory_total_bytes: number }
@@ -17,11 +18,6 @@ const memoryHistory = ref<number[]>([]);
 const error = ref<string | null>(null);
 let intervalId: number | undefined;
 
-function averageCpuPercent(cpus: CpuInfo[]): number {
-  if (cpus.length === 0) return 0;
-  return cpus.reduce((sum, c) => sum + c.usage_percent, 0) / cpus.length;
-}
-
 function pushSample(arr: typeof cpuHistory, value: number) {
   arr.value.push(value);
   if (arr.value.length > MAX_SAMPLES) arr.value.shift();
@@ -31,7 +27,7 @@ async function sample() {
   try {
     const snapshot = await invoke<SystemSnapshot>("get_system_snapshot");
     pushSample(cpuHistory, averageCpuPercent(snapshot.cpus));
-    pushSample(memoryHistory, (snapshot.memory_used_bytes / snapshot.memory_total_bytes) * 100);
+    pushSample(memoryHistory, memoryUsedPercent(snapshot.memory_used_bytes, snapshot.memory_total_bytes));
     error.value = null;
   } catch (e) {
     error.value = String(e);

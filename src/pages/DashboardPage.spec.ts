@@ -17,6 +17,12 @@ vi.mock("@tauri-apps/api/core", () => ({
     if (cmd === "get_sensor_snapshot") {
       return Promise.resolve({ battery_percent: 80, battery_charging: true, temperatures: [] });
     }
+    if (cmd === "list_disk_usage") {
+      return Promise.resolve([
+        { mountpoint: "/", total_bytes: 100_000_000_000, used_bytes: 20_000_000_000, used_percent: 20 },
+        { mountpoint: "/boot", total_bytes: 1_000_000_000, used_bytes: 900_000_000, used_percent: 90 },
+      ]);
+    }
     return Promise.resolve(null);
   }),
 }));
@@ -68,6 +74,37 @@ describe("DashboardPage", () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain("Test CPU"));
     expect(wrapper.text()).toContain("Go");
     expect(wrapper.text()).not.toContain("GB");
+  });
+
+  it("computes the system health score from the root (/) mountpoint, not just the first disk entry", async () => {
+    // The mock's first list_disk_usage entry is "/boot" at 90% (would tank
+    // the score if the code naively used disks[0]) -- the real "/" entry
+    // (20%, listed second) is what the score must actually key off.
+    // CPU 12.5% (<30 -> 34pts) + RAM 50% used/50% free (not >50%, falls to
+    // the >25% tier -> 16pts) + disk 20% (<80 -> 33pts) = 83.
+    const wrapper = mount(DashboardPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Score système"));
+    expect(wrapper.text()).toContain("83");
+    expect(wrapper.text()).toContain("Excellent");
+  });
+
+  it("does not show a health score while disk usage is still unknown", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) => {
+      if (cmd === "get_system_snapshot") {
+        return Promise.resolve({
+          cpus: [{ name: "Test CPU", usage_percent: 12.5, usage_display: "12.5%" }],
+          memory_used_bytes: 4_000_000_000,
+          memory_total_bytes: 8_000_000_000,
+          process_count: 210,
+        });
+      }
+      if (cmd === "list_disk_usage") return Promise.reject("lsblk introuvable");
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(DashboardPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Test CPU"));
+    expect(wrapper.text()).not.toContain("Score système");
   });
 
   it("every quick-action gradient stop meets WCAG AA contrast against the tile's white text", async () => {
