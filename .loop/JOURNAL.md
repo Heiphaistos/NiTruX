@@ -2769,3 +2769,7 @@ Aucun bug trouvé. 9e cycle négatif consécutif (346-354).
 Aucun bug trouvé. 10e cycle négatif consécutif (346-355).
 
 Éléments en attente inchangés. **2 correctifs accumulés depuis la release v0.25.94**. 246 cycles cumulés 110-355.
+
+[2026-08-08T22:20:00+02:00] **RELEASE PUBLIÉE** : utilisateur a explicitement demandé ("build et publie la release"). `npm run tauri build` (WSL2) → 3 bundles (deb/rpm/AppImage) générés sans erreur. `postrm`/`nitrux-pkexec-helper` empaquetés dans le `.deb` vérifiés identiques à la source (`diff` exit 0 sur les deux) -- confirme que le correctif TOCTOU/symlink clone-disk du cycle 343 et le nettoyage du cycle 345 sont bien inclus dans le binaire réellement distribué. Tag annoté `v0.25.96` + release GitHub créée avec les 3 assets et notes (sécurité TOCTOU en tête) : https://github.com/Heiphaistos/NiTruX/releases/tag/v0.25.96. **Les 2 correctifs accumulés depuis v0.25.94 sont désormais publiés. Plus aucun backlog de correctifs non livrés.**
+
+**Nouvelle demande utilisateur reçue en parallèle** : après cette release, démarrer une NOUVELLE boucle orientée ajout de fonctionnalités (pas seulement audit/correction) -- "rajouter des fonctionnalité, les corrige si il y a des bugs et les ameliorer". Voir CHECKPOINT.md pour le changement de mandat de la boucle à partir du prochain cycle.
