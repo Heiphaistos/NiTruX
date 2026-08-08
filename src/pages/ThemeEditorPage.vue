@@ -47,7 +47,13 @@ function handleSave() {
   // by name since each save gets its own timestamp-based id.
   const trimmedName = themeName.value.trim();
   if (trimmedName === "") return;
-  const theme = { ...themeStore.active, id: `custom-${Date.now()}`, name: trimmedName };
+  // crypto.randomUUID(), not `custom-${Date.now()}`: two saves landing in
+  // the same millisecond (a fast double-click, or any rapid-fire save)
+  // would otherwise mint the same id -- saveCustomTheme treats a matching
+  // id as an update (splice), so the second save would silently replace
+  // the first instead of both existing side by side (reproduced live by
+  // this file's own test before this fix).
+  const theme = { ...themeStore.active, id: crypto.randomUUID(), name: trimmedName };
   themeStore.saveCustomTheme(theme);
   themeStore.setTheme(theme);
 }

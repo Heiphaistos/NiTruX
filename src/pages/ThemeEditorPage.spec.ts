@@ -85,6 +85,32 @@ describe("ThemeEditorPage — theme tab custom themes", () => {
     expect(themeStore.customThemes.length).toBe(0);
   });
 
+  it("two saves in the same millisecond must not collide and silently overwrite each other", async () => {
+    // Regression guard for the actual bug: `custom-${Date.now()}` gives two
+    // saves that land in the same millisecond (e.g. a fast double-click on
+    // "Sauvegarder", or any programmatic rapid-fire save) the exact same
+    // id -- saveCustomTheme treats a matching id as an UPDATE (splice), not
+    // a new entry, so the second save would silently replace the first
+    // instead of both existing side by side, even though both single saves
+    // succeeded and reported no error.
+    vi.spyOn(Date, "now").mockReturnValue(1_000_000);
+    const themeStore = useThemeStore();
+    themeStore.setTheme(builtinThemes[0]);
+
+    const wrapper = mount(ThemeEditorPage);
+    await wrapper.find(".te-name-input").setValue("Premier");
+    const saveButton = wrapper.findAll(".te-actions button").find((b) => b.text() === "Sauvegarder")!;
+    await saveButton.trigger("click");
+
+    await wrapper.find(".te-name-input").setValue("Second");
+    await saveButton.trigger("click");
+
+    vi.restoreAllMocks();
+    const names = themeStore.customThemes.map((t) => t.name);
+    expect(names).toContain("Premier");
+    expect(names).toContain("Second");
+  });
+
   it("clicking Sauvegarder activates the saved theme immediately, not just adds it to the unused customThemes list", async () => {
     const themeStore = useThemeStore();
     themeStore.setTheme(builtinThemes[0]); // start on a known theme
