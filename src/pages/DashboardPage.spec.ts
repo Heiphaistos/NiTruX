@@ -69,4 +69,34 @@ describe("DashboardPage", () => {
     expect(wrapper.text()).toContain("Go");
     expect(wrapper.text()).not.toContain("GB");
   });
+
+  it("every quick-action gradient stop meets WCAG AA contrast against the tile's white text", async () => {
+    // Regression guard for the actual bug: the original gradients (e.g.
+    // #fb923c) were 2.26:1 against white, well under the 4.5:1 AA minimum
+    // -- computed with the official relative-luminance formula (not
+    // eyeballed) rather than trusting the hex values look "dark enough".
+    const srgbToLinear = (c: number) => {
+      const s = c / 255;
+      return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+    };
+    const relativeLuminance = ([r, g, b]: [number, number, number]) =>
+      0.2126 * srgbToLinear(r) + 0.7152 * srgbToLinear(g) + 0.0722 * srgbToLinear(b);
+    const contrastAgainstWhite = (rgb: [number, number, number]) => (1 + 0.05) / (relativeLuminance(rgb) + 0.05);
+
+    const wrapper = mount(DashboardPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Test CPU"));
+    const tiles = wrapper.findAll(".nx-quick-action");
+    expect(tiles.length).toBe(5);
+    for (const tile of tiles) {
+      // jsdom normalizes `background` to "linear-gradient(135deg, rgb(r, g, b), rgb(r, g, b))",
+      // not the original hex -- parse the rgb() triples it actually renders.
+      const background = (tile.element as HTMLElement).style.background;
+      const stops = [...background.matchAll(/rgb\((\d+), (\d+), (\d+)\)/g)];
+      expect(stops.length).toBe(2);
+      for (const [, r, g, b] of stops) {
+        const rgb: [number, number, number] = [Number(r), Number(g), Number(b)];
+        expect(contrastAgainstWhite(rgb)).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
 });
