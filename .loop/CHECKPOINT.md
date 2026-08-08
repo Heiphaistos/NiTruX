@@ -656,3 +656,11 @@ Cycles 338-339 négatifs (clippy/npm-outdated/expect-panic/any re-vérifiés pro
 **`clone-disk` retiré de la liste des éléments en attente** -- c'était le dernier signalement de sécurité substantiel non traité. **1 correctif accumulé depuis v0.25.93** (sévérité confidentialité réelle, pas encore dans une release publiée). Éléments en attente restants (tous non bloquants, décisions produit/portée) : CSP désactivée, aria-live absent, NxBadge/ScriptsPage couleur-accent, NxQuickActionTile dégradés, confirmNonDestructiveActions, bouton Vérifier, timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus. 231 cycles cumulés 110-340, boucle continue.
 
 **Recommandation forte pour la prochaine interaction utilisateur** : proposer une coupure de release (.deb/.rpm/.AppImage) pour publier ce correctif de sécurité -- c'est la vulnérabilité la plus sérieuse trouvée dans toute la campagne, restée non livrée depuis très longtemps uniquement par prudence excessive d'un classificateur sur une édition de fichier source.
+
+## Mise à jour (2026-08-08, v0.25.94, cycle 342) — RELEASE PUBLIÉE, correctif clone-disk livré
+
+Cycle 341 négatif/confirmatoire : généralisation du correctif clone-disk aux 13 autres sous-commandes de `nitrux-pkexec-helper` -- aucune autre instance de la même classe de bug, l'angle est réellement clos.
+
+**Utilisateur a explicitement demandé la publication** ("finis ce que tu fesait publier la derniere release a jour"). `npm run tauri build` (WSL2) → 3 bundles générés sans erreur. `postrm`/`nitrux-pkexec-helper` empaquetés dans le `.deb` vérifiés identiques à la source -- confirme que le correctif clone-disk est bien dans le binaire distribué. Tag annoté `v0.25.94` + release GitHub créée (3 assets, notes sécurité en tête) : https://github.com/Heiphaistos/NiTruX/releases/tag/v0.25.94
+
+**Le correctif clone-disk (dernier signalement de sécurité substantiel en attente depuis le cycle 120) est désormais publié. Plus aucun backlog de correctifs non livrés.** Éléments en attente inchangés (tous non bloquants, décisions produit/portée) : CSP désactivée, aria-live absent, NxBadge/ScriptsPage couleur-accent, NxQuickActionTile dégradés, confirmNonDestructiveActions, bouton Vérifier, timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus. 233 cycles cumulés 110-342, boucle continue.

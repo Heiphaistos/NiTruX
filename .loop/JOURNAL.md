@@ -2675,3 +2675,7 @@ Aucun bug trouvé. Négatif -- 3e cycle négatif consécutif (337-339), tous des
 Aucun bug trouvé (confirmatoire). Négatif mais ferme la question ouverte par le correctif précédent plutôt qu'une simple re-vérification redondante.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.93**. 232 cycles cumulés 110-341.
+
+[2026-08-08T19:31:00+02:00] **RELEASE PUBLIÉE** : utilisateur a explicitement demandé la publication ("finis ce que tu fesait publier la derniere release a jour"). `npm run tauri build` (WSL2) → 3 bundles (deb/rpm/AppImage) générés sans erreur. `postrm` et `nitrux-pkexec-helper` empaquetés dans le `.deb` vérifiés identiques à la source (`diff` exit 0 sur les deux) -- confirme que le correctif clone-disk du cycle 340 est bien inclus dans le binaire réellement distribué, pas seulement dans le dépôt source. Tag annoté `v0.25.94` + release GitHub créée avec les 3 assets et notes (sécurité clone-disk en tête). **Le seul correctif accumulé depuis v0.25.93 est désormais publié. Plus aucun backlog de correctifs non livrés.**
+
+Boucle reprend son cycle normal après cette entrée.
