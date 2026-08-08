@@ -2451,3 +2451,9 @@ Aucun bug trouvé (hypothèse initiale réfutée par la documentation primaire, 
 Aucun bug trouvé. Négatif, mais hypothèse vérifiée par lecture du contrat de type plutôt que supposée.
 
 Éléments en attente inchangés. **4 correctifs accumulés depuis la release v0.25.79**. 192 cycles cumulés 110-301.
+
+[2026-08-08T05:04:00+02:00] Cycle 302 : `secure_temp.rs` relu en profondeur (helper anti-CWE-377/CWE-367 pour l'écriture de fichiers temporaires à chemin prévisible basé sur PID -- `create_new` exclusif + permissions 0o600 + suppression préalable d'un symlink pré-positionné) -- module déjà exemplaire, tests couvrant la protection anti-symlink. Vérification élargie : recherche de tous les usages de `std::env::temp_dir()` dans `src-tauri/src` pour confirmer qu'aucun site de PRODUCTION (hors `#[cfg(test)]`) n'écrit encore via un `File::create`/`fs::write` brut sur un chemin prévisible -- seuls 2 sites réels trouvés (`benchmark.rs::benchmark_disk`, `pkexec_bootstrap.rs::write_bootstrap_script_to_temp`), les deux confirmés utiliser déjà le helper sécurisé. Aucun site orphelin.
+
+Aucun bug trouvé. Négatif -- confirmation qu'un correctif de sécurité déjà appliqué (2026-08-06) couvre bien tous les appelants réels, pas seulement son site d'origine.
+
+Éléments en attente inchangés. **4 correctifs accumulés depuis la release v0.25.79**. 193 cycles cumulés 110-302.
