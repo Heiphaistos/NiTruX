@@ -2757,3 +2757,9 @@ Aucun bug trouvé, piste explorée puis explicitement écartée avec justificati
 Aucun bug trouvé. 8e cycle négatif consécutif (346-353). Boucle continue conformément à la règle du projet (pas d'arrêt sans instruction explicite).
 
 Éléments en attente inchangés. **2 correctifs accumulés depuis la release v0.25.94**. 244 cycles cumulés 110-353.
+
+[2026-08-08T21:56:00+02:00] Cycle 354 : cycle minimal délibéré (rendement marginal très faible confirmé sur 8 cycles, aucune réponse utilisateur aux recommandations envoyées cycles 351-353 -- éviter de surinvestir du calcul en investigation profonde répétée). VM re-testée joignable mais le seul signalement structurellement bloqué (`WiFiAnalyzerPage::securityStatus`) nécessite du matériel Wi-Fi physique, absent de cette VM Hyper-V quelle que soit sa joignabilité. `npm run test -- --run` re-passé : 334/334, 0 régression.
+
+Aucun bug trouvé. 9e cycle négatif consécutif (346-354).
+
+Éléments en attente inchangés. **2 correctifs accumulés depuis la release v0.25.94**. 245 cycles cumulés 110-354.
