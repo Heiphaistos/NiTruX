@@ -12,6 +12,13 @@ use std::collections::BTreeMap;
 use std::sync::Mutex;
 use sysinfo::System;
 
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub struct ReportFile {
+    pub filename: String,
+    pub size_bytes: u64,
+    pub created_at: String,
+}
+
 #[derive(Serialize, Clone)]
 pub struct SystemReport {
     pub generated_at: String,
@@ -462,6 +469,123 @@ pub fn generate_pdf_report(state: tauri::State<Mutex<System>>) -> Result<String,
     Ok(STANDARD.encode(pdf_bytes))
 }
 
+// ── Reports library (StatsReportsPage NiTriTe: "Rapports générés") ─────────
+// Persists every report the user actually downloads to a fixed directory
+// (not every preview -- clicking "Générer" to preview shouldn't silently
+// litter disk) so they can be found again later without re-generating,
+// mirroring NiTriTe's own reports folder + listing.
+
+const REPORT_EXTENSIONS: [&str; 5] = ["json", "md", "txt", "html", "pdf"];
+
+fn reports_dir() -> Result<String, String> {
+    let home = std::env::var("HOME").map_err(|_| "variable HOME introuvable".to_string())?;
+    Ok(format!("{home}/.local/share/nitrux/reports"))
+}
+
+/// A stored report's filename must stay a plain, single path component
+/// starting with "rapport-" and ending in one of the formats this app
+/// actually generates -- rejects traversal (`..`, `/`) since this name is
+/// joined onto `reports_dir()` and used directly as a delete target.
+fn validate_report_filename(filename: &str) -> Result<(), String> {
+    if filename.is_empty() || filename.contains('/') || filename.contains("..") {
+        return Err(format!("nom de fichier de rapport invalide : {filename}"));
+    }
+    if !filename.starts_with("rapport-") {
+        return Err(format!("nom de fichier de rapport invalide : {filename}"));
+    }
+    if !REPORT_EXTENSIONS.iter().any(|ext| filename.ends_with(&format!(".{ext}"))) {
+        return Err(format!("nom de fichier de rapport invalide : {filename}"));
+    }
+    Ok(())
+}
+
+fn list_reports_in(dir: &str) -> Result<Vec<ReportFile>, String> {
+    let entries = match std::fs::read_dir(dir) {
+        Ok(entries) => entries,
+        // No report saved yet -- the common case, not an error.
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(vec![]),
+        Err(e) => return Err(format!("impossible de lire {dir} : {e}")),
+    };
+    let mut reports: Vec<(u64, ReportFile)> = Vec::new();
+    for entry in entries {
+        let entry = entry.map_err(|e| format!("erreur de lecture de répertoire : {e}"))?;
+        let filename = entry.file_name().to_string_lossy().into_owned();
+        if validate_report_filename(&filename).is_err() {
+            continue; // foreign file in our directory -- ignore, don't error the whole list
+        }
+        let metadata = entry.metadata().map_err(|e| format!("métadonnées illisibles pour {filename} : {e}"))?;
+        let modified_epoch = metadata
+            .modified()
+            .ok()
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        reports.push((
+            modified_epoch,
+            ReportFile { filename, size_bytes: metadata.len(), created_at: format_epoch_utc(modified_epoch) },
+        ));
+    }
+    reports.sort_by(|a, b| b.0.cmp(&a.0)); // most recent first
+    Ok(reports.into_iter().map(|(_, r)| r).collect())
+}
+
+/// Writes `bytes` under a fresh `rapport-<epoch>[-N].<extension>` filename.
+/// The `-N` disambiguation loop exists because two downloads within the
+/// same wall-clock second (a plausible double-click, e.g. "Télécharger"
+/// then immediately "Télécharger en PDF" -- different extension so no
+/// clash there, but two same-format downloads in one second would collide)
+/// must never silently overwrite an earlier report -- the exact
+/// Date.now()-collision bug class already found and fixed twice elsewhere
+/// in this project (profilesStore, ThemeEditorPage), avoided here from the
+/// start instead of discovered later.
+fn write_report_bytes_in(dir: &str, bytes: &[u8], extension: &str) -> Result<ReportFile, String> {
+    if !REPORT_EXTENSIONS.contains(&extension) {
+        return Err(format!("format de rapport inconnu : {extension}"));
+    }
+    std::fs::create_dir_all(dir).map_err(|e| format!("impossible de créer {dir} : {e}"))?;
+    let epoch = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let mut filename = format!("rapport-{epoch}.{extension}");
+    let mut path = format!("{dir}/{filename}");
+    let mut n = 2;
+    while std::path::Path::new(&path).exists() {
+        filename = format!("rapport-{epoch}-{n}.{extension}");
+        path = format!("{dir}/{filename}");
+        n += 1;
+    }
+    std::fs::write(&path, bytes).map_err(|e| format!("impossible d'écrire {filename} : {e}"))?;
+    Ok(ReportFile { filename, size_bytes: bytes.len() as u64, created_at: format_epoch_utc(epoch) })
+}
+
+fn delete_report_in(dir: &str, filename: &str) -> Result<(), String> {
+    validate_report_filename(filename)?;
+    let path = format!("{dir}/{filename}");
+    std::fs::remove_file(&path).map_err(|e| format!("impossible de supprimer {filename} : {e}"))
+}
+
+#[tauri::command]
+pub fn list_reports() -> Result<Vec<ReportFile>, String> {
+    list_reports_in(&reports_dir()?)
+}
+
+#[tauri::command]
+pub fn save_text_report(content: String, extension: String) -> Result<ReportFile, String> {
+    write_report_bytes_in(&reports_dir()?, content.as_bytes(), &extension)
+}
+
+#[tauri::command]
+pub fn save_pdf_report(base64_content: String) -> Result<ReportFile, String> {
+    let bytes = STANDARD.decode(&base64_content).map_err(|e| format!("PDF base64 invalide : {e}"))?;
+    write_report_bytes_in(&reports_dir()?, &bytes, "pdf")
+}
+
+#[tauri::command]
+pub fn delete_report(filename: String) -> Result<(), String> {
+    delete_report_in(&reports_dir()?, &filename)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -631,5 +755,106 @@ mod tests {
         let encoded = STANDARD.encode(&pdf_bytes);
         let decoded = STANDARD.decode(&encoded).expect("should be valid base64");
         assert_eq!(decoded, pdf_bytes);
+    }
+
+    // ── Reports library ──────────────────────────────────────────────────
+    // Each test gets its own uniquely-named temp directory (not the real
+    // reports_dir(), which is shared across the whole test binary) so
+    // parallel test threads never race on the same files -- same pattern
+    // already established in trash.rs/backup.rs for filesystem-touching tests.
+    fn test_dir(purpose: &str) -> String {
+        let dir = std::env::temp_dir().join(format!("nitrux-reports-test-{purpose}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir); // stale leftovers from a prior crashed run
+        dir.to_string_lossy().into_owned()
+    }
+
+    #[test]
+    fn rejects_empty_traversal_and_wrongly_prefixed_or_extensioned_filenames() {
+        assert!(validate_report_filename("").is_err());
+        assert!(validate_report_filename("../../etc/passwd").is_err());
+        assert!(validate_report_filename("rapport-123/../../evil.json").is_err());
+        assert!(validate_report_filename("evil-123.json").is_err()); // missing "rapport-" prefix
+        assert!(validate_report_filename("rapport-123.exe").is_err()); // not a report extension
+    }
+
+    #[test]
+    fn accepts_every_real_report_extension() {
+        for ext in REPORT_EXTENSIONS {
+            assert!(validate_report_filename(&format!("rapport-1735689600.{ext}")).is_ok());
+        }
+    }
+
+    #[test]
+    fn list_on_a_missing_directory_returns_an_empty_list_not_an_error() {
+        let dir = test_dir("list-missing");
+        assert_eq!(list_reports_in(&dir), Ok(vec![]));
+    }
+
+    #[test]
+    fn write_then_list_round_trips_the_real_file_size_and_a_real_date() {
+        let dir = test_dir("write-list");
+        let saved = write_report_bytes_in(&dir, b"hello report", "txt").expect("should write");
+        assert_eq!(saved.size_bytes, 12);
+        assert!(saved.filename.starts_with("rapport-") && saved.filename.ends_with(".txt"));
+        // Regression guard for the actual bug class this project hit twice
+        // before (Date.now()-style placeholder never actually formatted):
+        // a real ISO-ish date, not a raw epoch number or empty string.
+        assert!(saved.created_at.contains('-') && saved.created_at.contains(':'));
+
+        let listed = list_reports_in(&dir).expect("should list");
+        assert_eq!(listed.len(), 1);
+        assert_eq!(listed[0], saved);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn write_rejects_an_unknown_extension_without_touching_the_filesystem() {
+        let dir = test_dir("write-bad-ext");
+        assert!(write_report_bytes_in(&dir, b"x", "exe").is_err());
+        assert!(!std::path::Path::new(&dir).exists());
+    }
+
+    #[test]
+    fn two_writes_in_the_same_second_never_overwrite_each_other() {
+        // Reproduces the exact scenario the disambiguation loop exists for:
+        // same directory, same extension, same epoch second (both calls
+        // happen synchronously here, well within one second).
+        let dir = test_dir("write-collision");
+        let first = write_report_bytes_in(&dir, b"first", "json").expect("first write should succeed");
+        let second = write_report_bytes_in(&dir, b"second", "json").expect("second write should succeed");
+        assert_ne!(first.filename, second.filename);
+
+        let first_bytes = std::fs::read(format!("{dir}/{}", first.filename)).expect("first file should still exist");
+        assert_eq!(first_bytes, b"first", "the first report must not have been silently overwritten by the second");
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn delete_removes_the_file_and_rejects_a_path_traversal_filename_before_touching_the_filesystem() {
+        let dir = test_dir("delete");
+        let saved = write_report_bytes_in(&dir, b"to delete", "md").expect("should write");
+
+        assert!(delete_report_in(&dir, "../../etc/passwd").is_err());
+        assert!(std::path::Path::new(&format!("{dir}/{}", saved.filename)).exists(), "traversal attempt must not have deleted anything");
+
+        delete_report_in(&dir, &saved.filename).expect("should delete");
+        assert!(!std::path::Path::new(&format!("{dir}/{}", saved.filename)).exists());
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn list_ignores_a_foreign_file_instead_of_erroring_the_whole_listing() {
+        let dir = test_dir("list-foreign");
+        std::fs::create_dir_all(&dir).expect("should create dir");
+        std::fs::write(format!("{dir}/notes.txt"), b"unrelated user file").expect("should write foreign file");
+        let ours = write_report_bytes_in(&dir, b"real report", "html").expect("should write");
+
+        let listed = list_reports_in(&dir).expect("should list despite the foreign file");
+        assert_eq!(listed, vec![ours]);
+
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
