@@ -766,7 +766,7 @@ Extraction DRY en cours de route : `averageCpuPercent`/`memoryUsedPercent` dupli
 **10 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Prochain cycle réel : **366**.
 
 ### Candidats pour les prochains cycles (mandat fonctionnalités/améliorations)
-- **Reste du chantier StatsReportsPage** : comparaison inter-session (deltas vs snapshot précédent), liste de rapports générés (à recroiser avec `ReportGeneratorPage` existant avant de dupliquer). (Seuils d'alerte configurables faits cycle 366.)
+- **Reste du chantier StatsReportsPage** : liste de rapports générés (à recroiser avec `ReportGeneratorPage` existant avant de dupliquer). (Seuils d'alerte configurables faits cycle 366, comparaison inter-session faite cycle 367.)
 - **"OS & USB Tools"** (écart identifié face à Nitrite 2.0, écarté cycle 363) -- équivalent Linux plausible : création de clé USB bootable depuis une image ISO. Nécessiterait une NOUVELLE action pkexec (écriture sur périphérique bloc, risque élevé) -- à ne construire qu'avec accès VM live pour vérification complète avant merge, jamais "pour plus tard" sans cette étape.
 - Approfondissement d'une catégorie nav existante (voir "Chantier ouvert" section antérieure de ce fichier pour le détail par catégorie).
 
@@ -781,3 +781,13 @@ Suite du chantier StatsReportsPage : **seuils d'alerte CPU/RAM/disque configurab
 392/392 frontend (+12), 325/325 Rust (inchangé), vue-tsc clean. Version 0.25.106→0.25.107, commit `3474f72`, poussé.
 
 **11 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Prochain cycle réel : **367**.
+
+## Mise à jour (2026-08-09, v0.25.108, cycle 367) — comparaison inter-session ajoutée au Dashboard
+
+Suite directe du chantier StatsReportsPage (cycle 365 score système, cycle 366 seuils d'alerte). Lu la section "Snapshot (comparaison session précédente)" de `StatsReportsPage.vue` NiTriTe : sauvegarde un seul instantané CPU/RAM/disque en localStorage à chaque montage (pas un historique -- `PerfHistoryPage.vue` couvre déjà ça séparément), compare au précédent, affiche des puces colorées (vert = amélioration, rouge = dégradation, cachées si écart < 1 point pour éviter le bruit).
+
+Porté à l'identique dans `DashboardPage.vue`, à côté du score système existant. `onMounted` passe en `async`/`Promise.all` (les 3 fonctions de rafraîchissement absorbent déjà leurs propres erreurs et résolvent toujours -- vérifié avant de committer que `Promise.all` ne peut donc jamais rejeter et bloquer le `setInterval` qui suit) pour ne sauvegarder l'instantané qu'une fois les vraies données du premier chargement disponibles, jamais un instantané partiel si `list_disk_usage` échoue. Aucune nouvelle commande Rust (réutilise `snapshot`/`ramPercent`/`rootDiskPercent` déjà pollés pour le score système et les tuiles).
+
+3 nouveaux tests (aucune puce à la toute première visite, puces correctement colorées + écart <1% masqué avec des valeurs asymétriques succès/danger, persistance vérifiée en relisant `localStorage` après montage). 395/395 frontend (392→395, +3), 325/325 Rust (inchangé, aucune commande ajoutée), `vue-tsc` clean. Version 0.25.107→0.25.108, commit `547020b`, poussé.
+
+**12 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Chantier StatsReportsPage : reste uniquement la liste de rapports générés (à recroiser avec `ReportGeneratorPage` avant de dupliquer -- possiblement déjà entièrement couvert, à vérifier en premier au prochain cycle avant d'écrire du code). Prochain cycle réel : **368**.
