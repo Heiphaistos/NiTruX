@@ -259,6 +259,28 @@ mod tests {
     }
 
     #[test]
+    fn parses_an_open_network_with_an_empty_security_field_as_an_empty_string() {
+        // `nmcli -t` (terse, machine-parseable mode) represents a genuinely
+        // absent field value as nothing between its two delimiters, not a
+        // placeholder like the "--" used in nmcli's default human-readable
+        // table output -- so an open (unencrypted) network's SECURITY
+        // column is an empty string here, not "--"/"None"/"Open". This
+        // exact scenario (the one this whole feature exists to flag to the
+        // user, cf. WiFiAnalyzerPage.vue::securityStatus's `security === ""`
+        // check) previously had zero test coverage on the Rust parsing
+        // side, even though the frontend's badge logic was already tested
+        // against it -- this closes that gap. Not independently verifiable
+        // against real WiFi hardware in this environment (no WiFi adapter
+        // on the dev VM, cf. .loop/JOURNAL.md cycle 308), but pins the
+        // documented terse-mode contract as a regression guard.
+        let line = "*:OpenNetwork::45";
+        let net = parse_nmcli_wifi_line(line).expect("should parse");
+        assert_eq!(net.ssid, "OpenNetwork");
+        assert_eq!(net.security, "");
+        assert_eq!(net.signal_percent, 45);
+    }
+
+    #[test]
     fn parses_an_ssid_containing_a_colon_escaped_by_nmcli_terse_mode() {
         // nmcli -t escapes a literal ':' in a field's own value as '\:' by
         // default (--escape defaults to yes) -- a real SSID like
