@@ -424,11 +424,23 @@ case "$cmd" in
     dest_path="${3:-}"
     validate_disk_device "$source_disk"
     validate_image_dest_path "$dest_path"
-    # dd creates dest_path under the caller's umask (typically 022 -> world-readable).
-    # A full disk image can contain every user's files, SSH keys, browser
-    # credentials -- chmod immediately after, before any other process can read it.
-    dd if="$source_disk" of="$dest_path" bs=4M status=progress conv=fsync
-    chmod 600 "$dest_path"
+    # dest_path sits in a directory the invoking (unprivileged) user already
+    # controls (e.g. their own $HOME) -- a process racing the polkit auth
+    # prompt could pre-position a symlink there so this root-privileged dd
+    # follows it and overwrites an arbitrary file elsewhere (verified: dd
+    # writes through an existing symlink to its target, not the link
+    # itself). noclobber makes `exec 3>` refuse anything already at that
+    # path -- symlink or regular file alike -- and a failed exec redirect
+    # aborts a non-interactive POSIX shell immediately, before chmod/dd run
+    # (both verified). Writing dd's output through the resulting fd, never
+    # re-resolving dest_path by name, also survives an attacker unlinking
+    # and re-symlinking the path in the instant right after this create
+    # succeeds (verified) -- closes the TOCTOU race entirely, not just
+    # narrows it.
+    set -C
+    exec 3>"$dest_path"
+    chmod 600 /proc/self/fd/3
+    dd if="$source_disk" of=/proc/self/fd/3 bs=4M status=progress conv=fsync
     ;;
   *)
     die "unknown subcommand: $cmd"
