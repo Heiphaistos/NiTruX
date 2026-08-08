@@ -82,6 +82,7 @@ const verifyMatch = ref<boolean | null>(null);
 async function computeHash() {
   hashError.value = null;
   hashResult.value = null;
+  verifyMatch.value = null;
   try {
     hashResult.value = await invoke<string>("compute_file_hash", { path: hashPath.value, algorithm: hashAlgorithm.value });
   } catch (e) {
@@ -92,6 +93,7 @@ async function computeHash() {
 async function verifyHash() {
   hashError.value = null;
   verifyMatch.value = null;
+  hashResult.value = null;
   try {
     verifyMatch.value = await invoke<boolean>("verify_file_hash", {
       path: hashPath.value,

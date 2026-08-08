@@ -90,6 +90,37 @@ describe("FileToolsPage", () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain("correspond"));
   });
 
+  it("clears the previously computed hash display when a match/mismatch verification runs for a different path", async () => {
+    // Regression: hashPath is shared between "Calculer" and "Vérifier". If a
+    // user computes the hash of file A, then changes the path to file B and
+    // clicks "Vérifier" without recomputing, the stale hash of A must not
+    // stay on screen next to the fresh match/mismatch result for B -- that
+    // would mislead the user into thinking the displayed hash belongs to
+    // the file that was just verified.
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string, args?: Record<string, unknown>) => {
+      if (cmd === "compute_file_hash") return Promise.resolve("hash-of-file-a");
+      if (cmd === "verify_file_hash") return Promise.resolve(args?.expected === "matching-hash");
+      return Promise.resolve([]);
+    });
+    const wrapper = mount(FileToolsPage);
+    const tabs = wrapper.findAll("button");
+    await tabs.find((b) => b.text() === "Vérif. hash")!.trigger("click");
+    const inputs = wrapper.findAll(".nx-input");
+    await inputs[0].setValue("/home/dev/a.iso");
+    const computeButton = wrapper.findAll("button").find((b) => b.text() === "Calculer")!;
+    await computeButton.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("hash-of-file-a"));
+
+    await inputs[0].setValue("/home/dev/b.iso");
+    await inputs[1].setValue("matching-hash");
+    const verifyButton = wrapper.findAll("button").find((b) => b.text() === "Vérifier")!;
+    await verifyButton.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("correspond"));
+
+    expect(wrapper.text()).not.toContain("hash-of-file-a");
+  });
+
   it("shows a mismatch message when the expected hash does not match", async () => {
     const wrapper = mount(FileToolsPage);
     const tabs = wrapper.findAll("button");
