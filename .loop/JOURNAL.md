@@ -2367,3 +2367,11 @@ Aucun bug trouvé. Négatif, mais ferme un angle mort réel que le résultat "0 
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 178 cycles cumulés 110-287.
+
+[2026-08-08T02:12:00+02:00] Cycle 288 : `cargo fmt --check` lancé pour la première fois cette session (vérification jamais tentée jusqu'ici, distincte de `cargo clippy` qui ne couvre que le lint, pas le style). Résultat surprenant : diff massif (3274 lignes, quasiment tous les fichiers) mais code de sortie 0 -- comportement incohérent avec le fonctionnement attendu de `cargo fmt --check` (devrait sortir en erreur s'il y a des différences), probablement une particularité de version cargo-fmt/rustfmt dans cet environnement WSL2, pas fiable comme signal binaire pass/fail ici.
+
+**Volontairement PAS corrigé** : le diff est purement cosmétique (retour à la ligne/largeur de ligne rustfmt par défaut), aucun `rustfmt.toml` n'existe pour codifier le style réellement établi -- mais ce style (littéraux de struct compacts sur une ligne dans les tests, par ex. `let root = UserAccount { username: ..., uid: ..., ... };`) est manifestement délibéré et appliqué de façon cohérente dans tout le projet, pas une dérive accidentelle. Reformater en masse ~3274 lignes à travers des dizaines de fichiers pour se conformer aux préférences par défaut de rustfmt serait un changement massif, disruptif et non demandé, sans aucun bénéfice fonctionnel, et casserait le style compact déjà établi et cohérent de ce projet.
+
+Aucun changement de code. Négatif, mais vérification honnêtement documentée plutôt que silencieusement ignorée ou appliquée sans réflexion.
+
+Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 179 cycles cumulés 110-288.
