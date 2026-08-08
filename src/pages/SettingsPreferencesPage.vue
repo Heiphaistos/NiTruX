@@ -20,10 +20,6 @@ function onIntervalChange(value: string) {
 function onScanDirChange(value: string) {
   preferences.setDefaultScanDirectory(value);
 }
-
-function onConfirmToggle(event: Event) {
-  preferences.setConfirmNonDestructiveActions((event.target as HTMLInputElement).checked);
-}
 </script>
 
 <template>
@@ -49,13 +45,6 @@ function onConfirmToggle(event: Event) {
         @update:model-value="onIntervalChange"
       />
     </NxCard>
-
-    <NxCard class="pref-card pref-toggle-row">
-      <label class="pref-label">
-        <input type="checkbox" :checked="preferences.confirmNonDestructiveActions" @change="onConfirmToggle" />
-        Demander confirmation pour les actions non-destructives
-      </label>
-    </NxCard>
   </div>
 </template>
 
@@ -63,5 +52,4 @@ function onConfirmToggle(event: Event) {
 .pref-page { padding: 24px; display: flex; flex-direction: column; gap: 12px; }
 .pref-card { display: flex; flex-direction: column; gap: 8px; }
 .pref-label { font-size: 13px; color: var(--nx-text-secondary); display: flex; align-items: center; gap: 8px; }
-.pref-toggle-row { flex-direction: row; align-items: center; }
 </style>

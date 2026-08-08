@@ -12,7 +12,6 @@ describe("preferencesStore", () => {
     const store = usePreferencesStore();
     expect(store.defaultScanDirectory).toBe("");
     expect(store.dashboardRefreshIntervalMs).toBe(2000);
-    expect(store.confirmNonDestructiveActions).toBe(true);
   });
 
   it("setDefaultScanDirectory updates state and persists", () => {
@@ -29,23 +28,14 @@ describe("preferencesStore", () => {
     expect(JSON.parse(localStorage.getItem("nitrux-preferences")!).dashboardRefreshIntervalMs).toBe(5000);
   });
 
-  it("setConfirmNonDestructiveActions updates state and persists", () => {
-    const store = usePreferencesStore();
-    store.setConfirmNonDestructiveActions(false);
-    expect(store.confirmNonDestructiveActions).toBe(false);
-    expect(JSON.parse(localStorage.getItem("nitrux-preferences")!).confirmNonDestructiveActions).toBe(false);
-  });
-
   it("reads persisted preferences on store creation", () => {
     localStorage.setItem("nitrux-preferences", JSON.stringify({
       defaultScanDirectory: "/mnt/data",
       dashboardRefreshIntervalMs: 1000,
-      confirmNonDestructiveActions: false,
     }));
     const store = usePreferencesStore();
     expect(store.defaultScanDirectory).toBe("/mnt/data");
     expect(store.dashboardRefreshIntervalMs).toBe(1000);
-    expect(store.confirmNonDestructiveActions).toBe(false);
   });
 
   it("falls back to defaults when persisted JSON is malformed", () => {
@@ -53,6 +43,5 @@ describe("preferencesStore", () => {
     const store = usePreferencesStore();
     expect(store.defaultScanDirectory).toBe("");
     expect(store.dashboardRefreshIntervalMs).toBe(2000);
-    expect(store.confirmNonDestructiveActions).toBe(true);
   });
 });

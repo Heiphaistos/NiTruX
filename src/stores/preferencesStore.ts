@@ -5,23 +5,17 @@ const STORAGE_KEY = "nitrux-preferences";
 export interface Preferences {
   defaultScanDirectory: string;
   dashboardRefreshIntervalMs: number;
-  confirmNonDestructiveActions: boolean;
 }
 
 const DEFAULTS: Preferences = {
   defaultScanDirectory: "",
   dashboardRefreshIntervalMs: 2000,
-  confirmNonDestructiveActions: true,
 };
 
 function isPreferences(value: unknown): value is Preferences {
   if (typeof value !== "object" || value === null) return false;
   const v = value as Record<string, unknown>;
-  return (
-    typeof v.defaultScanDirectory === "string" &&
-    typeof v.dashboardRefreshIntervalMs === "number" &&
-    typeof v.confirmNonDestructiveActions === "boolean"
-  );
+  return typeof v.defaultScanDirectory === "string" && typeof v.dashboardRefreshIntervalMs === "number";
 }
 
 function readPersistedPreferences(): Preferences {
@@ -48,10 +42,6 @@ export const usePreferencesStore = defineStore("preferences", {
     },
     setDashboardRefreshIntervalMs(value: number) {
       this.dashboardRefreshIntervalMs = value;
-      persist({ ...this.$state });
-    },
-    setConfirmNonDestructiveActions(value: boolean) {
-      this.confirmNonDestructiveActions = value;
       persist({ ...this.$state });
     },
   },
