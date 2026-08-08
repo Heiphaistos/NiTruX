@@ -630,3 +630,11 @@ Cycles 324-329 : sweep exhaustif `LC_ALL=C` complété (0 bug supplémentaire tr
 **Les 12 correctifs/améliorations accumulés depuis v0.25.79 sont désormais tous dans une release publiée. Plus aucun backlog de correctifs non livrés.**
 
 Éléments en attente inchangés (non bloquants, décisions produit/portée en attente) : CSP désactivée (cycle 294), aria-live absent (cycle 317), NxBadge/ScriptsPage couleur-accent (cycles 274/276/282), NxQuickActionTile dégradés (cycle 273), clone-disk (cycle 120), confirmNonDestructiveActions (cycle 148), bouton Vérifier (cycle 174), timeout run_pkexec_with_stdin (cycle 193), doublons catalogue (cycles 201-202/259), WiFiAnalyzerPage::securityStatus (cycle 241, non vérifiable sans matériel Wi-Fi réel). 221 cycles cumulés 110-330 depuis la reprise.
+
+## Mise à jour (2026-08-08, v0.25.93, cycle 336) — RELEASE PUBLIÉE, backlog livré
+
+Cycles 331-335 : `InstallProfilesPage.vue`/`PerfHistoryPage.vue`/`BenchmarkPage.vue`/`UpdatesPage.vue` audités en profondeur (tous propres). **Cycle 332 -- bug réel trouvé et corrigé** : `DnsSwitcherPage.vue::toResolvConfContent` préfixait aveuglément `"nameserver "` sans vérifier si la ligne l'avait déjà -- un utilisateur collant une ligne `resolv.conf` existante obtenait `"nameserver nameserver X"`, un serveur DNS silencieusement ignoré sans erreur affichée. Confirmé par traçage direct de la fonction pure, corrigé. Commit `f96bc34`, version 0.25.92→0.25.93.
+
+**Utilisateur a explicitement demandé la publication** ("ok cree la nouvelle release"). Build+tag+release identiques au process rodé. **Le seul correctif accumulé depuis v0.25.92 est désormais publié. Plus aucun backlog de correctifs non livrés.**
+
+Éléments en attente inchangés par ailleurs (mêmes signalements non bloquants). 226 cycles cumulés 110-335, boucle continue.

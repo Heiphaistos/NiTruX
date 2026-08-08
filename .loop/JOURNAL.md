@@ -2633,3 +2633,7 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **1 correctif accumulé depuis la release v0.25.92**. 226 cycles cumulés 110-335.
+
+[2026-08-08T17:10:00+02:00] **RELEASE PUBLIÉE** : utilisateur a explicitement demandé la publication ("ok cree la nouvelle release"). `npm run tauri build` (WSL2) → 3 bundles (deb 9,3 Mo/rpm 9,3 Mo/AppImage 86 Mo) générés sans erreur. Script `postrm` empaqueté vérifié identique au source (`diff` exit 0). Tag annoté `v0.25.93` + release GitHub créée avec les 3 assets et notes (correctif DNS double-préfixe). **Le seul correctif accumulé depuis v0.25.92 est désormais publié. Plus aucun backlog de correctifs non livrés.**
+
+Boucle reprend son cycle normal après cette entrée.
