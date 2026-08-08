@@ -2533,3 +2533,9 @@ Aucun bug trouvé. Négatif.
 Aucun changement de code. Négatif, mais nouveau signalement d'accessibilité documenté honnêtement.
 
 Éléments en attente : + **absence de zones `aria-live`** (cycle 317, nécessite une passe dédiée à travers l'app, probablement au niveau composant partagé) rejoint la liste (CSP désactivée, NxBadge/ScriptsPage, NxQuickActionTile, clone-disk, confirmNonDestructiveActions, bouton Vérifier, timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus). **11 correctifs/améliorations accumulés depuis la release v0.25.79**. 208 cycles cumulés 110-317.
+
+[2026-08-08T07:24:00+02:00] Cycle 318 : `accounts.rs` relu en entier (jamais fait pour sa propre logique cette session). Parsing `/etc/passwd` correct, dégradation gracieuse sur ligne malformée ou UID non numérique. VM toujours joignable -- `is_real_user_account` (bornes UID 1000-60000 pour distinguer un vrai utilisateur d'un compte système) vérifié EN DIRECT contre le vrai `/etc/passwd` de la VM (37 comptes réels) : seul `dev` (uid 1000) passe le filtre, tous les comptes système/démon (0-999, y compris la plage 986-999 utilisée par systemd/polkitd/sshd sur cette Debian 13, et `nobody` à 65534) sont correctement exclus -- aucun faux positif ni faux négatif sur des données de production réelles.
+
+Aucun bug trouvé. Négatif, mais vérification en direct sur données réelles plutôt qu'une confiance aveugle dans la convention documentée.
+
+Éléments en attente inchangés. **11 correctifs/améliorations accumulés depuis la release v0.25.79**. 209 cycles cumulés 110-318.
