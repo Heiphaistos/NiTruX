@@ -210,6 +210,29 @@ describe("NetworkPage", () => {
     expect(portRows.length).toBe(2);
   });
 
+  it("shows a protocol badge on listening ports, distinguishing UDP entries that used to be silently dropped by the backend", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") {
+        return Promise.resolve({
+          wifi_networks: [],
+          listening_ports: [
+            { port: 53, process: "systemd-resolved", protocol: "udp" },
+            { port: 22, process: "sshd", protocol: "tcp" },
+          ],
+          dns_servers: [],
+          hosts_file: "127.0.0.1 localhost\n",
+        });
+      }
+      if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("systemd-resolved"));
+    expect(wrapper.text()).toContain("UDP");
+    expect(wrapper.text()).toContain("TCP");
+  });
+
   it("drops out-of-range port numbers before sending them, instead of crashing the scan on a raw IPC error", async () => {
     // Regression guard for the actual bug: scan_ports_cmd's backend
     // parameter is a Vec<u16> -- parseInt has no inherent range limit

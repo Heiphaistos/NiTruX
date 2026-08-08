@@ -8,7 +8,7 @@ import NxInput from "@/components/ui/NxInput.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 
 interface WifiNetwork { ssid: string; security: string; signal_percent: number; connected: boolean }
-interface ListeningPort { port: number; process: string | null }
+interface ListeningPort { port: number; process: string | null; protocol: string | null }
 interface NetworkSnapshot { wifi_networks: WifiNetwork[]; listening_ports: ListeningPort[]; dns_servers: string[]; hosts_file: string }
 interface PortResult { port: number; open: boolean }
 interface Container { id: string; image: string; name: string; status: string }
@@ -175,8 +175,8 @@ async function runScan() {
 
       <NxCard>
         <NxSectionHeader title="Ports en écoute" />
-        <div v-for="(p, pi) in snapshot.listening_ports" :key="`${p.port}-${pi}`" class="net-row">
-          <span>{{ p.port }}</span>
+        <div v-for="(p, pi) in snapshot.listening_ports" :key="`${p.port}-${p.protocol}-${pi}`" class="net-row">
+          <span>{{ p.port }} <span v-if="p.protocol" class="net-proto">{{ p.protocol.toUpperCase() }}</span></span>
           <span>{{ p.process ?? "?" }}</span>
         </div>
       </NxCard>
@@ -251,6 +251,7 @@ async function runScan() {
 .net-tabs button { padding: 8px 14px; border-radius: var(--nx-style-radius); border: var(--nx-style-border-width) solid var(--nx-style-border-color); background: var(--nx-style-bg); color: var(--nx-text-secondary); cursor: pointer; font: inherit; }
 .net-tabs button.active { color: var(--nx-text-primary); font-weight: 600; }
 .net-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; border-bottom: 1px solid var(--nx-style-border-color); }
+.net-proto { font-size: 10px; font-weight: 600; color: var(--nx-text-secondary); background: var(--nx-bg-elevated); border-radius: 4px; padding: 1px 5px; margin-left: 4px; }
 .net-textarea { width: 100%; padding: 10px; border-radius: var(--nx-style-radius); border: var(--nx-style-border-width) solid var(--nx-style-border-color); background: var(--nx-style-bg); color: var(--nx-text-primary); font-family: monospace; font-size: 12px; margin-bottom: 8px; }
 .net-success { margin-top: 10px; padding: 10px 14px; border-radius: var(--nx-style-radius); background: color-mix(in srgb, var(--nx-accent-success) 15%, transparent); border: 1px solid var(--nx-accent-success); }
 .net-form-row { display: flex; gap: 10px; align-items: center; }
