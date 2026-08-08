@@ -2527,3 +2527,9 @@ Aucun changement de code. Négatif, mais deux vérifications utiles avec un juge
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **11 correctifs/améliorations accumulés depuis la release v0.25.79**. 207 cycles cumulés 110-316.
+
+[2026-08-08T07:16:00+02:00] Cycle 317 : nouvel angle a11y jamais testé cette session -- recherche de zones `aria-live` (annonce des mises à jour dynamiques aux lecteurs d'écran). **0 occurrence trouvée dans toute l'application** (40+ pages), confirmé jamais mentionné dans JOURNAL.md/CHECKPOINT.md avant ce cycle -- gap réel et systémique : aucun badge de résultat, message de succès/échec, ou changement de statut asynchrone (calcul de hash, installation de paquet, benchmark...) n'est annoncé à un lecteur d'écran lors de sa mise à jour. **Pas corrigé** : contrairement aux corrections ponctuelles déjà faites (NxButton/pkb-success contrast), un vrai correctif cohérent nécessiterait de toucher des dizaines de fichiers à travers toute l'app (probablement au niveau des composants partagés `NxCard`/`NxBadge` plutôt que page par page, pour éviter l'incohérence) -- une décision de portée/conception, pas un correctif ciblé de cycle. Signalé plutôt que traité partiellement de façon incohérente.
+
+Aucun changement de code. Négatif, mais nouveau signalement d'accessibilité documenté honnêtement.
+
+Éléments en attente : + **absence de zones `aria-live`** (cycle 317, nécessite une passe dédiée à travers l'app, probablement au niveau composant partagé) rejoint la liste (CSP désactivée, NxBadge/ScriptsPage, NxQuickActionTile, clone-disk, confirmNonDestructiveActions, bouton Vérifier, timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus). **11 correctifs/améliorations accumulés depuis la release v0.25.79**. 208 cycles cumulés 110-317.
