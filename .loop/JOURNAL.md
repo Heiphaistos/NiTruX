@@ -2381,3 +2381,9 @@ Aucun changement de code. Négatif, mais vérification honnêtement documentée 
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 180 cycles cumulés 110-289.
+
+[2026-08-08T02:28:00+02:00] Cycle 290 : nouvelle classe de vérification jamais tentée cette session -- détection de dépendances circulaires entre modules TS/Vue (script Python jetable, construction du graphe d'imports via résolution des alias `@/*` et chemins relatifs, DFS pour repérer tout cycle). 79 fichiers source non-spec analysés (tous les `.ts`/`.vue` de `src/`), **0 cycle trouvé** -- architecture de modules propre, aucune dépendance circulaire qui pourrait causer des bugs d'initialisation subtils (valeur `undefined` au premier import, ordre d'évaluation fragile).
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 181 cycles cumulés 110-290.
