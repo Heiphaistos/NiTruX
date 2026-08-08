@@ -134,6 +134,25 @@ function scoreStatus(score: number): "success" | "warning" | "danger" {
   return "danger";
 }
 
+// Per-tile "exceeded" dot (NxStatTile's own status prop, not a new
+// mechanism) -- distinct from the health score above, which is a fixed
+// internal weighting the user can't tune. These reflect the user's own
+// configured thresholds (Préférences), checked per metric independently.
+const ramPercent = computed<number | null>(() => {
+  if (!snapshot.value || snapshot.value.memory_total_bytes === 0) return null;
+  return (snapshot.value.memory_used_bytes / snapshot.value.memory_total_bytes) * 100;
+});
+
+function cpuStatus(cpuUsagePercent: number): "danger" | undefined {
+  return cpuUsagePercent >= preferences.cpuAlertThreshold ? "danger" : undefined;
+}
+const ramStatus = computed<"danger" | undefined>(() =>
+  ramPercent.value !== null && ramPercent.value >= preferences.ramAlertThreshold ? "danger" : undefined,
+);
+const diskStatus = computed<"danger" | undefined>(() =>
+  rootDiskPercent.value !== null && rootDiskPercent.value >= preferences.diskAlertThreshold ? "danger" : undefined,
+);
+
 // Both stops of every gradient are darkened to the same hue's darkest shade
 // that still clears WCAG AA (>=4.5:1) against the tile's white text -- the
 // original bright stops (e.g. #fb923c, 2.26:1) failed AA outright.
@@ -173,10 +192,17 @@ const QUICK_ACTIONS = [
 
     <div class="dash-grid" v-if="snapshot">
       <NxCard v-for="(cpu, i) in snapshot.cpus" :key="i">
-        <NxStatTile :label="cpu.name || `CPU ${i}`" :value="cpu.usage_display" />
+        <NxStatTile :label="cpu.name || `CPU ${i}`" :value="cpu.usage_display" :status="cpuStatus(cpu.usage_percent)" />
       </NxCard>
       <NxCard>
-        <NxStatTile label="Mémoire" :value="`${bytesToGb(snapshot.memory_used_bytes)} / ${bytesToGb(snapshot.memory_total_bytes)} Go`" />
+        <NxStatTile
+          label="Mémoire"
+          :value="`${bytesToGb(snapshot.memory_used_bytes)} / ${bytesToGb(snapshot.memory_total_bytes)} Go`"
+          :status="ramStatus"
+        />
+      </NxCard>
+      <NxCard v-if="rootDiskPercent !== null">
+        <NxStatTile label="Disque (/)" :value="`${rootDiskPercent}%`" :status="diskStatus" />
       </NxCard>
       <NxCard>
         <NxStatTile label="Processus" :value="String(snapshot.process_count)" />
