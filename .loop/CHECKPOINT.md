@@ -674,3 +674,11 @@ En creusant plus loin sur le correctif clone-disk livré au cycle précédent, *
 **1 correctif de sécurité (sévérité élevée) en attente d'une release publiée depuis v0.25.94.** Éléments en attente non bloquants inchangés par ailleurs (CSP désactivée, aria-live absent, NxBadge/ScriptsPage couleur-accent, NxQuickActionTile dégradés, confirmNonDestructiveActions, bouton Vérifier, timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus). 234 cycles cumulés 110-343, boucle continue.
 
 **Recommandation** : proposer une nouvelle coupure de release pour livrer ce correctif, comme pour le précédent.
+
+## Mise à jour (2026-08-08, v0.25.96, cycle 345) — réglage mort confirmNonDestructiveActions supprimé
+
+Cycle 344 : généralisation TOCTOU confirmée close (quarantine-file/format-partition/extend-partition non concernés), commentaire Rust obsolète corrigé.
+
+**`confirmNonDestructiveActions`** (préférence sans aucun effet nulle part dans l'app, signalée depuis le cycle 49 comme "décision produit en attente") **reconsidérée et retirée** : ce n'est pas une fonctionnalité incomplète nécessitant une décision de conception, c'est un réglage qui trompe l'utilisateur (aucun mécanisme de confirmation n'existe pour qu'il gate quoi que ce soit) -- relève de "suppression code mort", explicitement en autonomie totale selon CLAUDE.md, distinct d'une vraie décision UX multi-pages (qui, elle, resterait hors périmètre). Retiré de `preferencesStore.ts`/`SettingsPreferencesPage.vue` + tests mis à jour. 334/334 frontend, Rust inchangé, vue-tsc clean. Version 0.25.95→0.25.96, commit `79f5556`, poussé.
+
+**`confirmNonDestructiveActions` retiré de la liste des éléments en attente** (n'existe plus). Restent (décisions produit/portée réelles, non bloquantes) : CSP désactivée, aria-live absent, NxBadge/ScriptsPage couleur-accent, NxQuickActionTile dégradés, bouton Vérifier, timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus. **2 correctifs accumulés depuis v0.25.94** (TOCTOU/symlink clone-disk, sévérité élevée + suppression réglage mort). 236 cycles cumulés 110-345, boucle continue.
