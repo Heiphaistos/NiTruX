@@ -2361,3 +2361,9 @@ Aucun changement de code. Négatif, mais analyse affinée qui confirme avec des 
 Aucun bug trouvé. Négatif, mais ferme un angle mort réel que le résultat "0 avertissement clippy" ne couvrait pas.
 
 Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 177 cycles cumulés 110-286.
+
+[2026-08-08T02:04:00+02:00] Cycle 287 : miroir du cycle 286 côté TypeScript -- recherche d'exports (`const`/`function`/`interface`/`type`/`class`) jamais importés ailleurs dans `src/`. 27 exports de haut niveau vérifiés (fichiers `data`/`types`/`stores`/`styles`/`themes`/`layouts`/`navigation`), **0 suspect** -- chaque export utilisé au moins une fois au-delà de sa propre définition. Ferme le miroir TypeScript du même angle mort que le cycle 286 avait fermé côté Rust.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 178 cycles cumulés 110-287.
