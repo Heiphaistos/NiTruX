@@ -2489,3 +2489,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif, mais vérification ciblée et rigoureuse de la même classe de bug sur tout le script.
 
 Éléments en attente inchangés. **9 correctifs/améliorations accumulés depuis la release v0.25.79**. 200 cycles cumulés 110-309.
+
+[2026-08-08T06:20:00+02:00] Cycle 310 : `benchmark.rs` relu en entier (jamais fait, seule la portion `secure_temp` avait été vue). Module déjà exemplaire, y compris un vrai bug déjà corrigé et testé (`resolve_disk_benchmark` : un échec du sous-benchmark disque ne doit plus faire perdre les mesures CPU/mémoire déjà réussies). Piste théorique identifiée mais délibérément non corrigée : dans `benchmark_disk`, si l'écriture réussit mais que la LECTURE du même fichier échoue ensuite, `write_mbps` déjà mesuré est perdu au profit d'un `Err` global (même classe de bug, un niveau plus profond) -- mais scénario de course extrêmement improbable (lecture du même fichier juste écrit par le même processus, dans son propre répertoire temporaire) sans chemin de reproduction réaliste, et le coût d'un correctif structurel (changer la signature de retour) serait disproportionné par rapport au risque -- cohérent avec la discipline déjà établie pour ce type d'edge case théorique (cf. `report.rs`'s unescaped `|`).
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **9 correctifs/améliorations accumulés depuis la release v0.25.79**. 201 cycles cumulés 110-310.
