@@ -819,3 +819,15 @@ Repris un signalement différé plutôt qu'une nouvelle comparaison NiTriTe (cha
 10 tests touchés/ajoutés. 403/403 frontend (401→403, +2), 333/333 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.109→0.25.110, commit `ce79726`, poussé.
 
 **Signalement "bouton Vérifier non désactivé pendant mise à jour" (cycle 174) fermé.** Éléments en attente restants : CSP désactivée, timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus (non vérifiable sans Wi-Fi réel), "OS & USB Tools" (nécessite VM + nouvelle action pkexec). **14 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Prochain cycle réel : **370**.
+
+## Mise à jour (2026-08-09, v0.25.111, cycle 370) — comparaison NiTriTe systématique : bug réel trouvé, UDP invisible dans "Ports en écoute"
+
+Chantier ouvert dédié clos (cycle 368), pas de signalement différé restant facilement actionnable sans VM (`run_pkexec_with_stdin` touche pkexec, `WiFiAnalyzerPage::securityStatus` non vérifiable, doublons catalogue = décision éditoriale) -- comparaison systématique `navigation.ts` NiTriTe vs `categories.ts` NiTruX comme prévu par le mandat. La quasi-totalité des écarts apparents se sont révélés déjà couverts en creusant (hosts-editor déjà câblé dans `NetworkPage.vue`, clone-disk déjà câblé dans `DisksPage.vue`, "port-scanner" NiTriTe = moniteur de ports locaux déjà couvert différemment par l'onglet "Scanner de ports" existant qui scanne activement un hôte/liste de ports).
+
+**En creusant l'onglet "Ports en écoute" pour cette comparaison, vrai bug trouvé et confirmé EN DIRECT sur cette machine** : `network.rs::parse_ss_line` ne reconnaissait que le token `LISTEN` pour localiser l'adresse locale -- or UDP n'a pas d'état "listening" formel, `ss -tulnp -l` rapporte un socket UDP lié comme `UNCONN`. Un test existant (`skips_real_udp_unconn_line`) verrouillait ce comportement comme "attendu" au lieu de le signaler comme un bug. Reproduit en direct : `ss -tulnp` sur cette machine WSL2 liste 4 vrais sockets UDP en écoute (dont le DNS local `127.0.0.53:53`), tous invisibles dans la page "Réseau" avant ce correctif malgré le flag `-u` explicitement passé pour les inclure.
+
+Corrigé : `parse_ss_line` reconnaît aussi `UNCONN`, `ListeningPort` gagne un champ `protocol` (tcp/udp, dérivé de la colonne Netid déjà présente dans la vraie sortie `ss`), affiché en badge à côté de chaque port dans `NetworkPage.vue`.
+
+1 test Rust remplacé (l'ancien verrouillait le bug, le nouveau prouve le contraire) + 1 assertion ajoutée à un test existant + 1 nouveau test frontend. 404/404 frontend (403→404, +1), 333/333 Rust (inchangé en nombre, un test remplacé pour un autre), `vue-tsc` clean. Version 0.25.110→0.25.111, commit `174c561`, poussé.
+
+**15 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Éléments en attente inchangés par ailleurs. Prochain cycle réel : **371**.
