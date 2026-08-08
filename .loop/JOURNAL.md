@@ -2393,3 +2393,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 182 cycles cumulés 110-291.
+
+[2026-08-08T02:44:00+02:00] Cycle 292 : re-vérification de la couverture `aria-label` sur tous les usages de `NxInput`/`NxSelect` dans `src/pages/*.vue` (l'attribut est optionnel côté composant depuis la campagne a11y des cycles 127-130 -- rien n'empêche mécaniquement une page future de l'oublier). Premier passage `grep` naïf (ligne unique) a signalé 5 faux positifs (attribut présent mais sur une ligne suivante du tag multi-ligne) ; script Python correctement multi-ligne relancé pour confirmer -- **0 vrai manque** sur l'ensemble des pages. Confirme que la pratique est restée cohérente même pour du code ajouté après la campagne initiale (ex. les champs de confirmation taper-pour-valider d'`AntivirusPage`/`DataRecoveryPage`/`DisksPage`, ajoutés aux cycles 156-158).
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **3 correctifs accumulés depuis la release v0.25.79**. 183 cycles cumulés 110-292.
