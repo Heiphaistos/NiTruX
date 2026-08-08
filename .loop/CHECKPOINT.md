@@ -713,9 +713,15 @@ Clôture de la piste laissée au cycle 357 : `installSelection` insère les rés
 
 `NxQuickActionTile` (cycle 273, signalé mais non corrigé faute d'autorisation esthétique) **fermé** : les 5 dégradés du tableau de bord échouaient tous WCAG AA contre le texte blanc fixe (pire cas 2.26:1, minimum 4.5:1) -- recalculé avec la formule officielle de luminance relative, pas supposé. Corrigé en assombrissant chaque paire jusqu'au seuil AA tout en conservant la teinte/saturation d'origine (les 5 actions restent identifiables par couleur). Nouveau test de régression permanent (implémente la formule WCAG dans le spec, vérifie le contraste réel rendu par jsdom -- piège trouvé : jsdom normalise en `rgb()`, pas en hex). 341/341 frontend, Rust inchangé, vue-tsc clean. Version 0.25.99→0.25.100, commit `dab16cc`, poussé.
 
-**`NxQuickActionTile dégradés` retiré des éléments en attente.** Restent (décisions produit/portée) : CSP désactivée, NxBadge/ScriptsPage couleur-accent (contraste distinct, pas encore traité), bouton Vérifier, timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus. **4 améliorations accumulées depuis v0.25.96.** Prochain cycle réel : **360**.
+**4 améliorations accumulées depuis v0.25.96.**
+
+## Mise à jour (2026-08-08, v0.25.101, cycle 360) — nouvelle fonctionnalité : profils de configuration
+
+**Équivalent ProfilesPage fermé** : nouveau `profilesStore.ts` compose `themeStore`/`layoutStore`/`styleStore`/`preferencesStore` (pas de duplication de logique) -- `saveCurrentAs()`/`apply()`/`remove()`/`exportProfile()`/`importProfile()`. Nouvelle page `ConfigProfilesPage.vue` dans "Paramètres" (3e page), export/import fichier JSON miroir du pattern déjà établi par `ThemeEditorPage.vue`. **Vrai bug trouvé par le test avant publication** : `profile-${Date.now()}` collisionne si deux profils sont créés dans la même milliseconde (motif d'id déjà présent ailleurs dans le projet, ex. thèmes personnalisés) -- corrigé avec `crypto.randomUUID()` (déjà utilisé par `TerminalPage.vue`). 16 nouveaux tests + 1 test navigation. 358/358 frontend, Rust inchangé (aucune action pkexec impliquée), vue-tsc clean. Version 0.25.100→0.25.101, commit `46904a1`, poussé.
+
+**`Équivalent ProfilesPage` retiré du "Chantier ouvert".** Éléments en attente inchangés (CSP désactivée, NxBadge/ScriptsPage couleur-accent, bouton Vérifier, timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus). **5 améliorations/fonctionnalités accumulées depuis v0.25.96.** Prochain cycle réel : **361**.
 
 ### Candidats pour les prochains cycles (mandat fonctionnalités/améliorations)
-- **Équivalent ProfilesPage** (sauvegarde/chargement/export/import de profils de config nommés) -- écart identifié de longue date face à NiTriTe Windows, jamais spécifié ni codé.
 - **Contraste WCAG NxBadge couleur-accent** (badges statiques, texte de la couleur d'accent sur fond `color-mix` translucide -- distinct des dégradés déjà corrigés, plus complexe car dépend de `--nx-style-bg` par disposition, cf. cycles 274/276).
 - Approfondissement d'une catégorie nav existante (voir "Chantier ouvert" section antérieure de ce fichier pour le détail par catégorie).
+- Le même piège de collision d'id (`Date.now()` seul) existe potentiellement ailleurs dans le projet (ex. `custom-${Date.now()}` dans `ThemeEditorPage.vue::handleSave`) -- repéré en passant au cycle 360, pas encore vérifié/corrigé pour ce site précis.
