@@ -110,6 +110,7 @@ export const navigationCategories: NavCategory[] = [
     pages: [
       { id: "settings-preferences", label: "Préférences", icon: "settings" },
       { id: "settings-appearance", label: "Thèmes & dispositions", icon: "palette" },
+      { id: "config-profiles", label: "Profils de configuration", icon: "save" },
     ],
   },
 ];

@@ -19,6 +19,7 @@ import NetworkPage from "@/pages/NetworkPage.vue";
 import FirewallPage from "@/pages/FirewallPage.vue";
 import TroubleshootPage from "@/pages/TroubleshootPage.vue";
 import SettingsPreferencesPage from "@/pages/SettingsPreferencesPage.vue";
+import ConfigProfilesPage from "@/pages/ConfigProfilesPage.vue";
 import QuickInstallPage from "@/pages/QuickInstallPage.vue";
 import UpdatesPage from "@/pages/UpdatesPage.vue";
 import ReportGeneratorPage from "@/pages/ReportGeneratorPage.vue";
@@ -107,6 +108,7 @@ const pages: Record<string, Component> = {
   logs: LogsPage,
   "settings-preferences": SettingsPreferencesPage,
   "settings-appearance": ThemeEditorPage,
+  "config-profiles": ConfigProfilesPage,
   optimizations: OptimizationsPage,
   temperatures: TemperaturesPage,
   benchmark: BenchmarkPage,

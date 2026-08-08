@@ -82,4 +82,9 @@ describe("navigationCategories", () => {
     const allPageIds = navigationCategories.flatMap((c) => c.pages.map((p) => p.id));
     expect(allPageIds).toContain("terminal");
   });
+
+  it("includes the new config profiles page by id", () => {
+    const allPageIds = navigationCategories.flatMap((c) => c.pages.map((p) => p.id));
+    expect(allPageIds).toContain("config-profiles");
+  });
 });
