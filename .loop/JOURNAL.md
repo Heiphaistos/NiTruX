@@ -2611,3 +2611,7 @@ Boucle reprend son cycle normal après cette entrée, comme demandé.
 Aucun bug trouvé. Négatif.
 
 Éléments en attente inchangés. **0 correctif accumulé depuis la release v0.25.92** (fraîchement publiée). 222 cycles cumulés 110-331.
+
+[2026-08-08T11:12:00+02:00] Cycle 332 : `DnsSwitcherPage.vue` auditée. **Vrai bug trouvé et corrigé** : `toResolvConfContent` préfixait inconditionnellement chaque ligne avec `"nameserver "` avant envoi à `set_dns_servers`. Un utilisateur collant une ligne `resolv.conf` déjà formatée (ex. copiée depuis `/etc/resolv.conf`) au lieu d'une IP nue obtenait `"nameserver nameserver 1.1.1.1"` -- `validate_dns_content` (backend) accepte toujours ce contenu (la ligne commence bien par "nameserver "), mais `resolv.conf` lui-même échouerait silencieusement à utiliser cette entrée malformée pour la résolution DNS, sans aucune erreur affichée à l'utilisateur. Confirmé en traçant directement la fonction pure (pas besoin de VM) : test de régression écrit et vérifié en échec AVANT correctif. Corrigé en sautant le préfixe si la ligne trimée le possède déjà. Suite complète verte : `npm run test -- --run` (exit 0), `npx vue-tsc --noEmit` (exit 0) -- `cargo test` non nécessaire, aucun code Rust touché. Version 0.25.92→0.25.93, commit `f96bc34`, poussé sur `origin/master`.
+
+Éléments en attente inchangés par ailleurs. **1 correctif accumulé depuis la release v0.25.92**. 223 cycles cumulés 110-332.
