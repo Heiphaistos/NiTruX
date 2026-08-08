@@ -68,4 +68,31 @@ describe("InstallProfilesPage", () => {
     expect(invoke).toHaveBeenCalledWith("install_package", { manager: "apt", package: "firefox-esr" });
     expect(invoke).toHaveBeenCalledWith("install_package", { manager: "apt", package: "libreoffice" });
   });
+
+  it("announces a single summary once the whole batch finishes, not one per app", async () => {
+    // Regression guard: marking each of the 4 per-app result badges as an
+    // ARIA live region would fire 4 separate screen-reader announcements
+    // as the sequential loop appends to `results` one at a time -- this
+    // summary badge is the one that should carry `live`, appearing only
+    // once every app in the batch (Essentiels: firefox/libreoffice/vlc/
+    // keepassxc, libreoffice fails per the mock above) has resolved.
+    const wrapper = mount(InstallProfilesPage);
+    const profileButton = wrapper.findAll("button").find((b) => b.text().includes("Essentiels"))!;
+    await profileButton.trigger("click");
+    const installButton = wrapper.findAll("button").find((b) => b.text() === "Installer la sélection")!;
+    await installButton.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Installation terminée"));
+
+    expect(wrapper.text()).toContain("3 réussies, 1 échouée");
+    const summaryBadge = wrapper
+      .findAll(".nx-badge")
+      .find((b) => b.text().includes("Installation terminée"))!;
+    expect(summaryBadge.attributes("aria-live")).toBe("polite");
+    // The 4 per-app result badges must stay silent -- only the summary announces.
+    const perAppBadges = wrapper.findAll(".nx-badge").filter((b) => !b.text().includes("Installation terminée"));
+    expect(perAppBadges.length).toBe(4);
+    for (const badge of perAppBadges) {
+      expect(badge.attributes("aria-live")).toBeUndefined();
+    }
+  });
 });

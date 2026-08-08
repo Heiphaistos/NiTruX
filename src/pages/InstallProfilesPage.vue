@@ -53,6 +53,7 @@ interface InstallResult { id: string; name: string; success: boolean; message: s
 
 const installing = ref(false);
 const results = ref<InstallResult[] | null>(null);
+const installSummary = ref<string | null>(null);
 
 async function installOne(entry: AppCatalogEntry): Promise<InstallResult> {
   try {
@@ -76,6 +77,7 @@ async function installOne(entry: AppCatalogEntry): Promise<InstallResult> {
 async function installSelection() {
   installing.value = true;
   results.value = [];
+  installSummary.value = null;
   // Sequential, not parallel -- avoids concurrent lock contention on the
   // native package manager (apt/dnf/etc hold an exclusive lock; parallel
   // installs would just serialize at the OS level anyway, but with
@@ -85,6 +87,17 @@ async function installSelection() {
     results.value = [...results.value, result];
   }
   installing.value = false;
+  // A single summary announced once the whole batch finishes, instead of
+  // marking each per-app result badge `live` -- that would fire one
+  // screen-reader announcement per app as the sequential loop above
+  // appends to `results`, which is noise for a multi-app install rather
+  // than useful feedback.
+  const succeeded = results.value.filter((r) => r.success).length;
+  const failed = results.value.length - succeeded;
+  installSummary.value =
+    failed === 0
+      ? `Installation terminée : ${succeeded} application${succeeded > 1 ? "s" : ""} installée${succeeded > 1 ? "s" : ""}.`
+      : `Installation terminée : ${succeeded} réussie${succeeded > 1 ? "s" : ""}, ${failed} échouée${failed > 1 ? "s" : ""}.`;
 }
 </script>
 
@@ -132,6 +145,9 @@ async function installSelection() {
 
     <NxCard v-if="results && results.length > 0">
       <NxSectionHeader title="Résultat" />
+      <NxBadge v-if="installSummary" :status="results.every((r) => r.success) ? 'success' : 'warning'" live>
+        {{ installSummary }}
+      </NxBadge>
       <div v-for="r in results" :key="r.id" class="ip-result-row">
         <span>{{ r.name }}</span>
         <NxBadge :status="r.success ? 'success' : 'danger'">{{ r.success ? 'installé' : 'échec' }}</NxBadge>
