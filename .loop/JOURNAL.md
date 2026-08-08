@@ -2789,3 +2789,11 @@ Aucun bug trouvé. 10e cycle négatif consécutif (346-355).
 2 nouveaux tests `NxBadge.spec.ts` (silencieux par défaut, `live` correctement posé). 339/339 frontend (337→339, +2), Rust inchangé, `vue-tsc` clean. Version 0.25.97→0.25.98. Commit `32e7fec`, poussé.
 
 Éléments en attente inchangés par ailleurs (CSP désactivée, NxBadge/ScriptsPage couleur-accent -- toujours un problème de CONTRASTE distinct, pas touché ce cycle --, NxQuickActionTile dégradés, bouton Vérifier, timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus). Nouveau point noté (pas dans la liste des signalements en attente, juste une piste future) : annonce groupée pour la liste de résultats d'`InstallProfilesPage.vue`. **2 améliorations accumulées depuis la release v0.25.96**. 2 cycles cumulés sous le nouveau mandat (356-357).
+
+[2026-08-08T22:24:00+02:00] Cycle 358 : clôture de la piste laissée en suspens au cycle 357 -- `InstallProfilesPage.vue::installSelection` insère les résultats un par un (boucle séquentielle `for...await`), donc marquer chaque badge de résultat par-app `live` aurait déclenché une annonce par app installée (jusqu'à plusieurs dizaines pour un gros profil), pas un signal utile.
+
+**Implémenté** : nouveau `installSummary` calculé une seule fois APRÈS la fin complète de la boucle ("Installation terminée : N réussie(s), M échouée(s)."), rendu dans un badge dédié marqué `live`, distinct des N badges par-app qui restent silencieux (comportement inchangé, confirmé dans le nouveau test). Bénéfice pas seulement accessibilité : les utilisateurs voyants ont aussi désormais un résumé rapide sans devoir compter les badges un par un.
+
+1 nouveau test (résumé annoncé une seule fois, pluralisation correcte "3 réussies, 1 échouée" avec le mock existant Essentiels 4 apps/1 échec, les 4 badges par-app confirmés sans `aria-live`). 340/340 frontend (339→340, +1), Rust inchangé, `vue-tsc` clean. Version 0.25.98→0.25.99. Commit `49520e5`, poussé.
+
+**Ferme la piste InstallProfilesPage notée au cycle 357.** Éléments en attente inchangés (CSP désactivée, NxBadge/ScriptsPage couleur-accent, NxQuickActionTile dégradés, bouton Vérifier, timeout run_pkexec_with_stdin, doublons catalogue, WiFiAnalyzerPage::securityStatus). **3 améliorations accumulées depuis la release v0.25.96**. 3 cycles cumulés sous le nouveau mandat (356-358).

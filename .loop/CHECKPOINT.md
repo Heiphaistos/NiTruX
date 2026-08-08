@@ -701,10 +701,15 @@ Cycles 346-355 : 10 cycles négatifs consécutifs après les correctifs 343-345 
 
 Suite directe du cycle 356. `NxBadge` mélange badges statiques (colonne source de tableau, statut courant en `v-for`) et résultats transitoires dans le même composant -- contrairement à `NxCard::danger`, un blanket sur `status` aurait créé du bruit. Nouveau prop opt-in `live` (`role="status" aria-live="polite"`), appliqué aux 13 usages réellement transitoires sur 9 pages (recensement exhaustif des 32 usages de `NxBadge`, classés un par un). Cas distinct repéré et volontairement différé : `InstallProfilesPage.vue` a une liste de résultats en `v-for` -- marquer chaque badge individuellement créerait N annonces simultanées, nécessite une annonce groupée de la section plutôt qu'un `live` par badge. 2 nouveaux tests. 339/339 frontend, Rust inchangé, vue-tsc clean. Version 0.25.97→0.25.98, commit `32e7fec`, poussé.
 
-**2 améliorations accumulées depuis v0.25.96** (aria-live NxCard + NxBadge). Prochain cycle réel : **358**.
+**2 améliorations accumulées depuis v0.25.96** (aria-live NxCard + NxBadge).
+
+## Mise à jour (2026-08-08, v0.25.99, cycle 358) — annonce groupée InstallProfilesPage
+
+Clôture de la piste laissée au cycle 357 : `installSelection` insère les résultats un par un (boucle séquentielle) -- marquer chaque badge par-app `live` aurait déclenché une annonce par app, pas un signal utile. Ajouté `installSummary`, calculé une seule fois après la fin complète de la boucle ("Installation terminée : N réussie(s), M échouée(s)."), rendu dans un badge dédié `live`, distinct des badges par-app qui restent silencieux. Bénéfice aussi pour les utilisateurs voyants (résumé rapide sans compter les badges). 1 nouveau test. 340/340 frontend, Rust inchangé, vue-tsc clean. Version 0.25.98→0.25.99, commit `49520e5`, poussé.
+
+**3 améliorations accumulées depuis v0.25.96** (aria-live NxCard + NxBadge + annonce groupée InstallProfilesPage). Prochain cycle réel : **359**.
 
 ### Candidats pour les prochains cycles (mandat fonctionnalités/améliorations)
-- **Annonce groupée pour `InstallProfilesPage.vue`** (liste de résultats d'installation multi-app) -- mécanisme distinct du `live` par badge (cycle 357), à concevoir.
 - **Équivalent ProfilesPage** (sauvegarde/chargement/export/import de profils de config nommés) -- écart identifié de longue date face à NiTriTe Windows, jamais spécifié ni codé.
 - **Contrastes WCAG NxQuickActionTile/NxBadge** (dégradés/couleurs d'accent, distinct de l'aria-live déjà fait) -- nécessite de choisir de nouvelles couleurs, jugement esthétique maintenant autorisé par l'utilisateur.
 - Approfondissement d'une catégorie nav existante (voir "Chantier ouvert" section antérieure de ce fichier pour le détail par catégorie).
