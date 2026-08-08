@@ -747,8 +747,14 @@ Vérifié EN DIRECT avant tout code : un lien `.../releases/latest/download/<nom
 
 Nouveau `portable_apps.rs` (aucune nouvelle dépendance -- `curl` + `serde_json` déjà présents), 4 commandes non-privilégiées, logique de sélection pure testée contre les vraies données GitHub. `PortableAppsPage.vue` câblée dans "Applications". 10 tests Rust + 8 tests frontend. 374/374 frontend, 325/325 Rust, vue-tsc clean. Version 0.25.103→0.25.104, commit `b7aebaf`, poussé.
 
-**8 fonctionnalités/améliorations accumulées depuis v0.25.96.** Prochain cycle réel : **364**.
+**8 fonctionnalités/améliorations accumulées depuis v0.25.96.**
+
+## Mise à jour (2026-08-08, v0.25.105, cycle 364) — bug réel trouvé en auto-revue de Apps portables
+
+Auto-revue de la fonctionnalité livrée au cycle 363. **Bug réel confirmé** : `curl` sans `-f` traite un 404 comme un succès (code 0, corps de l'erreur écrit dans le fichier de destination) -- `download_portable_app` aurait donc `chmod +x` une fausse page d'erreur et rapporté un téléchargement réussi. Reproduit EN DIRECT dans les deux sens (URL 404 → échec propre avec `-f`, vrai téléchargement CopyQ 47 696 376 octets → toujours identique) avant de committer. Piège de capture `$?` rencontré et évité en cours de route (script `Write`-é plutôt qu'inline `wsl.exe bash -lc`, cf. LESSONS.md). Correctif Rust d'un seul argument, aucun fichier frontend touché. Version 0.25.104→0.25.105, commit `e1d99aa`, poussé.
+
+**9 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Prochain cycle réel : **365**.
 
 ### Candidats pour les prochains cycles (mandat fonctionnalités/améliorations)
-- **"OS & USB Tools"** (écart identifié face à Nitrite 2.0, écarté ce cycle) -- équivalent Linux plausible : création de clé USB bootable depuis une image ISO. Nécessiterait une NOUVELLE action pkexec (écriture sur périphérique bloc, risque élevé) -- à ne construire qu'avec accès VM live pour vérification complète avant merge, jamais "pour plus tard" sans cette étape.
+- **"OS & USB Tools"** (écart identifié face à Nitrite 2.0, écarté cycle 363) -- équivalent Linux plausible : création de clé USB bootable depuis une image ISO. Nécessiterait une NOUVELLE action pkexec (écriture sur périphérique bloc, risque élevé) -- à ne construire qu'avec accès VM live pour vérification complète avant merge, jamais "pour plus tard" sans cette étape.
 - Approfondissement d'une catégorie nav existante (voir "Chantier ouvert" section antérieure de ce fichier pour le détail par catégorie).
