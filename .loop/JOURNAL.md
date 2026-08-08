@@ -2433,3 +2433,9 @@ Aucun bug trouvé. Négatif.
 Aucun bug trouvé. Négatif, mais sweep de confirmation utile après un vrai correctif.
 
 Éléments en attente inchangés. **4 correctifs accumulés depuis la release v0.25.79**. 189 cycles cumulés 110-298.
+
+[2026-08-08T04:40:00+02:00] Cycle 299 : poursuite de l'audit module-par-module -- `largefiles.rs` (voisin de `duplicates.rs`, jamais relu en profondeur pour sa propre logique cette session) relu en entier. Scan récursif, seuil de taille inclusif (`>= min_size_bytes`), tri par taille décroissante, symlinks exclus, dossiers inaccessibles ignorés silencieusement -- même discipline que `duplicates.rs`, aucun bug. Consommateur frontend (section "Gros fichiers" de `FileToolsPage.vue`) re-vérifié : strictement en lecture seule (liste chemin+taille, aucun bouton de suppression), même confirmation que pour les doublons au cycle 296.
+
+Aucun bug trouvé. Négatif.
+
+Éléments en attente inchangés. **4 correctifs accumulés depuis la release v0.25.79**. 190 cycles cumulés 110-299.
