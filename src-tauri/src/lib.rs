@@ -8,6 +8,7 @@ mod benchmark;
 mod bluetooth;
 mod boot_manager;
 mod cache_size;
+mod certificates;
 mod dependencies;
 mod disk_write;
 mod disks;
@@ -166,6 +167,7 @@ pub fn run() {
             report::save_text_report,
             report::save_pdf_report,
             report::delete_report,
+            certificates::get_certificates,
             benchmark::run_benchmark,
             disks::list_disks,
             disks::list_disk_usage,
