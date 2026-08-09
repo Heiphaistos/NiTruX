@@ -869,3 +869,15 @@ Nouveau module `dns_lookup.rs` : `dig +short` (dnsutils, déjà supposé présen
 10 nouveaux tests Rust (parsing pur avec 4 sorties réelles capturées + validation d'entrée + test d'intégration réel résolvant `localhost`) + 6 nouveaux tests frontend. 415/415 frontend (412→415, +3 nets après le correctif de typage), 356/356 Rust (346→356, +10), `vue-tsc` clean. Version 0.25.113→0.25.114, commit `90be52f`, poussé.
 
 **18 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Éléments en attente inchangés par ailleurs. Prochain cycle réel : **374** -- reste traceroute/ARP/routes de `DiagTabNetTools` (chacun un candidat de portée similaire), aucun autre onglet Diagnostic NiTriTe non évalué.
+
+## Mise à jour (2026-08-09, v0.25.115, cycle 374) — table de routage ajoutée à l'onglet Vue d'ensemble de la page Réseau
+
+Suite de `DiagTabNetTools`. Contrairement à Ping/Recherche DNS/Scanner de ports (sondes actives déclenchées par l'utilisateur, chacune son propre onglet), la table de routage est une donnée en lecture seule récupérée passivement -- même nature que Wi-Fi/ports en écoute déjà présents dans l'onglet "Vue d'ensemble" existant. Ajoutée comme nouvelle carte dans cet onglet plutôt que comme nouvel onglet à part.
+
+`network.rs::NetworkSnapshot` étendu d'un 5e champ `routes: Vec<RouteEntry>`. Parsing de `ip route show` par scan des paires clé/valeur (`via`, `dev`, `metric`) plutôt que position fixe, car les clés non pertinentes (`proto`, `scope`, `src`) apparaissent dans un ordre variable. Vérifié en direct : la route par défaut et la route link-local réelles de cette machine n'ont pas de métrique -- `Option<u32>`, pas un défaut à 0.
+
+**Corrigé au passage** : même bug de contamination inter-tests déjà trouvé et corrigé plusieurs fois cette session, cette fois dans `NetworkPage.spec.ts` -- un test ajouté juste après un autre qui remplaçait `mockImplementation` sans le restaurer héritait silencieusement des routes du test précédent au lieu de la liste vide attendue. Corrigé à la racine (`vi.hoisted()` + reset `beforeEach`).
+
+5 nouveaux tests Rust (parsing pur incluant les 2 vraies lignes capturées sur cette machine + 1 cas avec métrique écrit à la main, honnêtement marqué comme non capturé en direct + test d'intégration réel confirmant une route par défaut) + 2 nouveaux tests frontend. 417/417 frontend (415→417, +2), 361/361 Rust (356→361, +5), `vue-tsc` clean. Version 0.25.114→0.25.115, commit `7c804dc`, poussé.
+
+**19 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Éléments en attente inchangés par ailleurs. Prochain cycle réel : **375** -- reste traceroute/ARP de `DiagTabNetTools` (HTTP check/bandwidth/net shares jugés hors périmètre pour un outil de diagnostic système généraliste, à confirmer si repris) ; sinon retour à la comparaison NiTriTe plus large ou reprise d'un signalement différé.
