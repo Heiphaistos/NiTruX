@@ -857,3 +857,15 @@ Nouveau module `ping.rs` : shell vers le binaire `ping` système (déjà suppos�
 Nouvel onglet "Ping" sur `NetworkPage.vue`, même structure que l'onglet "Scanner de ports" existant. 8 nouveaux tests Rust (parsing pur avec sorties réelles capturées + validation d'hôte + test d'intégration réel contre `127.0.0.1`) + 3 nouveaux tests frontend. 412/412 frontend (409→412, +3), 346/346 Rust (338→346, +8), `vue-tsc` clean. Version 0.25.112→0.25.113, commit `40a08a2`, poussé.
 
 **17 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Éléments en attente inchangés par ailleurs. Prochain cycle réel : **373** -- reste `DiagTabRepair` (jamais évalué) et le reste de `DiagTabNetTools` (traceroute/DNS lookup/ARP/routes en particulier, chacun un candidat de portée similaire à Ping) pour une future comparaison.
+
+## Mise à jour (2026-08-09, v0.25.114, cycle 373) — outil Recherche DNS ajouté à la page Réseau ; DiagTabRepair écarté
+
+`DiagTabRepair` évalué et écarté : quasi entièrement Windows-only (SFC/DISM/bcdedit/winmgmt/gpupdate/bootrec) ; son sous-groupe réseau (presets DNS Google/Cloudflare/Auto) est déjà couvert par `DnsSwitcherPage.vue` existant. Repris `DiagTabNetTools` : nouvel outil **Recherche DNS** (résout un hôte contre un type d'enregistrement choisi -- A/AAAA/MX/TXT/CNAME/NS), même précédent de conception que Ping/Scanner de ports sur la même page.
+
+Nouveau module `dns_lookup.rs` : `dig +short` (dnsutils, déjà supposé présent comme le reste du catalogue) plutôt qu'un résolveur DNS écrit à la main -- une ligne par enregistrement, aucun texte d'en-tête/pied à parser. Vérifié en direct avant le parseur : A/AAAA/MX/TXT réels, une chaîne CNAME (résout via un intermédiaire), et un nom sans enregistrement du type demandé -- confirmé que `dig` sort avec le code 0 et une sortie vide même pour NXDOMAIN, donc une liste vide est un résultat légitime ("aucun enregistrement trouvé"), pas une erreur.
+
+**Piège de type TypeScript rencontré et corrigé en cours de route** : `vi.mocked(invoke).mockImplementation((cmd, args?: Record<string, unknown>) => ...)` échouait `vue-tsc` (le vrai type `InvokeArgs` de Tauri inclut aussi `number[]`, incompatible avec `Record<string, unknown>` sous vérification stricte de `vi.mocked`) -- corrigé en retirant l'assertion sur `args` dans le callback et en vérifiant plutôt l'appel après coup via `expect(invoke).toHaveBeenCalledWith(...)`, déjà le pattern établi ailleurs dans le projet.
+
+10 nouveaux tests Rust (parsing pur avec 4 sorties réelles capturées + validation d'entrée + test d'intégration réel résolvant `localhost`) + 6 nouveaux tests frontend. 415/415 frontend (412→415, +3 nets après le correctif de typage), 356/356 Rust (346→356, +10), `vue-tsc` clean. Version 0.25.113→0.25.114, commit `90be52f`, poussé.
+
+**18 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Éléments en attente inchangés par ailleurs. Prochain cycle réel : **374** -- reste traceroute/ARP/routes de `DiagTabNetTools` (chacun un candidat de portée similaire), aucun autre onglet Diagnostic NiTriTe non évalué.
