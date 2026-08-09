@@ -969,3 +969,11 @@ Poursuite de l'audit page-par-page sur les pages les moins mentionnées au journ
 1 nouveau test frontend. 435/435 frontend (434→435, +1), 376/376 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.122→0.25.123, commit `be2128b`, poussé.
 
 **27 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Le sweep try/catch app-wide (cycles 380-382) semble maintenant réellement complet -- aucune page restante trouvée sans garde sur son chargement `onMounted`. Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools"). Prochain cycle réel : **383** -- si l'audit page-par-page ne trouve plus rien de neuf, élargir via comparaison NiTriTe ou reprendre un signalement différé.
+
+## Mise à jour (2026-08-09, v0.25.124, cycle 383) — profil d'installation "Développement" reconstruit (était quasi vide + mal catégorisé)
+
+Vérifié le "Chantier ouvert" historique en fin de fichier : "ProfilesPage-équivalent" est déjà fermé depuis le cycle 358 (`ConfigProfilesPage.vue`, save/apply/export/import) -- l'en-tête de section n'avait juste jamais été mis à jour. Backlog "éléments en attente" quasi entièrement clos, seuls les items bloqués pour de vraies raisons de portée/budget restent (CSP, timeout, doublons catalogue, WiFi, OS&USB Tools).
+
+**Vrai trouvé** : `installProfiles.ts::developpement` n'avait que `["git", "htop"]`, et `htop` est catégorisé `"Utilitaires"` dans `appCatalog.ts` (pas `"Développement"`) -- une mauvaise catégorisation, pas un choix minimal délibéré. Reconstruit avec `git` + `vscode` + `build-essential` + `python3` + `nodejs`, taille alignée sur les autres profils. 2 nouveaux tests (assertion ciblée + test UI). 437/437 frontend (435→437, +2), 376/376 Rust (inchangé), `vue-tsc` clean. Version 0.25.123→0.25.124, commit `7d1a87a`, poussé.
+
+**28 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools"). Prochain cycle réel : **384** -- si l'audit page-par-page et le catalogue n'offrent plus de piste concrète, élargir via comparaison NiTriTe systématique par catégorie nav.

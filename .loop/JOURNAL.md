@@ -3085,3 +3085,15 @@ Repris l'audit page par page (méthode qui avait payé aux cycles 380-381) sur l
 435/435 frontend (434→435, +1), 376/376 Rust (inchangé, aucun fichier Rust touché ce cycle), `vue-tsc` clean. Version 0.25.122→0.25.123. Commit `be2128b`, poussé.
 
 **27 fonctionnalités/améliorations/correctifs accumulés depuis la release v0.25.96**. 27 cycles cumulés sous le nouveau mandat (356-382). Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools").
+
+## Cycle 383 -- 2026-08-09T02:50:47Z
+
+Vérification du "Chantier ouvert" historique de CHECKPOINT.md : "ProfilesPage-équivalent" déjà fermé depuis le cycle 358 (`ConfigProfilesPage.vue`) -- juste un en-tête de section pas nettoyé, pas un vrai écart. Backlog "éléments en attente" quasi entièrement fermé (CSP, timeout, doublons catalogue, WiFi non vérifiable, OS&USB Tools -- tous bloqués pour de vraies raisons de portée/budget, pas repris).
+
+**Vrai trouvé : `installProfiles.ts::developpement`** n'avait que `["git", "htop"]` -- et `htop` est catégorisé `"Utilitaires"` dans `appCatalog.ts`, pas `"Développement"` : un cas de mauvaise catégorisation, pas un choix minimal délibéré (contrairement à `communication` qui a 2 apps par choix cohérent). Le catalogue a pourtant 60+ entrées réelles `"Développement"` (éditeurs, VCS, chaînes de compilation, langages, bases de données...).
+
+Reconstruit avec `git` + `vscode` + `build-essential` + `python3` + `nodejs` -- éditeur, contrôle de version, chaîne de compilation C/C++, deux langages courants. Taille alignée sur les autres profils (4-5 apps). Chaque `appId` vérifié individuellement contre le vrai `appCatalog.ts` avant ajout (même discipline que cycles 377-378).
+
+2 nouveaux tests (assertion ciblée sur le contenu exact du profil dans `installProfiles.spec.ts` + test UI confirmant que 5 cases se cochent, pas l'ancien 2, dans `InstallProfilesPage.spec.ts`). 437/437 frontend (435→437, +2), 376/376 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.123→0.25.124, commit `7d1a87a`, poussé.
+
+**28 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools").
