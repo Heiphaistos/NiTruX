@@ -23,6 +23,7 @@ describe("InstallProfilesPage", () => {
     expect(wrapper.text()).toContain("Serveur web");
     expect(wrapper.text()).toContain("Science & Éducation");
     expect(wrapper.text()).toContain("Accessibilité");
+    expect(wrapper.text()).toContain("Virtualisation & conteneurs");
   });
 
   it("selecting the new 'Jeux' profile checks all its real appCatalog entries", async () => {
@@ -44,6 +45,14 @@ describe("InstallProfilesPage", () => {
   it("selecting the new 'Accessibilité' profile checks all its real appCatalog entries", async () => {
     const wrapper = mount(InstallProfilesPage);
     const button = wrapper.findAll("button").find((b) => b.text().includes("Accessibilité"))!;
+    await button.trigger("click");
+    const checkboxes = wrapper.findAll("input[type=checkbox]:checked");
+    expect(checkboxes.length).toBe(4);
+  });
+
+  it("selecting the new 'Virtualisation & conteneurs' profile checks all its real appCatalog entries", async () => {
+    const wrapper = mount(InstallProfilesPage);
+    const button = wrapper.findAll("button").find((b) => b.text().includes("Virtualisation"))!;
     await button.trigger("click");
     const checkboxes = wrapper.findAll("input[type=checkbox]:checked");
     expect(checkboxes.length).toBe(4);

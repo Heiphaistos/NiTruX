@@ -64,4 +64,15 @@ describe("installProfiles", () => {
     expect(profile.appIds).not.toContain("htop");
     expect(profile.appIds).toEqual(expect.arrayContaining(["git", "vscode", "build-essential", "python3", "nodejs"]));
   });
+
+  it("includes the new 'virtualisation' profile covering a previously-unaddressed catalog category", () => {
+    // "Virtualisation" has 6 real appCatalog entries (qemu-system,
+    // virt-manager, docker, docker-compose, podman, gnome-boxes) but no
+    // profile drew from it at all before this -- a genuine coverage gap,
+    // distinct from "developpement" which is coding tools, not VM/containers.
+    const ids = installProfiles.map((p) => p.id);
+    expect(ids).toContain("virtualisation");
+    const profile = installProfiles.find((p) => p.id === "virtualisation")!;
+    expect(profile.appIds).toEqual(expect.arrayContaining(["qemu-system", "virt-manager", "docker", "docker-compose"]));
+  });
 });
