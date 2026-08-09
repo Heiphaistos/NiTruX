@@ -30,4 +30,15 @@ describe("BluetoothPage", () => {
     const wrapper = mount(BluetoothPage);
     await vi.waitFor(() => expect(wrapper.text()).toContain("Aucun périphérique Bluetooth appairé"));
   });
+
+  it("shows an error message instead of a silently blank page when the backend call fails", async () => {
+    // Regression guard: get_bluetooth_status is infallible by design, but
+    // the IPC call itself was never guarded here (unlike every other page
+    // in this app) -- a failure left the page entirely blank (neither the
+    // "no adapter" nor the loaded-status branch matches a still-null ref).
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockRejectedValueOnce("bluetoothctl introuvable");
+    const wrapper = mount(BluetoothPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("bluetoothctl introuvable"));
+  });
 });

@@ -26,6 +26,15 @@ describe("UserAccountsPage", () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain("Aucun compte utilisateur réel trouvé."));
   });
 
+  it("shows an error message instead of a silently blank page when the backend call fails", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementationOnce((cmd: string) =>
+      cmd === "get_user_accounts" ? Promise.reject("/etc/passwd illisible") : Promise.resolve(null),
+    );
+    const wrapper = mount(UserAccountsPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("/etc/passwd illisible"));
+  });
+
   it("does not flash 'no accounts found' while get_user_accounts is still pending", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     let resolveAccounts!: (value: unknown[]) => void;
