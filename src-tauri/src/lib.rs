@@ -12,6 +12,7 @@ mod certificates;
 mod dependencies;
 mod disk_write;
 mod disks;
+mod dns_lookup;
 mod docker;
 mod drivers;
 mod duplicates;
@@ -181,6 +182,7 @@ pub fn run() {
             network::get_network_interfaces,
             portscan::scan_ports_cmd,
             ping::ping_host,
+            dns_lookup::dns_lookup,
             processes::get_processes,
             processes::get_systemd_services,
             processes::get_autostart_entries,
