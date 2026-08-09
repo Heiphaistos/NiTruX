@@ -49,6 +49,7 @@ import InstalledSoftwarePage from "@/pages/InstalledSoftwarePage.vue";
 import UserAccountsPage from "@/pages/UserAccountsPage.vue";
 import UpdateHistoryPage from "@/pages/UpdateHistoryPage.vue";
 import CertificatesPage from "@/pages/CertificatesPage.vue";
+import CrashAnalyzerPage from "@/pages/CrashAnalyzerPage.vue";
 import SystemToolsPage from "@/pages/SystemToolsPage.vue";
 import TerminalPage from "@/pages/TerminalPage.vue";
 
@@ -137,6 +138,7 @@ const pages: Record<string, Component> = {
   "user-accounts": UserAccountsPage,
   "update-history": UpdateHistoryPage,
   certificates: CertificatesPage,
+  "crash-analyzer": CrashAnalyzerPage,
   "system-tools": SystemToolsPage,
   terminal: TerminalPage,
 };

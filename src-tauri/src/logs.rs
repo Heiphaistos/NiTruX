@@ -46,7 +46,7 @@ pub fn parse_journal_line(line: &str) -> Option<LogEntry> {
     })
 }
 
-fn run_journalctl(limit: u32) -> Result<Vec<LogEntry>, String> {
+pub fn run_journalctl(limit: u32) -> Result<Vec<LogEntry>, String> {
     let limit_str = limit.to_string();
     let output = subprocess::run_with_timeout(
         "journalctl",
