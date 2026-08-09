@@ -3168,3 +3168,15 @@ Nouveau profil "emulation" : wine + bottles (compatibilité Windows) + dosbox + 
 2 nouveaux tests (assertion ciblée `installProfiles.spec.ts` + test UI de sélection `InstallProfilesPage.spec.ts`, même discipline que les cycles précédents). 452/452 frontend (450→452, +2), 376/376 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.129→0.25.130, commit `29c0482`, poussé.
 
 **34 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** 13 profils couvrent désormais 11 des 29 catégories `appCatalog.ts`. Candidats catalogue restants : Réseau(29), Ligne de commande(40) -- les deux plus grosses catégories non encore couvertes, nécessiteront une curation plus poussée vu leur taille. Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools").
+
+## Cycle 390 -- 2026-08-09T07:20:01Z
+
+Dernier grand candidat catalogue de la liste : "Réseau" (29 entrées réelles), mais la catégorie est trop hétérogène pour un seul profil -- couvre au moins 4 thèmes distincts sans rapport entre eux (diagnostics : wireshark/nmap/tcpdump/mtr/iperf3 ; VPN : openconnect/networkmanager-openvpn/vpnc ; partage/torrent : transmission/qbittorrent/deluge/warpinator/gftp ; accès distant : openssh-server/putty).
+
+**Décision de portée** : plutôt que de forcer 4-5 apps disparates dans un seul profil "Réseau" fourre-tout, choisi le sous-ensemble le plus cohérent -- partage de fichiers/torrent. Écarté délibérément le thème "diagnostics" : NiTruX a déjà des outils de diagnostic réseau intégrés natifs (ping/traceroute/DNS/scan de ports, page nav "Réseau") -- un profil d'installation avec wireshark/nmap créerait une redondance conceptuelle avec des fonctionnalités déjà là, contrairement à torrent/partage qui n'a aucun équivalent natif.
+
+Nouveau profil "partage-fichiers" : transmission + qbittorrent (clients BitTorrent) + warpinator (partage LAN) + gftp (client FTP). Chaque `appId` vérifié individuellement.
+
+2 nouveaux tests (assertion ciblée `installProfiles.spec.ts`, avec justification du choix de portée documentée dans le commentaire du test + test UI de sélection `InstallProfilesPage.spec.ts`). 454/454 frontend (452→454, +2), 376/376 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.130→0.25.131, commit `f7428b2`, poussé.
+
+**35 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** 14 profils couvrent désormais 12 des 29 catégories `appCatalog.ts`. Seule grosse catégorie restante non couverte : "Ligne de commande" (40 entrées) -- très hétérogène elle aussi (shells, multiplexeurs terminal, utilitaires texte...), même type de décision de portée à prendre au prochain cycle catalogue. Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools").
