@@ -39,6 +39,15 @@ describe("DataRecoveryPage", () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain("Corbeille vide"));
   });
 
+  it("shows an error message instead of a silently blank page when list_trash fails", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementationOnce((cmd: string) =>
+      cmd === "list_trash" ? Promise.reject("~/.local/share/Trash illisible") : Promise.resolve(null),
+    );
+    const wrapper = mount(DataRecoveryPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("~/.local/share/Trash illisible"));
+  });
+
   it("requires typing the trashed file's name before permanent deletion is possible", async () => {
     // Regression guard for the actual gap: "Supprimer définitivement" is
     // genuinely irreversible (unlike Restaurer), but previously deleted

@@ -14,7 +14,11 @@ const error = ref<string | null>(null);
 const busy = ref<string | null>(null);
 
 async function refresh() {
-  items.value = await invoke<TrashedItem[]>("list_trash");
+  try {
+    items.value = await invoke<TrashedItem[]>("list_trash");
+  } catch (e) {
+    error.value = String(e);
+  }
 }
 
 onMounted(refresh);
