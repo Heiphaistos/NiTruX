@@ -191,6 +191,7 @@ export const systemToolsCatalog: SystemTool[] = [
   { id: "mtr-report", name: "Rapport MTR (traceroute continu)", description: "Rapport MTR condensé vers 8.8.8.8.", category: "reseau", command: "mtr -r -c 4 8.8.8.8" },
   { id: "wpa-cli-status", name: "État WPA (Wi-Fi bas niveau)", description: "État de la connexion Wi-Fi via wpa_cli.", category: "reseau", command: "wpa_cli status" },
   { id: "systemd-resolve-statistics", name: "Statistiques du résolveur DNS", description: "Statistiques de cache du résolveur systemd.", category: "reseau", command: "resolvectl statistics" },
+  { id: "resolvectl-flush-caches", name: "Vider le cache DNS", description: "Vide le cache de résolution DNS de systemd-resolved.", category: "reseau", command: "resolvectl flush-caches" },
   { id: "ip-netns-list", name: "Espaces de noms réseau", description: "Liste des network namespaces configurés.", category: "reseau", command: "ip netns list" },
   { id: "cat-proc-net-route", name: "Table de routage noyau brute", description: "Table de routage IPv4 telle que vue par le noyau.", category: "reseau", command: "cat /proc/net/route" },
   { id: "cat-proc-net-tcp-count", name: "Nombre de connexions TCP actives", description: "Compte des lignes de la table de connexions TCP.", category: "reseau", command: "wc -l /proc/net/tcp" },
