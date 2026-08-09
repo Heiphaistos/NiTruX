@@ -3117,3 +3117,13 @@ Nouveau profil "cloud-sync" : les 5 entrées de la catégorie entière (assez pe
 2 nouveaux tests (assertion ciblée `installProfiles.spec.ts` + test UI de sélection `InstallProfilesPage.spec.ts`). 441/441 frontend (439→441, +2), 376/376 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.125→0.25.126, commit `0c70d9e`, poussé.
 
 **30 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** 11 profils couvrent désormais 9 des 29 catégories `appCatalog.ts`. Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools").
+
+## Cycle 386 -- 2026-08-09T06:30:02Z
+
+Suite directe des cycles 383-385. Candidat suivant : "Productivité" (9 entrées réelles `appCatalog.ts` : prise de notes + gestion de tâches), non couverte par les 11 profils existants.
+
+Nouveau profil "productivite" : contrairement à "cloud-sync" (catégorie assez petite pour tout inclure), 9 entrées nécessitent une curation -- choisi un mélange représentatif des deux usages (notes + tâches) plutôt que de tout inclure : Obsidian + Joplin (notes), Taskwarrior + Planify (tâches). Taille alignée sur les autres profils (4 apps). Chaque `appId` vérifié individuellement contre le vrai `appCatalog.ts`.
+
+2 nouveaux tests (assertion ciblée `installProfiles.spec.ts` + test UI de sélection `InstallProfilesPage.spec.ts`, même discipline que les cycles précédents). 443/443 frontend (441→443, +2), 376/376 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.126→0.25.127, commit `4d8751e`, poussé.
+
+**31 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** 12 profils couvrent désormais 10 des 29 catégories `appCatalog.ts`. Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools").
