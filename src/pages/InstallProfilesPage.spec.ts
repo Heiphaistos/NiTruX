@@ -18,6 +18,17 @@ describe("InstallProfilesPage", () => {
     const wrapper = mount(InstallProfilesPage);
     expect(wrapper.text()).toContain("Essentiels");
     expect(wrapper.text()).toContain("Développement");
+    expect(wrapper.text()).toContain("Jeux");
+    expect(wrapper.text()).toContain("Sécurité & vie privée");
+    expect(wrapper.text()).toContain("Serveur web");
+  });
+
+  it("selecting the new 'Jeux' profile checks all its real appCatalog entries", async () => {
+    const wrapper = mount(InstallProfilesPage);
+    const button = wrapper.findAll("button").find((b) => b.text().includes("Jeux"))!;
+    await button.trigger("click");
+    const checkboxes = wrapper.findAll("input[type=checkbox]:checked");
+    expect(checkboxes.length).toBe(4);
   });
 
   it("filters the manual selection catalog by category, mirroring QuickInstallPage's chip filter", async () => {

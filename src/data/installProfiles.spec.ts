@@ -41,4 +41,12 @@ describe("installProfiles", () => {
       expect(new Set(profile.appIds).size, `${profile.id} has a duplicate appId`).toBe(profile.appIds.length);
     }
   });
+
+  it("includes the profiles added to broaden coverage beyond the original 4 (jeux, sécurité, serveur web)", () => {
+    // The generic invariant checks above would still pass even if these
+    // were accidentally deleted -- this pins their presence so that
+    // regression is actually caught.
+    const ids = installProfiles.map((p) => p.id);
+    expect(ids).toEqual(expect.arrayContaining(["jeux", "securite", "serveur-web"]));
+  });
 });

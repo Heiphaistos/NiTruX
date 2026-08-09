@@ -32,4 +32,22 @@ export const installProfiles: InstallProfile[] = [
     description: "Messagerie et discussion.",
     appIds: ["thunderbird", "discord"],
   },
+  {
+    id: "jeux",
+    label: "Jeux",
+    description: "Launchers et bibliothèques de jeux multi-plateformes.",
+    appIds: ["steam", "lutris", "heroic", "retroarch"],
+  },
+  {
+    id: "securite",
+    label: "Sécurité & vie privée",
+    description: "Mots de passe, chiffrement, VPN et protection contre les intrusions.",
+    appIds: ["bitwarden", "gnupg", "wireguard", "fail2ban"],
+  },
+  {
+    id: "serveur-web",
+    label: "Serveur web",
+    description: "Pile web classique et interface d'administration.",
+    appIds: ["nginx", "mariadb-server", "php-fpm", "cockpit"],
+  },
 ];
