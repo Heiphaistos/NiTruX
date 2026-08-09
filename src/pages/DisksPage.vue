@@ -129,6 +129,16 @@ async function runClone() {
 function bytesToGb(bytes: number): string {
   return (bytes / 1024 / 1024 / 1024).toFixed(1);
 }
+
+// `health` is `null` when smartctl succeeded but the device didn't report
+// the standard "SMART overall-health self-assessment" line (real on some
+// NVMe/RAID-attached drives, not just theoretical) -- previously shown as
+// a 'danger' (red) badge alongside "inconnu", which reads as "this disk is
+// failing" when the honest answer is "we don't actually know its health".
+function smartBadgeStatus(health: string | null): "success" | "warning" | "danger" {
+  if (health === null) return "warning";
+  return health === "PASSED" ? "success" : "danger";
+}
 </script>
 
 <template>
@@ -146,7 +156,7 @@ function bytesToGb(bytes: number): string {
         <NxButton :disabled="smartBusy[disk.name] === true" @click="checkSmart(disk.name)">
           {{ smartBusy[disk.name] === true ? "Vérification..." : "Vérifier la santé" }}
         </NxButton>
-        <NxBadge v-if="smartStatus[disk.name]" :status="smartStatus[disk.name].health === 'PASSED' ? 'success' : 'danger'">
+        <NxBadge v-if="smartStatus[disk.name]" :status="smartBadgeStatus(smartStatus[disk.name].health)">
           {{ smartStatus[disk.name].health ?? "inconnu" }}
         </NxBadge>
         <span v-if="smartError[disk.name]" class="disks-smart-error">{{ smartError[disk.name] }}</span>

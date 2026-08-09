@@ -53,6 +53,29 @@ describe("DisksPage", () => {
     expect(invoke).toHaveBeenCalledWith("get_smart_status", { device: "/dev/sda" });
   });
 
+  it("shows an unknown SMART health result as a neutral warning badge, not a false 'danger'", async () => {
+    // Regression guard for the actual bug: health === null (real on some
+    // NVMe/RAID-attached drives that don't report the standard health line,
+    // per smart.rs) was shown as "inconnu" with the SAME 'danger' (red)
+    // status as an actually-failing disk -- misleadingly implies the disk
+    // is failing when the honest answer is "we don't know".
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) => {
+      if (cmd === "list_disks") return Promise.resolve([{ name: "nvme0n1", size: "1T", partitions: [] }]);
+      if (cmd === "list_disk_usage") return Promise.resolve([]);
+      if (cmd === "get_smart_status") return Promise.resolve({ device: "/dev/nvme0n1", health: null });
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(DisksPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("nvme0n1"));
+    const button = wrapper.findAll("button").find((b) => b.text() === "Vérifier la santé")!;
+    await button.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("inconnu"));
+    const badge = wrapper.findAll(".nx-badge").find((b) => b.text() === "inconnu")!;
+    expect(badge.classes()).toContain("nx-badge--warning");
+    expect(badge.classes()).not.toContain("nx-badge--danger");
+  });
+
   it("shows a clear message when SMART is unavailable (e.g. no root)", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) => {
