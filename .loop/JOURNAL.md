@@ -3288,3 +3288,13 @@ Poursuite du conseil du checkpoint 397 : `network_write.rs`, `disk_write.rs`, `s
 En-tête du commentaire corrigé (14→15), 1 nouveau test de régression pinnant explicitement la présence des deux noms create/delete-snapshot (les tests génériques existants auraient pu passer même sans le nom manquant, puisqu'ils ne font qu'itérer sur ce qui EST dans la liste). 386/386 Rust (385→386, +1... note : le compte exact varie légèrement selon la fenêtre de mesure, aucun échec), 473/473 frontend (inchangé, aucun fichier frontend touché), `vue-tsc` clean. Version 0.25.138→0.25.139, commit `391cf15`, poussé.
 
 **43 fonctionnalités/améliorations/correctifs accumulés depuis la release v0.25.132.** Le backlog continue de croître -- coupure de release à envisager. Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools", "Turbo Mode").
+
+## Hors cycle -- 2026-08-09T13:56:21Z -- RELEASE PUBLIÉE + ARRÊT DE LA BOUCLE
+
+**Utilisateur a explicitement demandé l'arrêt** ("stop la loop cree la derniere release et sauvegarde dans ta memoire et stop la loop"). `npm run tauri build` (WSL2) → 3 bundles générés sans erreur (`Nitrux_0.25.139_amd64.deb` 9,34 Mo, `Nitrux-0.25.139-1.x86_64.rpm` 9,35 Mo, `Nitrux_0.25.139_amd64.AppImage` 86,5 Mo, build release ~1min30). `postrm` et `nitrux-pkexec-helper` empaquetés vérifiés identiques à la source (`diff` exit 0 sur les deux). **Vérification ciblée** : les 15 binaires `nitrux-pkexec-*` (dont le `delete-snapshot` corrigé ce cycle) sont bien tous présents dans le `.deb`.
+
+Tag annoté `v0.25.139` poussé, release GitHub créée via `gh release create` avec les 3 assets et des notes organisées par catégorie (Nouvelles fonctionnalités : analyseur de pannes + bannière tableau de bord, export CSV perf, vider cache DNS ; Corrections de bugs : bug AppImage delete-snapshot en tête, ScriptsPage verrou partagé, badge SMART inconnu ; Sous le capot : audit sécurité approfondi, Turbo Mode différé). Vérifié via `gh release view` : publiée (non-draft), 3 assets présents, notes correctes.
+
+**Les 43 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.132 (cycles 392-398) sont désormais tous publiés : https://github.com/Heiphaistos/NiTruX/releases/tag/v0.25.139. Plus aucun backlog de correctifs non livrés.**
+
+**Fin de session** : boucle NiTruX arrêtée sur demande explicite de l'utilisateur après 43 cycles (356-398) sous le nouveau mandat "features+corrections+améliorations", 2 releases publiées (v0.25.132 et v0.25.139). Mémoire projet mise à jour en conséquence.
