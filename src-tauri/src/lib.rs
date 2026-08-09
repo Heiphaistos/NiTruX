@@ -27,6 +27,7 @@ mod network_write;
 mod optimizations;
 mod packages;
 mod peripherals;
+mod ping;
 mod pkexec_bootstrap;
 mod portable_apps;
 mod portscan;
@@ -179,6 +180,7 @@ pub fn run() {
             network::get_network_snapshot,
             network::get_network_interfaces,
             portscan::scan_ports_cmd,
+            ping::ping_host,
             processes::get_processes,
             processes::get_systemd_services,
             processes::get_autostart_entries,

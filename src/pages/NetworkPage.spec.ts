@@ -233,6 +233,61 @@ describe("NetworkPage", () => {
     expect(wrapper.text()).toContain("TCP");
   });
 
+  it("pings a host and shows packet/loss and latency results", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string, args?: Record<string, unknown>) => {
+      if (cmd === "get_network_snapshot") {
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n" });
+      }
+      if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
+      if (cmd === "ping_host") {
+        expect(args).toEqual({ host: "8.8.8.8" });
+        return Promise.resolve({ packets_sent: 4, packets_received: 4, loss_percent: 0, min_ms: 15.9, avg_ms: 18.3, max_ms: 22.8 });
+      }
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await wrapper.findAll("button").find((b) => b.text() === "Ping")!.trigger("click");
+    await wrapper.findAll("button").find((b) => b.text() === "Pinger")!.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("4 / 4 reçus"));
+    expect(wrapper.text()).toContain("moy 18.3 ms");
+  });
+
+  it("hides the latency row when every packet was lost (avg_ms is null)", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") {
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n" });
+      }
+      if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
+      if (cmd === "ping_host") {
+        return Promise.resolve({ packets_sent: 4, packets_received: 0, loss_percent: 100, min_ms: null, avg_ms: null, max_ms: null });
+      }
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await wrapper.findAll("button").find((b) => b.text() === "Ping")!.trigger("click");
+    await wrapper.findAll("button").find((b) => b.text() === "Pinger")!.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("0 / 4 reçus"));
+    expect(wrapper.text()).not.toContain("moy");
+  });
+
+  it("shows an error message when the ping fails (e.g. host does not resolve)", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") {
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n" });
+      }
+      if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
+      if (cmd === "ping_host") return Promise.reject("ping: this-does-not-resolve.invalid: Name or service not known");
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await wrapper.findAll("button").find((b) => b.text() === "Ping")!.trigger("click");
+    await wrapper.findAll("button").find((b) => b.text() === "Pinger")!.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Name or service not known"));
+  });
+
   it("drops out-of-range port numbers before sending them, instead of crashing the scan on a raw IPC error", async () => {
     // Regression guard for the actual bug: scan_ports_cmd's backend
     // parameter is a Vec<u16> -- parseInt has no inherent range limit
