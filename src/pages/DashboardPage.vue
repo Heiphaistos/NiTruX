@@ -5,6 +5,7 @@ import {
   Stethoscope, Download, RefreshCw, Wrench, FileText,
 } from "lucide-vue-next";
 import NxCard from "@/components/ui/NxCard.vue";
+import NxButton from "@/components/ui/NxButton.vue";
 import NxStatTile from "@/components/ui/NxStatTile.vue";
 import NxBadge from "@/components/ui/NxBadge.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
@@ -31,6 +32,7 @@ interface DiskUsageEntry {
   used_percent: number;
 }
 interface DashboardSnapshot { cpu: number; ram: number; disk: number }
+interface CrashEvent { kind: string; message: string; unit: string }
 
 const emit = defineEmits<{ navigate: [string] }>();
 
@@ -40,6 +42,7 @@ const error = ref<string | null>(null);
 const sensors = ref<SensorSnapshot | null>(null);
 const sensorsError = ref<string | null>(null);
 const diskUsage = ref<DiskUsageEntry[]>([]);
+const crashEvents = ref<CrashEvent[]>([]);
 let intervalId: number | undefined;
 
 // Inter-session comparison (NiTriTe Windows concept): the snapshot saved
@@ -114,13 +117,28 @@ async function refreshDiskUsage() {
   }
 }
 
+// Fetched once on mount, not on the periodic interval like CPU/RAM/disk:
+// crash history (kernel panics, OOM kills, segfaults -- CrashAnalyzerPage's
+// own backend) doesn't need second-by-second freshness, and re-scanning a
+// 5000-line journald window every refresh tick would be wasted work for
+// data that rarely changes between dashboard glances. Best-effort, silently
+// degrades like refreshDiskUsage: this is a supplementary alert banner, not
+// a page that owns its own error reporting.
+async function refreshCrashEvents() {
+  try {
+    crashEvents.value = await invoke<CrashEvent[]>("get_crash_events");
+  } catch {
+    crashEvents.value = [];
+  }
+}
+
 onMounted(async () => {
   loadPrevSnapshot();
   // Each refresher already catches its own errors and resolves normally
   // (see refreshDiskUsage above), so Promise.all here never rejects --
   // awaiting it just means the comparison snapshot is saved from real
   // first-load data instead of racing the initial fetch.
-  await Promise.all([refresh(), refreshSensors(), refreshDiskUsage()]);
+  await Promise.all([refresh(), refreshSensors(), refreshDiskUsage(), refreshCrashEvents()]);
   saveSnapshotIfReady();
   intervalId = window.setInterval(() => {
     refresh();
@@ -231,6 +249,11 @@ const QUICK_ACTIONS = [
     <NxCard v-if="error" danger>Impossible de récupérer les informations système : {{ error }}</NxCard>
     <NxCard v-if="sensorsError" danger>Impossible de récupérer les capteurs : {{ sensorsError }}</NxCard>
 
+    <NxCard v-if="crashEvents.length > 0" danger class="dash-crash-banner">
+      <span>{{ crashEvents.length }} panne(s) détectée(s) dans les journaux récents (paniques noyau, manques de mémoire, erreurs de segmentation).</span>
+      <NxButton @click="emit('navigate', 'crash-analyzer')">Voir le détail</NxButton>
+    </NxCard>
+
     <NxCard v-if="systemScore !== null" class="dash-score">
       <span class="dash-score-label">Score système</span>
       <span class="dash-score-value">{{ systemScore }}<span class="dash-score-max">/100</span></span>
@@ -286,6 +309,7 @@ const QUICK_ACTIONS = [
 .dash-actions { display: flex; gap: 12px; flex-wrap: wrap; }
 .dash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
 .dash-score { display: flex; align-items: center; gap: 16px; }
+.dash-crash-banner { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .dash-score-label { font-size: 13px; color: var(--nx-text-secondary); }
 .dash-score-value { font-size: 28px; font-weight: 700; font-family: var(--nx-style-font-family); margin-right: auto; }
 .dash-score-max { font-size: 14px; font-weight: 400; color: var(--nx-text-secondary); }
