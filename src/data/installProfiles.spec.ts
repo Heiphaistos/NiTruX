@@ -54,4 +54,14 @@ describe("installProfiles", () => {
     const ids = installProfiles.map((p) => p.id);
     expect(ids).toEqual(expect.arrayContaining(["science-education", "accessibilite"]));
   });
+
+  it("'developpement' profile has real dev tooling, not the miscategorized 'htop' (a Utilitaires entry)", () => {
+    // Regression guard for the actual bug: this profile shipped with only
+    // ["git", "htop"] -- htop's own appCatalog entry is category
+    // "Utilitaires", not "Développement", so it never belonged here, and
+    // 2 apps was a token gesture against a catalog with 60+ real dev tools.
+    const profile = installProfiles.find((p) => p.id === "developpement")!;
+    expect(profile.appIds).not.toContain("htop");
+    expect(profile.appIds).toEqual(expect.arrayContaining(["git", "vscode", "build-essential", "python3", "nodejs"]));
+  });
 });
