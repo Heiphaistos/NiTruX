@@ -12,6 +12,7 @@ use std::time::Duration;
 
 const PKEXEC_TROUBLESHOOT: &str = "/usr/bin/nitrux-pkexec-troubleshoot";
 const PKEXEC_CREATE_SNAPSHOT: &str = "/usr/bin/nitrux-pkexec-create-snapshot";
+const PKEXEC_DELETE_SNAPSHOT: &str = "/usr/bin/nitrux-pkexec-delete-snapshot";
 const PKEXEC_QUARANTINE_FILE: &str = "/usr/bin/nitrux-pkexec-quarantine-file";
 
 pub fn validate_troubleshoot_action(action: &str) -> Result<(), String> {
@@ -19,6 +20,21 @@ pub fn validate_troubleshoot_action(action: &str) -> Result<(), String> {
         "clean-cache" | "fix-broken" | "restart-network" | "vacuum-logs" => Ok(()),
         other => Err(format!("action de dépannage inconnue : {other}")),
     }
+}
+
+/// Mirrors the helper script's own `validate_snapshot_name`. Timeshift
+/// snapshot names are always the fixed timestamp shape already shown to
+/// the user as the snapshot's date (e.g. "2026-07-30_23-00-01") -- this
+/// intentionally validates the same restricted character set (digits,
+/// dashes, underscores) rather than the exact date/time structure.
+pub fn validate_snapshot_name(name: &str) -> Result<(), String> {
+    if name.is_empty() {
+        return Err("nom d'instantané vide".to_string());
+    }
+    if !name.chars().all(|c| c.is_ascii_digit() || c == '-' || c == '_') {
+        return Err(format!("nom d'instantané invalide : {name}"));
+    }
+    Ok(())
 }
 
 /// Mirrors the helper script's own `validate_quarantine_path`, checked
@@ -74,6 +90,16 @@ pub fn create_snapshot() -> Result<String, String> {
 }
 
 #[tauri::command]
+pub fn delete_snapshot(name: String) -> Result<String, String> {
+    validate_snapshot_name(&name)?;
+    subprocess::run_with_timeout(
+        "pkexec",
+        &[PKEXEC_DELETE_SNAPSHOT, "delete-snapshot", &name],
+        Duration::from_secs(120),
+    )
+}
+
+#[tauri::command]
 pub fn quarantine_file(path: String) -> Result<String, String> {
     validate_quarantine_path(&path)?;
     subprocess::run_with_timeout(
@@ -100,6 +126,19 @@ mod tests {
         assert!(validate_troubleshoot_action("rm-rf-root").is_err());
         assert!(validate_troubleshoot_action("").is_err());
         assert!(validate_troubleshoot_action("clean-cache; rm -rf /").is_err());
+    }
+
+    #[test]
+    fn accepts_a_real_timeshift_snapshot_name() {
+        assert!(validate_snapshot_name("2026-07-30_23-00-01").is_ok());
+    }
+
+    #[test]
+    fn rejects_empty_or_shell_metacharacter_snapshot_names() {
+        assert!(validate_snapshot_name("").is_err());
+        assert!(validate_snapshot_name("2026-07-30_23-00-01; rm -rf /").is_err());
+        assert!(validate_snapshot_name("$(whoami)").is_err());
+        assert!(validate_snapshot_name("../../etc/passwd").is_err());
     }
 
     #[test]

@@ -203,6 +203,7 @@ pub fn run() {
             network_write::remove_firewall_rule,
             security_write::run_troubleshoot_action,
             security_write::create_snapshot,
+            security_write::delete_snapshot,
             security_write::quarantine_file,
             disk_write::format_partition,
             disk_write::extend_partition,

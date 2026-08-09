@@ -9,12 +9,13 @@
 # Rust-side validation happens too, but this script NEVER trusts that and
 # re-validates everything itself.
 #
-# This same script is installed under 14 distinct names (one per polkit
+# This same script is installed under 15 distinct names (one per polkit
 # action): nitrux-pkexec-install-package, nitrux-pkexec-uninstall-package,
 # nitrux-pkexec-upgrade-all, nitrux-pkexec-install-snap,
 # nitrux-pkexec-write-hosts,
 # nitrux-pkexec-set-dns, nitrux-pkexec-firewall-rule,
 # nitrux-pkexec-troubleshoot, nitrux-pkexec-create-snapshot,
+# nitrux-pkexec-delete-snapshot,
 # nitrux-pkexec-quarantine-file, nitrux-pkexec-format-partition,
 # nitrux-pkexec-extend-partition, nitrux-pkexec-clone-disk,
 # nitrux-pkexec-system-tools. pkexec
@@ -37,6 +38,7 @@
 #   nitrux-pkexec-firewall-rule firewall-rule <add|remove> <port/proto>
 #   nitrux-pkexec-troubleshoot troubleshoot <clean-cache|fix-broken|restart-network|vacuum-logs>
 #   nitrux-pkexec-create-snapshot create-snapshot
+#   nitrux-pkexec-delete-snapshot delete-snapshot <snapshot-name>
 #   nitrux-pkexec-quarantine-file quarantine-file <absolute-path>
 #   nitrux-pkexec-format-partition format-partition <device> <ext4|btrfs|xfs|vfat>
 #   nitrux-pkexec-extend-partition extend-partition <partition-device> <disk-device> <partnum>
@@ -101,6 +103,18 @@ validate_troubleshoot_action() {
   case "$1" in
     clean-cache|fix-broken|restart-network|vacuum-logs) : ;;
     *) die "unknown troubleshoot action: $1" ;;
+  esac
+}
+
+# Timeshift snapshot names are always a fixed timestamp shape
+# (YYYY-MM-DD_HH-MM-SS, e.g. "2026-07-30_23-00-01", the same string
+# already shown to the user as the snapshot's date) -- restricting to
+# digits, dashes, and underscores rejects anything else outright rather
+# than trying to allowlist the exact date/time structure.
+validate_snapshot_name() {
+  case "$1" in
+    '') die "empty snapshot name" ;;
+    *[!0-9_-]*) die "snapshot name contains disallowed characters: $1" ;;
   esac
 }
 
@@ -379,6 +393,14 @@ case "$cmd" in
     ;;
   create-snapshot)
     exec timeshift --create --comments "NiTruX manual snapshot"
+    ;;
+  delete-snapshot)
+    name="${2:-}"
+    validate_snapshot_name "$name"
+    # --yes: this runs non-interactively under pkexec with no TTY for
+    # timeshift's own confirmation prompt to attach to; without it the
+    # process would just hang until the caller's own timeout killed it.
+    exec timeshift --delete --snapshot "$name" --yes
     ;;
   quarantine-file)
     path="${2:-}"

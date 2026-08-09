@@ -32,9 +32,13 @@ pub fn parse_timeshift_line(line: &str) -> Option<Snapshot> {
 }
 
 /// Read-only: lists existing Btrfs/rsync snapshots via `timeshift --list`.
-/// Never creates, restores, or deletes a snapshot — that is out of scope for
-/// this plan, same as every other write-capable operation deferred across
-/// prior phases.
+/// Never creates or deletes a snapshot itself -- those are separate,
+/// privileged commands (`security_write::create_snapshot`/`delete_snapshot`).
+/// Restoring a snapshot remains deliberately out of scope: unlike create/
+/// delete, `timeshift --restore` needs a `--target` device and can leave
+/// the system in a state that requires a reboot to recover from if it goes
+/// wrong -- a different risk class from the two operations this module's
+/// siblings already cover.
 ///
 /// Uses `run_capturing_exit_code` rather than `run_with_timeout`: confirmed
 /// live (extracting the real `timeshift` binary and running it unprivileged
