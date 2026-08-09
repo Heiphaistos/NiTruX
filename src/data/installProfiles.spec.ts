@@ -99,4 +99,15 @@ describe("installProfiles", () => {
     const profile = installProfiles.find((p) => p.id === "productivite")!;
     expect(profile.appIds).toEqual(expect.arrayContaining(["obsidian", "joplin", "taskwarrior", "planner"]));
   });
+
+  it("includes the new 'emulation' profile covering a previously-unaddressed catalog category", () => {
+    // "Émulation" has 8 real appCatalog entries (retro/console emulators
+    // + Windows compatibility layers) but no profile drew from it --
+    // distinct from "jeux", which is modern multi-platform game launchers
+    // (Steam/Lutris/Heroic/RetroArch), not individual emulators.
+    const ids = installProfiles.map((p) => p.id);
+    expect(ids).toContain("emulation");
+    const profile = installProfiles.find((p) => p.id === "emulation")!;
+    expect(profile.appIds).toEqual(expect.arrayContaining(["wine", "bottles", "dosbox", "scummvm", "dolphin-emu"]));
+  });
 });
