@@ -11,12 +11,20 @@ interface WifiNetwork { ssid: string; security: string; signal_percent: number; 
 interface ListeningPort { port: number; process: string | null; protocol: string | null }
 interface NetworkSnapshot { wifi_networks: WifiNetwork[]; listening_ports: ListeningPort[]; dns_servers: string[]; hosts_file: string }
 interface PortResult { port: number; open: boolean }
+interface PingSummary {
+  packets_sent: number;
+  packets_received: number;
+  loss_percent: number;
+  min_ms: number | null;
+  avg_ms: number | null;
+  max_ms: number | null;
+}
 interface Container { id: string; image: string; name: string; status: string }
 interface DockerImageInfo { id: string; repository: string; tag: string; size: string }
 interface DockerSnapshot { available: boolean; installed: boolean; error: string | null; containers: Container[]; images: DockerImageInfo[] }
 interface NetworkInterface { name: string; mac_address: string | null; rx_bytes_per_sec: number; tx_bytes_per_sec: number }
 
-type Tab = "overview" | "portscan" | "docker";
+type Tab = "overview" | "portscan" | "ping" | "docker";
 const activeTab = ref<Tab>("overview");
 
 const snapshot = ref<NetworkSnapshot | null>(null);
@@ -142,6 +150,24 @@ async function runScan() {
     scanning.value = false;
   }
 }
+
+const pingHost = ref("8.8.8.8");
+const pingResult = ref<PingSummary | null>(null);
+const pingError = ref<string | null>(null);
+const pinging = ref(false);
+
+async function runPing() {
+  pinging.value = true;
+  pingError.value = null;
+  pingResult.value = null;
+  try {
+    pingResult.value = await invoke<PingSummary>("ping_host", { host: pingHost.value });
+  } catch (e) {
+    pingError.value = String(e);
+  } finally {
+    pinging.value = false;
+  }
+}
 </script>
 
 <template>
@@ -151,6 +177,7 @@ async function runScan() {
     <div class="net-tabs">
       <button :class="{ active: activeTab === 'overview' }" @click="activeTab = 'overview'">Vue d'ensemble</button>
       <button :class="{ active: activeTab === 'portscan' }" @click="activeTab = 'portscan'">Scanner de ports</button>
+      <button :class="{ active: activeTab === 'ping' }" @click="activeTab = 'ping'">Ping</button>
       <button :class="{ active: activeTab === 'docker' }" @click="activeTab = 'docker'">Docker</button>
     </div>
 
@@ -219,6 +246,24 @@ async function runScan() {
       <div v-for="(r, ri) in scanResults" :key="`${r.port}-${ri}`" class="net-row">
         <span>{{ r.port }}</span>
         <span :class="r.open ? 'net-open' : 'net-closed'">{{ r.open ? "ouvert" : "fermé" }}</span>
+      </div>
+    </NxCard>
+
+    <NxCard v-else-if="activeTab === 'ping'">
+      <div class="net-form-row">
+        <NxInput v-model="pingHost" placeholder="Hôte (ex: 8.8.8.8)" aria-label="Hôte à pinger" />
+        <NxButton :disabled="pinging" @click="runPing">{{ pinging ? "Ping..." : "Pinger" }}</NxButton>
+      </div>
+      <NxCard v-if="pingError" danger>{{ pingError }}</NxCard>
+      <div v-if="pingResult" class="net-ping-result">
+        <div class="net-row">
+          <span>Paquets</span>
+          <span>{{ pingResult.packets_received }} / {{ pingResult.packets_sent }} reçus ({{ pingResult.loss_percent }}% de perte)</span>
+        </div>
+        <div v-if="pingResult.avg_ms !== null" class="net-row">
+          <span>Latence</span>
+          <span>min {{ pingResult.min_ms }} ms · moy {{ pingResult.avg_ms }} ms · max {{ pingResult.max_ms }} ms</span>
+        </div>
       </div>
     </NxCard>
 
