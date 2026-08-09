@@ -29,4 +29,14 @@ describe("PerfHistoryPage", () => {
     await vi.waitFor(() => expect(wrapper.find(".nx-sparkline").exists()).toBe(true));
     expect(invoke).toHaveBeenCalledWith("get_system_snapshot");
   });
+
+  it("keeps the CSV export button disabled until at least one sample has been collected", async () => {
+    const wrapper = mount(PerfHistoryPage);
+    const findExportButton = () => wrapper.findAll("button").find((b) => b.text() === "Exporter en CSV")!;
+    expect(findExportButton().attributes("disabled")).toBeDefined();
+    // ".nx-sparkline" is an unconditional root <svg> (only its inner
+    // <polyline> is v-if'd), so waiting on its existence doesn't actually
+    // wait for a sample -- poll the button's own disabled state directly.
+    await vi.waitFor(() => expect(findExportButton().attributes("disabled")).toBeUndefined());
+  });
 });
