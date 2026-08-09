@@ -945,3 +945,15 @@ Corrigé les 4 en un seul cycle (même correctif mécanique appliqué 4 fois, co
 4 nouveaux tests frontend (un par page, chacun confirmant qu'un rejet du backend affiche un message clair au lieu d'une page vide). 432/432 frontend (428→432, +4), 376/376 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.120→0.25.121, commit `72deb52`, poussé.
 
 **25 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Éléments en attente inchangés par ailleurs (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools"). Prochain cycle réel : **381**.
+
+## Mise à jour (2026-08-09, v0.25.122, cycle 381) — sweep du cycle 380 complété : 2 pages de plus protégées, le trou fermé partout
+
+Reprise de l'audit page-par-page (`DnsSwitcherPage.vue` lue en entier) : son `refresh()` (appelé via `onMounted(refresh)`, une référence de fonction nommée) n'avait pas non plus de `try/catch` -- **le grep du cycle 380 (`onMounted\(async \(\) => \{$`) ne couvrait que la forme fléchée inline, pas cette 2e forme syntaxique**, laissant un angle mort. Re-balayé les 10 pages utilisant `onMounted(nomDeFonction)` : 8 avaient déjà un `try/catch` dans leur fonction nommée, mais `DataRecoveryPage.vue::refresh()` et `DnsSwitcherPage.vue::refresh()` non plus.
+
+`DnsSwitcherPage` est le cas le plus intéressant : un échec silencieux n'y laisse pas juste une page vide, il affiche activement "Serveurs actuels : aucun" -- lu à tort comme "aucun DNS configuré" plutôt que "impossible de vérifier". Information fausse affichée avec confiance, pas juste une section vide.
+
+**Chaque chargement de données déclenché par `onMounted` dans toute l'app (les deux formes syntaxiques) a désormais un `try/catch`** -- ce trou est maintenant fermé partout, pas seulement là où il avait été repéré en premier.
+
+2 nouveaux tests frontend. 434/434 frontend (432→434, +2), 376/376 Rust (inchangé), `vue-tsc` clean. Version 0.25.121→0.25.122, commit `e27c11c`, poussé.
+
+**26 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Éléments en attente inchangés par ailleurs. Prochain cycle réel : **382**.
