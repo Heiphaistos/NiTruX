@@ -34,6 +34,9 @@ const activeTab = ref<Tab>("overview");
 const snapshot = ref<NetworkSnapshot | null>(null);
 const docker = ref<DockerSnapshot | null>(null);
 const interfaces = ref<NetworkInterface[] | null>(null);
+const overviewError = ref<string | null>(null);
+const dockerFetchError = ref<string | null>(null);
+const interfacesError = ref<string | null>(null);
 
 function formatThroughput(bytesPerSec: number): string {
   return `${(bytesPerSec / 1024).toFixed(1)} Ko/s`;
@@ -55,13 +58,32 @@ const firewallError = ref<string | null>(null);
 const firewallBusy = ref(false);
 
 onMounted(async () => {
-  snapshot.value = await invoke<NetworkSnapshot>("get_network_snapshot");
-  docker.value = await invoke<DockerSnapshot>("get_docker_snapshot");
-  if (snapshot.value) {
-    hostsEditable.value = snapshot.value.hosts_file;
-    dnsEditable.value = snapshot.value.dns_servers.map((ip) => `nameserver ${ip}`).join("\n");
+  // Each source degrades independently (matching the backend's own
+  // documented philosophy for network.rs/docker.rs): the overview
+  // snapshot, the Docker section, and the interface list come from 3
+  // separate invoke() calls, so one failing must not blank the other two
+  // -- and, before this fix, a rejection anywhere in this sequence left
+  // every later `.value` assignment un-run with no error ever shown,
+  // silently stale/blank instead.
+  try {
+    snapshot.value = await invoke<NetworkSnapshot>("get_network_snapshot");
+    if (snapshot.value) {
+      hostsEditable.value = snapshot.value.hosts_file;
+      dnsEditable.value = snapshot.value.dns_servers.map((ip) => `nameserver ${ip}`).join("\n");
+    }
+  } catch (e) {
+    overviewError.value = String(e);
   }
-  interfaces.value = await invoke<NetworkInterface[]>("get_network_interfaces");
+  try {
+    docker.value = await invoke<DockerSnapshot>("get_docker_snapshot");
+  } catch (e) {
+    dockerFetchError.value = String(e);
+  }
+  try {
+    interfaces.value = await invoke<NetworkInterface[]>("get_network_interfaces");
+  } catch (e) {
+    interfacesError.value = String(e);
+  }
 });
 
 async function saveHosts() {
@@ -233,7 +255,9 @@ async function runTraceroute() {
       <button :class="{ active: activeTab === 'docker' }" @click="activeTab = 'docker'">Docker</button>
     </div>
 
-    <template v-if="activeTab === 'overview' && snapshot">
+    <template v-if="activeTab === 'overview'">
+      <NxCard v-if="overviewError" danger>{{ overviewError }}</NxCard>
+      <template v-if="snapshot">
       <NxCard v-if="interfaces">
         <NxSectionHeader title="Cartes réseau" />
         <div v-if="interfaces.length === 0" class="net-empty">Aucune carte réseau détectée.</div>
@@ -243,6 +267,7 @@ async function runTraceroute() {
           <span>↓ {{ formatThroughput(i.rx_bytes_per_sec) }} · ↑ {{ formatThroughput(i.tx_bytes_per_sec) }}</span>
         </div>
       </NxCard>
+      <NxCard v-else-if="interfacesError" danger>{{ interfacesError }}</NxCard>
 
       <NxCard>
         <NxSectionHeader title="Wi-Fi" />
@@ -308,6 +333,7 @@ async function runTraceroute() {
         <NxCard v-if="firewallError" danger>{{ firewallError }}</NxCard>
         <div v-if="firewallResult" class="net-success">Règle appliquée.</div>
       </NxCard>
+      </template>
     </template>
 
     <NxCard v-else-if="activeTab === 'portscan'">
@@ -369,7 +395,8 @@ async function runTraceroute() {
     </NxCard>
 
     <NxCard v-else-if="activeTab === 'docker'">
-      <div v-if="!docker?.available && !docker?.installed" class="net-empty">Docker n'est pas installé sur ce système.</div>
+      <NxCard v-if="dockerFetchError" danger>{{ dockerFetchError }}</NxCard>
+      <div v-else-if="!docker?.available && !docker?.installed" class="net-empty">Docker n'est pas installé sur ce système.</div>
       <div v-else-if="!docker?.available" class="net-empty">
         Docker est installé mais injoignable{{ docker?.error ? " : " + docker.error : "" }}. Vérifiez que le démon est démarré et que votre utilisateur a les droits nécessaires.
       </div>

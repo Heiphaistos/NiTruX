@@ -479,4 +479,51 @@ describe("NetworkPage", () => {
 
     expect(invoke).toHaveBeenCalledWith("scan_ports_cmd", { host: "127.0.0.1", ports: [22, 80] });
   });
+
+  // Regression guard for the actual bug: onMounted had no try/catch at all
+  // around its 3 invoke() calls (get_network_snapshot, get_docker_snapshot,
+  // get_network_interfaces) -- a rejection anywhere in that sequence left
+  // the page silently blank/stale with no error shown, and this page was
+  // missed by the earlier app-wide try/catch sweep (cycles 380-382) because
+  // its own unrelated handlers (saveHosts, addFirewallRule, ...) already
+  // contain "try {" elsewhere in the file, defeating a naive grep-based check.
+  it("shows a clear error on the overview tab instead of a blank page when get_network_snapshot is rejected", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") return Promise.reject("permission denied reading routes");
+      if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
+      if (cmd === "get_network_interfaces") return Promise.resolve([]);
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("permission denied reading routes"));
+  });
+
+  it("shows a clear error on the Docker tab instead of falsely claiming Docker is not installed when get_docker_snapshot is rejected", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") return defaultInvokeImpl("get_network_snapshot");
+      if (cmd === "get_docker_snapshot") return Promise.reject("tauri IPC channel closed");
+      if (cmd === "get_network_interfaces") return Promise.resolve([]);
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await wrapper.findAll("button").find((b) => b.text() === "Docker")!.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("tauri IPC channel closed"));
+    expect(wrapper.text()).not.toContain("Docker n'est pas installé");
+  });
+
+  it("shows a clear error for the interfaces card without blocking the rest of the overview tab when get_network_interfaces is rejected", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") return defaultInvokeImpl("get_network_snapshot");
+      if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
+      if (cmd === "get_network_interfaces") return Promise.reject("could not enumerate interfaces");
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("could not enumerate interfaces"));
+    // The rest of the overview tab (Wi-Fi section) must still render.
+    expect(wrapper.text()).toContain("Wi-Fi");
+  });
 });
