@@ -29,8 +29,17 @@ use tauri::Manager;
 /// the invoked executable's path, with no visibility into argv, so a
 /// shared path across multiple actions is ambiguous to it -- confirmed
 /// live on a real polkit stack). Kept as a single source of truth here;
-/// `tauri.conf.json`'s `deb`/`rpm` file maps list the same 14 names for
+/// `tauri.conf.json`'s `deb`/`rpm` file maps list the same 15 names for
 /// the package-manager-driven install path.
+///
+/// `nitrux-pkexec-delete-snapshot` (added alongside RestorePointsPage's
+/// snapshot deletion, cycle 379) was missing from this list entirely --
+/// this doesn't affect .deb/.rpm installs (their package manager places
+/// the binary via tauri.conf.json's own file map, independent of this
+/// module), but an AppImage install -- which relies solely on THIS
+/// bootstrap list to create every /usr/bin/nitrux-pkexec-* binary --
+/// never got the file at all, silently breaking snapshot deletion for
+/// every AppImage user specifically while working fine everywhere else.
 pub const PKEXEC_BINARY_NAMES: &[&str] = &[
     "nitrux-pkexec-install-package",
     "nitrux-pkexec-install-snap",
@@ -42,6 +51,7 @@ pub const PKEXEC_BINARY_NAMES: &[&str] = &[
     "nitrux-pkexec-firewall-rule",
     "nitrux-pkexec-troubleshoot",
     "nitrux-pkexec-create-snapshot",
+    "nitrux-pkexec-delete-snapshot",
     "nitrux-pkexec-quarantine-file",
     "nitrux-pkexec-format-partition",
     "nitrux-pkexec-extend-partition",
@@ -166,6 +176,18 @@ mod tests {
     fn representative_binary_absent_reports_not_installed() {
         let bogus = std::path::Path::new("/definitely/not/a/real/path/nitrux-pkexec-troubleshoot");
         assert!(!is_installed_at(bogus));
+    }
+
+    #[test]
+    fn includes_delete_snapshot_alongside_create_snapshot() {
+        // Regression guard for the actual bug: this name was missing
+        // entirely -- the generic loop-based tests below would have
+        // passed either way (they only check whatever IS in the list),
+        // so this pins the specific name against an accidental future
+        // removal the same way installProfiles.spec.ts pins each new
+        // catalog profile.
+        assert!(PKEXEC_BINARY_NAMES.contains(&"nitrux-pkexec-create-snapshot"));
+        assert!(PKEXEC_BINARY_NAMES.contains(&"nitrux-pkexec-delete-snapshot"));
     }
 
     #[test]
