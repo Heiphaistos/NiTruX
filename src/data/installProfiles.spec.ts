@@ -124,4 +124,18 @@ describe("installProfiles", () => {
     const profile = installProfiles.find((p) => p.id === "partage-fichiers")!;
     expect(profile.appIds).toEqual(expect.arrayContaining(["transmission", "qbittorrent", "warpinator", "gftp"]));
   });
+
+  it("includes the new 'cli-moderne' profile, the well-known 'modern Unix replacements' slice of 'Ligne de commande'", () => {
+    // "Ligne de commande" has 37 real appCatalog entries spanning several
+    // unrelated themes (shells, terminal multiplexers, system monitors,
+    // dev tooling, cosmetic novelties like figlet/lolcat) -- too
+    // heterogeneous for one profile, same situation as "Réseau" (cycle
+    // 390). Picked the "modern CLI replacements" tools specifically: a
+    // widely recognized, coherent real-world bundle (ls/cat/find/grep
+    // replacements), not an arbitrary grab-bag.
+    const ids = installProfiles.map((p) => p.id);
+    expect(ids).toContain("cli-moderne");
+    const profile = installProfiles.find((p) => p.id === "cli-moderne")!;
+    expect(profile.appIds).toEqual(expect.arrayContaining(["eza", "bat", "fd-find", "ripgrep", "fzf"]));
+  });
 });
