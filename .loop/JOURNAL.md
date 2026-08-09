@@ -3212,3 +3212,15 @@ Page Vue `CrashAnalyzerPage.vue` : liste chronologique inversée (plus récent e
 462/462 frontend (456→462, +6 : 5 CrashAnalyzerPage + 1 categories), 384/384 Rust (376→384, +8), `vue-tsc` clean. Version 0.25.132→0.25.133, commit `5fa9750`, poussé.
 
 **37 fonctionnalités/améliorations/correctifs accumulés depuis la release v0.25.132.** Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools").
+
+## Cycle 393 -- 2026-08-09T09:16:49Z
+
+Poursuite de la comparaison NiTriTe. `MonitoringPage.vue` (NiTriTe, 677 lignes) a un vrai enregistrement de session avec annotations horodatées et export CSV. `PerfHistoryPage.vue` (NiTruX) est explicitement décrite comme "non persisté" dans son propre texte -- aucune trace ne survit à la fermeture de la page. L'enregistrement de session complet + annotations est un chantier bien plus large qu'un cycle ; portion bien bornée et immédiatement utile retenue : export CSV de l'historique en mémoire.
+
+**CSV extrait dans `perfHistoryCsv.ts`** comme fonction pure (même séparation déjà pratiquée par `systemMetrics.ts`) -- testable directement sans monter le composant ni mocker Blob/URL/clic d'ancre. `PerfHistoryPage.vue` : les échantillons portent désormais un horodatage réel (pas juste un index), bouton "Exporter en CSV" désactivé tant qu'aucun échantillon n'est collecté.
+
+**Piège de test trouvé en écrivant le test du bouton** : `.nx-sparkline` est un `<svg>` racine INCONDITIONNEL (seul le `<polyline>` intérieur est `v-if`) -- attendre son existence ne garantit PAS qu'un échantillon a été chargé, contrairement à ce que le test pré-existant du fichier laissait croire. Mon premier test attendait sur ce mauvais signal et échouait de façon non-déterministe (le bouton restait "disabled" au moment de l'assertion). Corrigé en interrogeant directement l'état `disabled` du bouton via `vi.waitFor` plutôt qu'un signal indirect.
+
+4 nouveaux tests (fonction pure : en-tête+lignes, arrondi à 1 décimale, horodatage ISO 8601, liste vide → en-tête seul) + 2 tests page (bouton désactivé→activé). 467/467 frontend (462→467, +5 nets : 4 CSV + 1 bouton, le test pré-existant de la page était déjà compté), 384/384 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.133→0.25.134, commit `ca63b1d`, poussé.
+
+**38 fonctionnalités/améliorations/correctifs accumulés depuis la release v0.25.132.** Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools").
