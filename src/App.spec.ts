@@ -16,6 +16,7 @@ const ARRAY_RETURNING_COMMANDS = new Set([
   "find_large_files_cmd",
   "get_audio_sinks",
   "get_autostart_entries",
+  "get_crash_events",
   "get_environment_variables",
   "get_monitors",
   "get_pci_devices",

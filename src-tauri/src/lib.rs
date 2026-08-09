@@ -9,6 +9,7 @@ mod bluetooth;
 mod boot_manager;
 mod cache_size;
 mod certificates;
+mod crash_analyzer;
 mod dependencies;
 mod disk_write;
 mod disks;
@@ -155,6 +156,7 @@ pub fn run() {
             hardware_details::get_hardware_details,
             drivers::get_driver_snapshot,
             logs::get_recent_logs,
+            crash_analyzer::get_crash_events,
             list_updates,
             detect_native_manager,
             get_environment_variables,

@@ -30,6 +30,7 @@ export const navigationCategories: NavCategory[] = [
       { id: "user-accounts", label: "Comptes utilisateurs", icon: "users" },
       { id: "update-history", label: "Historique des mises à jour", icon: "history" },
       { id: "certificates", label: "Certificats", icon: "lock" },
+      { id: "crash-analyzer", label: "Analyseur de pannes", icon: "bug" },
     ],
   },
   {

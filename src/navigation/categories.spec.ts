@@ -92,4 +92,9 @@ describe("navigationCategories", () => {
     const allPageIds = navigationCategories.flatMap((c) => c.pages.map((p) => p.id));
     expect(allPageIds).toContain("portable-apps");
   });
+
+  it("includes the new crash analyzer page by id", () => {
+    const allPageIds = navigationCategories.flatMap((c) => c.pages.map((p) => p.id));
+    expect(allPageIds).toContain("crash-analyzer");
+  });
 });
