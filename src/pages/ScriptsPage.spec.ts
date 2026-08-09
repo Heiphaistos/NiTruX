@@ -52,6 +52,40 @@ describe("ScriptsPage", () => {
     expect(wrapper.findAll(".scr-item")).toHaveLength(0);
   });
 
+  it("keeps one script's 'Exécuter' button enabled while an unrelated script is still running", async () => {
+    // Regression guard for the actual bug: `running` used to be a single
+    // shared ref (not per-script), so starting ANY script disabled every
+    // OTHER script's button too, even completely unrelated ones -- the
+    // same shared-state bug SystemToolsPage.vue already fixed for this
+    // exact primitive.
+    const { invoke } = await import("@tauri-apps/api/core");
+    let resolveA!: (value: string) => void;
+    vi.mocked(invoke).mockImplementationOnce(() => new Promise((resolve) => (resolveA = resolve)));
+
+    const wrapper = mount(ScriptsPage);
+    await wrapper.find("input[placeholder*='Nom']").setValue("A");
+    await wrapper.find("textarea").setValue("sleep 30");
+    await wrapper.findAll("button").find((b) => b.text() === "Enregistrer")!.trigger("click");
+
+    await wrapper.find("input[placeholder*='Nom']").setValue("B");
+    await wrapper.find("textarea").setValue("echo fast");
+    await wrapper.findAll("button").find((b) => b.text() === "Enregistrer")!.trigger("click");
+
+    // Located by their stable containing row (script name), not by button
+    // text -- the button's own text flips to "En cours..." once running,
+    // which would silently drop it from a `text() === "Exécuter"` filter.
+    const items = () => wrapper.findAll(".scr-item");
+    const runButtonFor = (name: string) => items().find((i) => i.text().includes(name))!.find("button");
+
+    await runButtonFor("A").trigger("click"); // starts A, leaves its promise pending
+
+    await vi.waitFor(() => expect(runButtonFor("A").attributes("disabled")).toBeDefined());
+    expect(runButtonFor("B").attributes("disabled")).toBeUndefined();
+
+    resolveA("done");
+    await vi.waitFor(() => expect(runButtonFor("A").attributes("disabled")).toBeUndefined());
+  });
+
   it("shows an error and keeps only the first script when saving a duplicate name", async () => {
     const wrapper = mount(ScriptsPage);
     await wrapper.find("input[placeholder*='Nom']").setValue("backup");
