@@ -32,19 +32,25 @@ function saveScript() {
   newContent.value = "";
 }
 
-const running = ref<string | null>(null);
+// Per-script, not a single shared name: a single ref disabled every OTHER
+// script's "Exécuter" button while any one script was running, even for
+// completely unrelated scripts -- the same shared-state bug SystemToolsPage
+// already moved away from for this exact primitive (see its own doc
+// comment on `running`). Tracked per-name like `outputs`/`errors` already are.
+const running = ref<Record<string, boolean>>({});
 const outputs = ref<Record<string, string>>({});
 const errors = ref<Record<string, string>>({});
 
 async function runScript(name: string, content: string) {
-  running.value = name;
+  running.value = { ...running.value, [name]: true };
   delete errors.value[name];
   try {
     outputs.value[name] = await invoke<string>("run_script", { content });
   } catch (e) {
     errors.value[name] = String(e);
   } finally {
-    running.value = null;
+    const { [name]: _removed, ...rest } = running.value;
+    running.value = rest;
   }
 }
 </script>
@@ -64,8 +70,8 @@ async function runScript(name: string, content: string) {
       <div class="scr-item-header">
         <span>{{ s.name }}</span>
         <div class="scr-item-actions">
-          <NxButton :disabled="running !== null" @click="runScript(s.name, s.content)">
-            {{ running === s.name ? "En cours..." : "Exécuter" }}
+          <NxButton :disabled="running[s.name] === true" @click="runScript(s.name, s.content)">
+            {{ running[s.name] === true ? "En cours..." : "Exécuter" }}
           </NxButton>
           <NxButton variant="danger" @click="store.removeScript(s.name)">Supprimer</NxButton>
         </div>
