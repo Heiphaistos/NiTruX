@@ -12,24 +12,32 @@ const packages = ref<InstalledPackage[] | null>(null);
 const envVars = ref<[string, string][]>([]);
 const softwareFilter = ref("");
 const loadError = ref<string | null>(null);
+const envVarsError = ref<string | null>(null);
 
 // Kept in two independent try/catch blocks, not one shared try: these are
 // unrelated data sources (installed-packages detection can genuinely fail
 // with no native package manager found -- InstalledPackagesPage's own
 // loadError below -- but that has nothing to do with reading the app's own
 // environment variables). A shared try previously meant a package-listing
-// failure silently left "Variables d'environnement" empty too, even though
-// get_environment_variables is infallible and would have succeeded on its
-// own. Mirrors the already-established pattern in UninstallerPage.vue,
-// which keeps list_installed_packages's own try/catch separate from the
-// unrelated detect_native_manager call right after it.
+// failure silently left "Variables d'environnement" empty too. Both calls
+// now get their own try/catch (get_environment_variables's Rust signature
+// is bare/infallible-by-logic, but the IPC call itself can still reject at
+// the Tauri layer -- same rare-but-real category guarded everywhere else
+// in the app, see NetworkPage.vue cycle 387). Mirrors the already-
+// established pattern in UninstallerPage.vue, which keeps
+// list_installed_packages's own try/catch separate from the unrelated
+// detect_native_manager call right after it.
 onMounted(async () => {
   try {
     packages.value = await invoke<InstalledPackage[]>("list_installed_packages");
   } catch (e) {
     loadError.value = String(e);
   }
-  envVars.value = await invoke<[string, string][]>("get_environment_variables");
+  try {
+    envVars.value = await invoke<[string, string][]>("get_environment_variables");
+  } catch (e) {
+    envVarsError.value = String(e);
+  }
 });
 
 const filteredPackages = computed(() =>
@@ -54,6 +62,7 @@ const filteredPackages = computed(() =>
 
     <NxCard>
       <NxSectionHeader title="Variables d'environnement" />
+      <NxCard v-if="envVarsError" danger>{{ envVarsError }}</NxCard>
       <div v-for="[key, value] in envVars" :key="key" class="sw-row">
         <span>{{ key }}</span><span>{{ value }}</span>
       </div>

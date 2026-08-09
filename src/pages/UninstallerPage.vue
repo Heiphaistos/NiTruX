@@ -13,6 +13,7 @@ interface InstalledPackage { name: string; version: string }
 const packages = ref<InstalledPackage[]>([]);
 const loadError = ref<string | null>(null);
 const nativeManager = ref<string | null>(null);
+const managerError = ref<string | null>(null);
 const searchText = ref("");
 
 onMounted(async () => {
@@ -21,7 +22,14 @@ onMounted(async () => {
   } catch (e) {
     loadError.value = String(e);
   }
-  nativeManager.value = await invoke<string | null>("detect_native_manager");
+  try {
+    nativeManager.value = await invoke<string | null>("detect_native_manager");
+  } catch (e) {
+    // Without this, a rejection here left the header stuck on "Détection
+    // du gestionnaire..." forever (implying detection is still running)
+    // instead of showing that it actually failed.
+    managerError.value = String(e);
+  }
 });
 
 const filteredPackages = computed(() =>
@@ -67,6 +75,7 @@ async function confirmUninstall(name: string) {
     <NxSectionHeader title="Désinstalleur" :description="nativeManager ? `Gestionnaire détecté : ${nativeManager}` : 'Détection du gestionnaire...'" />
 
     <NxCard v-if="loadError" danger>{{ loadError }}</NxCard>
+    <NxCard v-if="managerError" danger>{{ managerError }}</NxCard>
     <NxCard v-if="uninstallError" danger>{{ uninstallError }}</NxCard>
     <NxBadge v-if="uninstallResult" status="success" live>{{ uninstallResult }}</NxBadge>
 

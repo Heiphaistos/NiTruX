@@ -80,4 +80,22 @@ describe("HardwareDetailsPage", () => {
     expect(wrapper.text()).toContain("Go");
     expect(wrapper.text()).not.toContain("GB");
   });
+
+  // Placed last: this test's mockImplementation makes get_hardware_details
+  // permanently reject for the rest of the file's run (same no-reset
+  // convention as the other overrides above), so nothing after it can
+  // depend on `details` ever resolving.
+  it("shows a clear error instead of a blank page when get_hardware_details is rejected", async () => {
+    // Regression guard: get_hardware_details had no try/catch at all
+    // (unlike get_pci_devices right after it) -- a rejection here left
+    // `details` null forever, blanking the entire page (everything is
+    // gated on `v-if="details"`) with no indication anything failed.
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_hardware_details") return Promise.reject("/proc/cpuinfo introuvable");
+      return Promise.resolve([]);
+    });
+    const wrapper = mount(HardwareDetailsPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("/proc/cpuinfo introuvable"));
+  });
 });
