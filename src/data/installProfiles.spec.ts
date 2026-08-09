@@ -88,4 +88,15 @@ describe("installProfiles", () => {
       expect.arrayContaining(["nextcloud-desktop", "dropbox", "syncthing", "davfs2", "gigolo"])
     );
   });
+
+  it("includes the new 'productivite' profile covering the note-taking/task-management catalog category", () => {
+    // "Productivité" has 9 real appCatalog entries (note-taking + task
+    // management apps) but no profile drew from it -- curated down to a
+    // representative subset (a mix of both purposes), same size convention
+    // as the other profiles, rather than dumping all 9 in.
+    const ids = installProfiles.map((p) => p.id);
+    expect(ids).toContain("productivite");
+    const profile = installProfiles.find((p) => p.id === "productivite")!;
+    expect(profile.appIds).toEqual(expect.arrayContaining(["obsidian", "joplin", "taskwarrior", "planner"]));
+  });
 });
