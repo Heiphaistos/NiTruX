@@ -3198,3 +3198,17 @@ Nouveau profil "cli-moderne" : eza (remplace ls) + bat (remplace cat) + fd-find 
 Tag annoté `v0.25.132` poussé, release GitHub créée via `gh release create` avec les 3 assets et des notes organisées par catégorie (Nouvelles fonctionnalités en tête : profils de config, apps portables, tableau de bord enrichi, page Réseau complète, suppression d'instantané, 11 nouveaux profils catalogue ; puis Accessibilité, Corrections de bugs -- sweep try/catch en tête --, Sous le capot). Vérifié via `gh release view` : publiée (non-draft), 3 assets présents, notes correctes.
 
 **Les 36 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96 sont désormais tous dans une release publiée : https://github.com/Heiphaistos/NiTruX/releases/tag/v0.25.132. Plus aucun backlog de correctifs non livrés.**
+
+## Cycle 392 -- 2026-08-09T09:02:51Z
+
+Retour à la comparaison NiTriTe suite à l'épuisement du filon catalogue (cycle 391). `BsodAnalyzerPage.vue` (NiTriTe) n'a aucun équivalent Linux dans NiTruX -- `LogsPage.vue` ne montre qu'un flux brut filtrable des 200 dernières lignes journald, où une vraie panne peut facilement être noyée dans le bruit habituel sans aucune distinction visuelle.
+
+**Nouvelle fonctionnalité : Analyseur de pannes** (catégorie "Diagnostic"). Backend `crash_analyzer.rs` : réutilise `run_journalctl` (rendu `pub`) avec une fenêtre bien plus large (5000 lignes vs 200 sur la page Journaux) et classifie chaque entrée via les formats de message STABLES et documentés du noyau lui-même (pas du texte CLI en forme libre qui pourrait dériver entre versions) : "Kernel panic - not syncing:" (panique noyau, `kernel/panic.c`), "Out of memory: Killed process" (OOM killer, `mm/oom_kill.c`), "segfault at" (erreur de segmentation, `arch/*/mm/fault.c`), ou toute entrée `kernel` à priorité critique/alerte/urgence (≤2, volontairement pas ≤3 pour éviter de classer des erreurs matérielles bruyantes mais bénignes comme des pannes).
+
+Page Vue `CrashAnalyzerPage.vue` : liste chronologique inversée (plus récent en premier), badge coloré par type (danger pour panique/OOM/erreur critique, warning pour segfault -- moins grave qu'un crash noyau), message empathique "Aucune panne détectée" si la liste est vide (bonne nouvelle, pas un état d'erreur). Câblée dans `categories.ts` (icône "bug", nouveau import Lucide dans `AppNav.vue`), `App.vue`.
+
+8 nouveaux tests Rust (classification de chaque type + faux négatifs : erreur kernel bruyante non-crash, unité non-kernel à haute sévérité, ligne info routinière + un test de bout en bout sur un lot mélangé) + 5 nouveaux tests frontend (rendu, libellés français distincts du tag enum brut, état vide rassurant, erreur claire, badge danger pour panique noyau). `get_crash_events` ajouté à `ARRAY_RETURNING_COMMANDS` d'`App.spec.ts` dès l'écriture (signature réelle `Result<Vec<CrashEvent>, String>`) -- piège du cycle 382 anticipé cette fois, pas re-découvert après coup.
+
+462/462 frontend (456→462, +6 : 5 CrashAnalyzerPage + 1 categories), 384/384 Rust (376→384, +8), `vue-tsc` clean. Version 0.25.132→0.25.133, commit `5fa9750`, poussé.
+
+**37 fonctionnalités/améliorations/correctifs accumulés depuis la release v0.25.132.** Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools").
