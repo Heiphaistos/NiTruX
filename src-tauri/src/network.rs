@@ -1,6 +1,6 @@
-//! Aggregates five cheap, read-only network diagnostics (Wi-Fi status,
-//! listening ports, DNS servers, `/etc/hosts`, routing table) into one
-//! `NetworkSnapshot`, mirroring `system.rs`'s
+//! Aggregates six cheap, read-only network diagnostics (Wi-Fi status,
+//! listening ports, DNS servers, `/etc/hosts`, routing table, ARP/neighbor
+//! table) into one `NetworkSnapshot`, mirroring `system.rs`'s
 //! `SystemSnapshot`/`get_system_snapshot` shape.
 
 use crate::subprocess;
@@ -31,6 +31,14 @@ pub struct RouteEntry {
     pub metric: Option<u32>,
 }
 
+#[derive(Serialize, Clone, Debug)]
+pub struct ArpEntry {
+    pub ip: String,
+    pub mac: Option<String>,
+    pub interface: Option<String>,
+    pub state: String,
+}
+
 #[derive(Serialize, Clone)]
 pub struct NetworkSnapshot {
     pub wifi_networks: Vec<WifiNetwork>,
@@ -38,6 +46,7 @@ pub struct NetworkSnapshot {
     pub dns_servers: Vec<String>,
     pub hosts_file: String,
     pub routes: Vec<RouteEntry>,
+    pub arp_entries: Vec<ArpEntry>,
 }
 
 /// Splits one line of `nmcli -t` output on `:`, honoring nmcli's terse-mode
@@ -147,6 +156,37 @@ pub fn parse_ip_route_line(line: &str) -> Option<RouteEntry> {
     Some(RouteEntry { destination, gateway, interface, metric })
 }
 
+/// Parses one line of `ip neigh show` output, e.g. (captured live on this
+/// project's own dev machine): `"172.17.208.1 dev eth0 lladdr
+/// 00:15:5d:4a:fb:0f STALE"` -- or, for a neighbor whose MAC hasn't
+/// resolved yet, `"172.17.208.250 dev eth0  INCOMPLETE"` (confirmed live
+/// by pinging an address with nothing listening there): note there is
+/// simply no `lladdr` field at all in that case, not an empty one, so
+/// `mac` must stay `None` rather than defaulting to an empty string.
+/// The IP is always the first token and the state always the last one;
+/// everything between is `key value` pairs in no fixed order, same
+/// tolerant scanning approach as `parse_ip_route_line`. A line with fewer
+/// than 4 tokens (ip + at least one key/value pair + state) is treated as
+/// malformed rather than risking the state and IP token colliding.
+pub fn parse_ip_neigh_line(line: &str) -> Option<ArpEntry> {
+    let fields: Vec<&str> = line.split_whitespace().collect();
+    if fields.len() < 4 {
+        return None;
+    }
+    let ip = fields[0].to_string();
+    let state = (*fields.last()?).to_string();
+    let mut interface = None;
+    let mut mac = None;
+    for i in 1..fields.len() - 1 {
+        match fields[i] {
+            "dev" => interface = fields.get(i + 1).map(|s| s.to_string()),
+            "lladdr" => mac = fields.get(i + 1).map(|s| s.to_string()),
+            _ => {}
+        }
+    }
+    Some(ArpEntry { ip, mac, interface, state })
+}
+
 /// Extracts `nameserver` entries from `/etc/resolv.conf` content, in order.
 pub fn parse_resolv_conf(content: &str) -> Vec<String> {
     content
@@ -188,7 +228,13 @@ fn read_routes() -> Vec<RouteEntry> {
         .unwrap_or_default()
 }
 
-/// Intentionally infallible: each of the five sub-queries independently
+fn read_arp_entries() -> Vec<ArpEntry> {
+    subprocess::run_with_timeout("ip", &["neigh", "show"], Duration::from_secs(5))
+        .map(|output| output.lines().filter_map(parse_ip_neigh_line).collect())
+        .unwrap_or_default()
+}
+
+/// Intentionally infallible: each of the six sub-queries independently
 /// degrades to empty/default on failure (e.g. no `nmcli` on a wired-only
 /// machine, no Wi-Fi hardware, `/etc/hosts` unreadable), matching
 /// `packages::universal::list_universal_updates()`'s "optional supplement,
@@ -202,6 +248,7 @@ pub fn get_network_snapshot() -> NetworkSnapshot {
         dns_servers: read_dns_servers(),
         hosts_file: read_hosts_file(),
         routes: read_routes(),
+        arp_entries: read_arp_entries(),
     }
 }
 
@@ -444,6 +491,12 @@ mod tests {
     fn skips_an_empty_route_line() {
         assert!(parse_ip_route_line("").is_none());
     }
+
+    #[test]
+    fn skips_an_empty_or_too_short_neigh_line() {
+        assert!(parse_ip_neigh_line("").is_none());
+        assert!(parse_ip_neigh_line("172.17.208.1 dev eth0").is_none());
+    }
 }
 
 /// Not part of the plan's specified test suite — added to prove
@@ -480,6 +533,55 @@ mod real_ip_route_output_regression {
         // default route.
         let snapshot = get_network_snapshot();
         assert!(snapshot.routes.iter().any(|r| r.destination == "default"), "expected a default route on this host, got {:?}", snapshot.routes);
+    }
+}
+
+/// Not part of the plan's specified test suite — added to prove
+/// `parse_ip_neigh_line` against the ACTUAL `ip neigh show` output
+/// captured on this project's own dev machine, including an INCOMPLETE
+/// entry (triggered live by pinging an address with nothing there) whose
+/// missing `lladdr` field a hand-written test literal would likely have
+/// gotten wrong (assumed present-but-empty rather than absent). Kept as a
+/// permanent regression test, same rationale as `real_ss_output_regression`.
+#[cfg(test)]
+mod real_ip_neigh_output_regression {
+    use super::*;
+
+    #[test]
+    fn parses_a_real_resolved_neighbor() {
+        let line = "172.17.208.1 dev eth0 lladdr 00:15:5d:4a:fb:0f STALE";
+        let entry = parse_ip_neigh_line(line).expect("should parse");
+        assert_eq!(entry.ip, "172.17.208.1");
+        assert_eq!(entry.mac.as_deref(), Some("00:15:5d:4a:fb:0f"));
+        assert_eq!(entry.interface.as_deref(), Some("eth0"));
+        assert_eq!(entry.state, "STALE");
+    }
+
+    #[test]
+    fn parses_a_real_incomplete_neighbor_with_no_lladdr_field_at_all() {
+        // Regression guard for the actual gap this test exists to close:
+        // an unresolved neighbor has no lladdr token whatsoever (not an
+        // empty one) -- `mac` must stay None here, not Some("").
+        let line = "172.17.208.250 dev eth0  INCOMPLETE";
+        let entry = parse_ip_neigh_line(line).expect("should parse despite the missing lladdr");
+        assert_eq!(entry.ip, "172.17.208.250");
+        assert_eq!(entry.mac, None);
+        assert_eq!(entry.interface.as_deref(), Some("eth0"));
+        assert_eq!(entry.state, "INCOMPLETE");
+    }
+
+    #[test]
+    fn get_network_snapshot_reads_real_arp_entries_without_crashing() {
+        // Real end-to-end call, not a mock. Unlike the default route,
+        // there's no guarantee this host currently has any neighbor cache
+        // entries at all (e.g. right after a network restart) -- this only
+        // proves the whole pipeline runs cleanly against real kernel
+        // output, not that a specific entry exists.
+        let snapshot = get_network_snapshot();
+        for entry in &snapshot.arp_entries {
+            assert!(!entry.ip.is_empty(), "every ARP entry must have a real IP");
+            assert!(!entry.state.is_empty(), "every ARP entry must have a real state");
+        }
     }
 }
 

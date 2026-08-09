@@ -643,7 +643,7 @@ mod tests {
             drivers: None,
             disks: Some(vec![Disk { name: "sda".to_string(), size: "500G".to_string(), partitions: vec![] }]),
             disk_usage: None,
-            network: NetworkSnapshot { wifi_networks: vec![], listening_ports: vec![], dns_servers: vec!["1.1.1.1".to_string()], hosts_file: "127.0.0.1 localhost\n".to_string(), routes: vec![] },
+            network: NetworkSnapshot { wifi_networks: vec![], listening_ports: vec![], dns_servers: vec!["1.1.1.1".to_string()], hosts_file: "127.0.0.1 localhost\n".to_string(), routes: vec![], arp_entries: vec![] },
             firewall: Some(FirewallStatus { active: true, rules: vec!["22/tcp ALLOW Anywhere".to_string()] }),
             updates: Some(vec![PackageUpdate { name: "curl".to_string(), current_version: "7.88".to_string(), new_version: "7.89".to_string(), source: "apt".to_string() }]),
         }

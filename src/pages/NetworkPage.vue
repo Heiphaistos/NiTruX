@@ -11,7 +11,8 @@ import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 interface WifiNetwork { ssid: string; security: string; signal_percent: number; connected: boolean }
 interface ListeningPort { port: number; process: string | null; protocol: string | null }
 interface RouteEntry { destination: string; gateway: string | null; interface: string | null; metric: number | null }
-interface NetworkSnapshot { wifi_networks: WifiNetwork[]; listening_ports: ListeningPort[]; dns_servers: string[]; hosts_file: string; routes: RouteEntry[] }
+interface ArpEntry { ip: string; mac: string | null; interface: string | null; state: string }
+interface NetworkSnapshot { wifi_networks: WifiNetwork[]; listening_ports: ListeningPort[]; dns_servers: string[]; hosts_file: string; routes: RouteEntry[]; arp_entries: ArpEntry[] }
 interface PortResult { port: number; open: boolean }
 interface PingSummary {
   packets_sent: number;
@@ -249,6 +250,15 @@ async function runDnsLookup() {
             <template v-if="r.interface">dev {{ r.interface }} </template>
             <template v-if="r.metric !== null">metric {{ r.metric }}</template>
           </span>
+        </div>
+      </NxCard>
+
+      <NxCard>
+        <NxSectionHeader title="Table ARP" />
+        <div v-if="snapshot.arp_entries.length === 0" class="net-empty">Aucune entrée ARP détectée.</div>
+        <div v-for="(a, ai) in snapshot.arp_entries" :key="`${a.ip}-${ai}`" class="net-row">
+          <span class="net-dns-record">{{ a.ip }}</span>
+          <span>{{ a.mac ?? "(inconnue)" }} · {{ a.interface ?? "?" }} · {{ a.state }}</span>
         </div>
       </NxCard>
 

@@ -12,7 +12,7 @@ import NetworkPage from "./NetworkPage.vue";
 // already found and fixed in DashboardPage.spec.ts/ReportGeneratorPage.spec.ts.
 const defaultInvokeImpl = vi.hoisted(() => (cmd: string) => {
   if (cmd === "get_network_snapshot") {
-    return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [] });
+    return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [], arp_entries: [] });
   }
   if (cmd === "get_docker_snapshot") {
     return Promise.resolve({ available: false, containers: [], images: [] });
@@ -49,7 +49,7 @@ describe("NetworkPage", () => {
     // whichever test runs next in this file.
     vi.mocked(invoke).mockImplementation((cmd: string) => {
       if (cmd === "get_network_snapshot") {
-        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [] });
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [], arp_entries: [] });
       }
       if (cmd === "get_docker_snapshot") return Promise.resolve({ available: true, containers: [], images: [] });
       return Promise.resolve(null);
@@ -66,7 +66,7 @@ describe("NetworkPage", () => {
     const { invoke } = await import("@tauri-apps/api/core");
     vi.mocked(invoke).mockImplementation((cmd: string) => {
       if (cmd === "get_network_snapshot") {
-        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [] });
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [], arp_entries: [] });
       }
       if (cmd === "get_docker_snapshot") {
         return Promise.resolve({ available: false, installed: false, error: null, containers: [], images: [] });
@@ -84,7 +84,7 @@ describe("NetworkPage", () => {
     const { invoke } = await import("@tauri-apps/api/core");
     vi.mocked(invoke).mockImplementation((cmd: string) => {
       if (cmd === "get_network_snapshot") {
-        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [] });
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [], arp_entries: [] });
       }
       if (cmd === "get_docker_snapshot") {
         return Promise.resolve({
@@ -115,7 +115,7 @@ describe("NetworkPage", () => {
     const { invoke } = await import("@tauri-apps/api/core");
     vi.mocked(invoke).mockImplementation((cmd: string) => {
       if (cmd === "get_network_snapshot") {
-        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [] });
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [], arp_entries: [] });
       }
       if (cmd === "get_docker_snapshot") {
         return Promise.resolve({
@@ -160,6 +160,7 @@ describe("NetworkPage", () => {
           dns_servers: ["1.1.1.1", "8.8.8.8"],
           hosts_file: "127.0.0.1 localhost\n",
           routes: [],
+          arp_entries: [],
         });
       }
       if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
@@ -175,7 +176,7 @@ describe("NetworkPage", () => {
     const { invoke } = await import("@tauri-apps/api/core");
     vi.mocked(invoke).mockImplementation((cmd: string) => {
       if (cmd === "get_network_snapshot") {
-        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [] });
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [], arp_entries: [] });
       }
       if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
       if (cmd === "get_network_interfaces") {
@@ -214,6 +215,7 @@ describe("NetworkPage", () => {
           dns_servers: [],
           hosts_file: "127.0.0.1 localhost\n",
           routes: [],
+          arp_entries: [],
         });
       }
       if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
@@ -238,6 +240,7 @@ describe("NetworkPage", () => {
           dns_servers: [],
           hosts_file: "127.0.0.1 localhost\n",
           routes: [],
+          arp_entries: [],
         });
       }
       if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
@@ -253,7 +256,7 @@ describe("NetworkPage", () => {
     const { invoke } = await import("@tauri-apps/api/core");
     vi.mocked(invoke).mockImplementation((cmd: string) => {
       if (cmd === "get_network_snapshot") {
-        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [] });
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [], arp_entries: [] });
       }
       if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
       if (cmd === "ping_host") {
@@ -273,7 +276,7 @@ describe("NetworkPage", () => {
     const { invoke } = await import("@tauri-apps/api/core");
     vi.mocked(invoke).mockImplementation((cmd: string) => {
       if (cmd === "get_network_snapshot") {
-        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [] });
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [], arp_entries: [] });
       }
       if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
       if (cmd === "ping_host") {
@@ -292,7 +295,7 @@ describe("NetworkPage", () => {
     const { invoke } = await import("@tauri-apps/api/core");
     vi.mocked(invoke).mockImplementation((cmd: string) => {
       if (cmd === "get_network_snapshot") {
-        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [] });
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [], arp_entries: [] });
       }
       if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
       if (cmd === "ping_host") return Promise.reject("ping: this-does-not-resolve.invalid: Name or service not known");
@@ -308,7 +311,7 @@ describe("NetworkPage", () => {
     const { invoke } = await import("@tauri-apps/api/core");
     vi.mocked(invoke).mockImplementation((cmd: string) => {
       if (cmd === "get_network_snapshot") {
-        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [] });
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [], arp_entries: [] });
       }
       if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
       if (cmd === "dns_lookup") return Promise.resolve(["172.217.22.110"]);
@@ -326,7 +329,7 @@ describe("NetworkPage", () => {
     const { invoke } = await import("@tauri-apps/api/core");
     vi.mocked(invoke).mockImplementation((cmd: string) => {
       if (cmd === "get_network_snapshot") {
-        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [] });
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [], arp_entries: [] });
       }
       if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
       if (cmd === "dns_lookup") return Promise.resolve([]);
@@ -342,7 +345,7 @@ describe("NetworkPage", () => {
     const { invoke } = await import("@tauri-apps/api/core");
     vi.mocked(invoke).mockImplementation((cmd: string) => {
       if (cmd === "get_network_snapshot") {
-        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [] });
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n", routes: [], arp_entries: [] });
       }
       if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
       if (cmd === "dns_lookup") return Promise.reject("hôte invalide : -oops");
@@ -367,6 +370,7 @@ describe("NetworkPage", () => {
             { destination: "default", gateway: "172.17.208.1", interface: "eth0", metric: null },
             { destination: "172.17.208.0/20", gateway: null, interface: "eth0", metric: 100 },
           ],
+          arp_entries: [],
         });
       }
       if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
@@ -382,6 +386,39 @@ describe("NetworkPage", () => {
   it("shows an empty-state message when no routes are detected", async () => {
     const wrapper = mount(NetworkPage);
     await vi.waitFor(() => expect(wrapper.text()).toContain("Aucune route détectée."));
+  });
+
+  it("shows ARP entries with MAC/interface/state, and a placeholder for an unresolved (no lladdr) entry", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") {
+        return Promise.resolve({
+          wifi_networks: [],
+          listening_ports: [],
+          dns_servers: [],
+          hosts_file: "127.0.0.1 localhost\n",
+          routes: [],
+          arp_entries: [
+            { ip: "172.17.208.1", mac: "00:15:5d:4a:fb:0f", interface: "eth0", state: "STALE" },
+            { ip: "172.17.208.250", mac: null, interface: "eth0", state: "INCOMPLETE" },
+          ],
+        });
+      }
+      if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("172.17.208.1"));
+    expect(wrapper.text()).toContain("00:15:5d:4a:fb:0f");
+    expect(wrapper.text()).toContain("STALE");
+    expect(wrapper.text()).toContain("172.17.208.250");
+    expect(wrapper.text()).toContain("(inconnue)");
+    expect(wrapper.text()).toContain("INCOMPLETE");
+  });
+
+  it("shows an empty-state message when no ARP entries are detected", async () => {
+    const wrapper = mount(NetworkPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Aucune entrée ARP détectée."));
   });
 
   it("drops out-of-range port numbers before sending them, instead of crashing the scan on a raw IPC error", async () => {
