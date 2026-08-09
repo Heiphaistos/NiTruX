@@ -913,3 +913,13 @@ Les tests génériques existants (bouclent déjà sur tous les profils) couvrent
 3 nouveaux tests. 423/423 frontend (421→423, +2 nets), 374/374 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.117→0.25.118, commit `1f416ae`, poussé.
 
 **22 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools"). Prochain cycle réel : **378**.
+
+## Mise à jour (2026-08-09, v0.25.119, cycle 378) — 2 profils d'installation supplémentaires (Science & Éducation, Accessibilité)
+
+Suite directe du chantier catalogue-enrichi du cycle 377. Deux groupements cohérents supplémentaires : **Science & Éducation** (octave, jupyter-notebook, geogebra, stellarium) et **Accessibilité** (orca, espeak, onboard, kmag). 6 profils couvrent désormais 7 des 29 catégories d'`appCatalog.ts`.
+
+**"Impression 3D" évaluée et écartée comme profil autonome** : seulement 3 entrées réelles dans cette catégorie, sous le minimum de 4 applications que respectent déjà tous les profils existants -- décision de portée documentée, pas un oubli.
+
+Même discipline que le cycle 377 : chaque `appId` vérifié individuellement contre le vrai `appCatalog.ts` avant ajout. 2 nouveaux tests (existence ciblée des 2 profils + sélection réelle du profil "Accessibilité" via l'UI montée, vérifiant que ses 4 cases se cochent). 425/425 frontend (423→425, +2), 374/374 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.118→0.25.119, commit `a628ccf`, poussé.
+
+**23 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools"). Prochain cycle réel : **379**.
