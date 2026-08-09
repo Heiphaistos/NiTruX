@@ -935,3 +935,13 @@ Après échecs de `cargo clippy`/`npm outdated` (rien à corriger), audit page-p
 Nettoyage VM post-test confirmé (aucun fichier d'injection créé, aucun processus résiduel). 4 nouveaux tests Rust + 3 nouveaux tests frontend. 428/428 frontend (425→428, +3), 376/376 Rust (374→376, +2), `vue-tsc` clean. Version 0.25.119→0.25.120, commit `ffad589`, poussé.
 
 **24 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Éléments en attente inchangés par ailleurs. Prochain cycle réel : **380**.
+
+## Mise à jour (2026-08-09, v0.25.121, cycle 380) — 4 pages protégées contre un écran silencieusement vide en cas d'échec IPC
+
+CSP écartée cette fois (nécessite build+vérification GUI live, budget bien au-delà d'un cycle -- confirmé par plusieurs cycles antérieurs). Retour à l'audit page-par-page : `DependenciesPage.vue` (lue en entier) n'a AUCUN `try/catch` autour de son `invoke()` -- contrairement à toutes les autres pages de l'app. Sweep systématique (`grep -c "try {"` sur les 21 pages `onMounted(async ...)`) : **3 autres pages partagent exactement le même trou** (`BluetoothPage.vue`, `PeripheralsPage.vue`, `UserAccountsPage.vue`), les 4 backées par des commandes Rust infaillibles par conception (`Vec<T>`/struct direct, jamais `Result`) -- ce qui explique pourquoi le bug n'a jamais été visible en usage normal, mais reste un vrai trou de robustesse face à un échec de la couche IPC elle-même (rare mais réel, catégorie distincte de la logique Rust).
+
+Corrigé les 4 en un seul cycle (même correctif mécanique appliqué 4 fois, cohérent avec les sweeps déjà menés pour `Date.now()`/aria-live). `PeripheralsPage.vue` reçoit 4 blocs `try/catch` indépendants (pas un seul partagé) -- même raisonnement déjà établi dans `InstalledSoftwarePage.vue` : ses 4 sources (xrandr/lsusb/pactl/lpstat) sont indépendantes, un échec de l'une (ex: pas de CUPS) ne doit pas empêcher les trois autres de charger.
+
+4 nouveaux tests frontend (un par page, chacun confirmant qu'un rejet du backend affiche un message clair au lieu d'une page vide). 432/432 frontend (428→432, +4), 376/376 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.120→0.25.121, commit `72deb52`, poussé.
+
+**25 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Éléments en attente inchangés par ailleurs (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools"). Prochain cycle réel : **381**.
