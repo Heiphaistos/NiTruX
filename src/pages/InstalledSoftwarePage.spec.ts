@@ -73,6 +73,22 @@ describe("InstalledSoftwarePage", () => {
     expect(wrapper.text()).toContain("/home/dev");
   });
 
+  it("shows a clear error and still shows packages when get_environment_variables rejects", async () => {
+    // Regression guard for the actual bug: get_environment_variables had
+    // no try/catch at all -- a rejection there was an unhandled rejection
+    // with no error ever shown, and (before this fix) would have aborted
+    // if it came before packages were already fetched.
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "list_installed_packages") return Promise.resolve([{ name: "firefox", version: "128.0" }]);
+      if (cmd === "get_environment_variables") return Promise.reject("impossible de lire l'environnement");
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(InstalledSoftwarePage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("impossible de lire l'environnement"));
+    expect(wrapper.text()).toContain("firefox");
+  });
+
   it("does not flash 'no package matches' while list_installed_packages is still pending", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     let resolvePackages!: (value: unknown[]) => void;

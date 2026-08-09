@@ -72,4 +72,20 @@ describe("UninstallerPage", () => {
     const uninstallCallsAfter = vi.mocked(invoke).mock.calls.filter((c) => c[0] === "uninstall_package").length;
     expect(uninstallCallsAfter).toBe(uninstallCallsBefore);
   });
+
+  it("shows a clear error and still shows the package list when detect_native_manager rejects", async () => {
+    // Regression guard for the actual bug: detect_native_manager had no
+    // try/catch -- a rejection there was an unhandled rejection with no
+    // error ever shown, and the header was stuck on "Détection du
+    // gestionnaire..." forever instead of indicating an actual failure.
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) => {
+      if (cmd === "list_installed_packages") return Promise.resolve([{ name: "curl", version: "7.88.1" }]);
+      if (cmd === "detect_native_manager") return Promise.reject("tauri IPC channel closed");
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(UninstallerPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("tauri IPC channel closed"));
+    expect(wrapper.text()).toContain("curl");
+  });
 });

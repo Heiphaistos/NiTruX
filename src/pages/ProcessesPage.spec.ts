@@ -74,4 +74,26 @@ describe("ProcessesPage", () => {
     expect(wrapper.text()).toContain("100.0 Mo");
     expect(wrapper.text()).not.toContain("MB");
   });
+
+  it("shows an error message for a failing section without blocking the other three", async () => {
+    // Regression guard: none of the 4 invoke() calls here were ever
+    // guarded by try/catch -- a single failing section (e.g. no systemd,
+    // so get_systemd_services rejects) previously left every later
+    // `.value` assignment un-run, since a rejection anywhere in the
+    // sequential onMounted body aborted the rest, with no error shown.
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) => {
+      if (cmd === "get_processes") return Promise.resolve([{ pid: 1, name: "nitrux", cpu_percent: 1, memory_bytes: 1000 }]);
+      if (cmd === "get_systemd_services") return Promise.reject("systemctl introuvable");
+      if (cmd === "get_autostart_entries") return Promise.resolve([{ name: "nm-applet.desktop" }]);
+      if (cmd === "get_scheduled_tasks") return Promise.resolve(["fwupd-refresh.timer"]);
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(ProcessesPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("systemctl introuvable"));
+    // The other three sections must still have loaded successfully.
+    expect(wrapper.text()).toContain("nitrux");
+    expect(wrapper.text()).toContain("nm-applet.desktop");
+    expect(wrapper.text()).toContain("fwupd-refresh.timer");
+  });
 });

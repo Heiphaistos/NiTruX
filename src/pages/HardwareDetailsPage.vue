@@ -13,16 +13,25 @@ interface PciDevice { slot: string; class: string; description: string }
 
 const details = ref<HardwareDetails | null>(null);
 const gpus = ref<PciDevice[]>([]);
-// get_hardware_details is infallible (bare return type), but get_pci_devices
-// is Result<Vec<PciDevice>, String> (e.g. errors if the pciutils package
-// isn't installed) and had no try/catch -- a rejection there would leave
-// gpus stuck at its default [], indistinguishable from the already-handled
-// "genuinely no GPU" empty state, with no indication anything actually
-// failed.
+// get_pci_devices is Result<Vec<PciDevice>, String> (e.g. errors if the
+// pciutils package isn't installed) and had no try/catch -- a rejection
+// there would leave gpus stuck at its default [], indistinguishable from
+// the already-handled "genuinely no GPU" empty state, with no indication
+// anything actually failed.
 const gpuError = ref<string | null>(null);
+// get_hardware_details itself has a bare (infallible-by-Rust-logic) return
+// type, but that only rules out the *command's own* logic erroring -- the
+// IPC call can still reject at the Tauri layer itself (panic, etc.), the
+// same rare-but-real category already guarded for every other page in the
+// app (see NetworkPage.vue, cycle 387).
+const detailsError = ref<string | null>(null);
 
 onMounted(async () => {
-  details.value = await invoke<HardwareDetails>("get_hardware_details");
+  try {
+    details.value = await invoke<HardwareDetails>("get_hardware_details");
+  } catch (e) {
+    detailsError.value = String(e);
+  }
   try {
     const pci = await invoke<PciDevice[]>("get_pci_devices");
     gpus.value = pci.filter((d) => d.class.includes("VGA") || d.class.includes("3D"));
@@ -46,6 +55,8 @@ const memoryRows = computed(() => details.value ? [
 <template>
   <div class="hd-page">
     <NxSectionHeader title="Matériel détaillé" description="Processeur, carte mère, mémoire et GPU." />
+
+    <NxCard v-if="detailsError" danger>{{ detailsError }}</NxCard>
 
     <template v-if="details">
       <NxCard>
