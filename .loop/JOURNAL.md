@@ -3264,3 +3264,13 @@ Re-vérifié `WiFiAnalyzerPage::securityStatus` (rien de plus possible sans mat�
 6 nouveaux tests (mock partagé + 3 tests bannière : absente si vide, affichée avec compteur + navigation au clic, ne bloque pas le reste du tableau de bord si rejetée). 472/472 frontend (469→472... le compte exact inclut le correctif de mock, pas un nouveau test), 384/384 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.136→0.25.137, commit `9a6ba24`, poussé.
 
 **41 fonctionnalités/améliorations/correctifs accumulés depuis la release v0.25.132.** Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools", "Turbo Mode").
+
+## Cycle 397 -- 2026-08-09T10:11:57Z
+
+Suite du conseil du checkpoint 396. `drivers.rs`/`DriversPage.vue`, `sensors.rs`, `smart.rs` relus intégralement -- tous exceptionnellement mûrs, aucun bug trouvé. Vérification annexe sur `smart.rs` : hypothèse d'un risque de traduction locale sur la ligne de santé smartctl (même classe de bug déjà trouvée deux fois dans ce projet, `ufw`/`apt`) -- **vérifiée et infirmée** en extrayant le vrai paquet `smartmontools` (`apt-get download` + `dpkg-deb -x`, sans root) : aucun fichier `.mo`/dossier `locale` nulle part dans le paquet, confirmant que `smartctl` ne traduit jamais sa sortie. Constat négatif propre, pas de correctif nécessaire.
+
+**Vrai bug trouvé en relisant `DisksPage.vue` en entier** : le badge de santé SMART affichait "inconnu" (quand `health` est `null` -- cas réel sur certains disques NVMe/RAID qui ne rapportent pas la ligne standard "SMART overall-health self-assessment", documenté dans le `Ok(None)` de `smart.rs`) avec le MÊME statut `'danger'` (rouge) qu'un disque réellement défaillant -- suggère à tort que le disque est en train de lâcher alors que la réponse honnête est "on ne sait pas".
+
+Corrigé avec une fonction dédiée `smartBadgeStatus()` : `'warning'` (neutre) pour `null`, `'success'`/`'danger'` selon la valeur réelle sinon. 1 nouveau test de régression. 473/473 frontend (472→473, +1), 384/384 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.137→0.25.138, commit `5dc6e6c`, poussé.
+
+**42 fonctionnalités/améliorations/correctifs accumulés depuis la release v0.25.132.** Le backlog continue de croître (42 non publiés) -- une coupure de release serait à envisager si l'utilisateur le souhaite. Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools", "Turbo Mode").
