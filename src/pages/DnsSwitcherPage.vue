@@ -18,10 +18,20 @@ const manualDns = ref("");
 const applying = ref(false);
 const applyError = ref<string | null>(null);
 const applySuccess = ref(false);
+const refreshError = ref<string | null>(null);
 
 async function refresh() {
-  const snapshot = await invoke<{ dns_servers: string[] }>("get_network_snapshot");
-  currentDns.value = snapshot.dns_servers;
+  try {
+    const snapshot = await invoke<{ dns_servers: string[] }>("get_network_snapshot");
+    currentDns.value = snapshot.dns_servers;
+    refreshError.value = null;
+  } catch (e) {
+    // Deliberately distinct from applyError: showing "Serveurs actuels :
+    // aucun" on a failed refresh would misleadingly read as "no DNS
+    // configured" rather than "couldn't check" -- a wrong-information bug,
+    // not just a blank section.
+    refreshError.value = String(e);
+  }
 }
 
 onMounted(refresh);
@@ -61,6 +71,7 @@ async function apply(servers: string[]) {
   <div class="dns-page">
     <NxSectionHeader title="DNS Switcher" :description="`Serveurs actuels : ${currentDns.join(', ') || 'aucun'}`" />
 
+    <NxCard v-if="refreshError" danger>{{ refreshError }}</NxCard>
     <NxCard v-if="applyError" danger>{{ applyError }}</NxCard>
     <NxBadge v-if="applySuccess" status="success" live>DNS mis à jour.</NxBadge>
 

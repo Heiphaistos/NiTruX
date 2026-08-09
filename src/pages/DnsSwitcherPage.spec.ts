@@ -55,6 +55,18 @@ describe("DnsSwitcherPage", () => {
     await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("set_dns_servers", { content: "nameserver 9.9.9.9" }));
   });
 
+  it("shows an error message instead of misleadingly claiming no DNS servers are configured, when the initial refresh fails", async () => {
+    // Regression guard for the actual gap: get_network_snapshot's own
+    // onMounted call had no try/catch, so a failure left currentDns at its
+    // default empty array -- rendering "Serveurs actuels : aucun", which
+    // reads as "no DNS configured" rather than "couldn't check". Wrong
+    // information, not just a blank section.
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockRejectedValueOnce("réseau injoignable");
+    const wrapper = mount(DnsSwitcherPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("réseau injoignable"));
+  });
+
   it("skips blank lines from the manual textarea instead of sending an empty nameserver entry", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     const wrapper = mount(DnsSwitcherPage);
