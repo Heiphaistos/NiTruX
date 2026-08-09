@@ -74,4 +74,10 @@ export const installProfiles: InstallProfile[] = [
     description: "Clients de synchronisation cloud et accès à des stockages distants.",
     appIds: ["nextcloud-desktop", "dropbox", "syncthing", "davfs2", "gigolo"],
   },
+  {
+    id: "productivite",
+    label: "Productivité",
+    description: "Prise de notes et gestion de tâches.",
+    appIds: ["obsidian", "joplin", "taskwarrior", "planner"],
+  },
 ];
