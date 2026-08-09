@@ -3158,3 +3158,13 @@ Chaque page reçoit son propre `try/catch` + affichage d'erreur, cohérent avec 
 450/450 frontend (446→450, +4 nets après ce déplacement), 376/376 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.128→0.25.129, commit `62e740b`, poussé.
 
 **33 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Le scanner Node reste disponible (`check_onmounted_guard.js`) si un futur cycle veut re-balayer après un nouvel ajout de page. Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools").
+
+## Cycle 389 -- 2026-08-09T07:11:03Z
+
+Retour au filon catalogue (candidats restants du checkpoint 388). "Émulation" (8 entrées réelles `appCatalog.ts` : émulateurs console + couches de compatibilité Windows) non couverte -- distincte de "jeux" (launchers modernes multi-plateformes : Steam/Lutris/Heroic/RetroArch), pas de doublon conceptuel.
+
+Nouveau profil "emulation" : wine + bottles (compatibilité Windows) + dosbox + scummvm + dolphin-emu (émulation rétro), 5 apps mélangeant les deux thèmes de la catégorie plutôt que de n'en couvrir qu'un seul. Chaque `appId` vérifié individuellement contre le vrai `appCatalog.ts`.
+
+2 nouveaux tests (assertion ciblée `installProfiles.spec.ts` + test UI de sélection `InstallProfilesPage.spec.ts`, même discipline que les cycles précédents). 452/452 frontend (450→452, +2), 376/376 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.129→0.25.130, commit `29c0482`, poussé.
+
+**34 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** 13 profils couvrent désormais 11 des 29 catégories `appCatalog.ts`. Candidats catalogue restants : Réseau(29), Ligne de commande(40) -- les deux plus grosses catégories non encore couvertes, nécessiteront une curation plus poussée vu leur taille. Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools").
