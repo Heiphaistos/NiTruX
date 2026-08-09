@@ -33,6 +33,14 @@ describe("InstallProfilesPage", () => {
     expect(checkboxes.length).toBe(4);
   });
 
+  it("selecting the rebuilt 'Développement' profile checks its real dev tooling, not the leftover 'htop'", async () => {
+    const wrapper = mount(InstallProfilesPage);
+    const button = wrapper.findAll("button").find((b) => b.text().includes("Développement"))!;
+    await button.trigger("click");
+    const checkboxes = wrapper.findAll("input[type=checkbox]:checked");
+    expect(checkboxes.length).toBe(5);
+  });
+
   it("selecting the new 'Accessibilité' profile checks all its real appCatalog entries", async () => {
     const wrapper = mount(InstallProfilesPage);
     const button = wrapper.findAll("button").find((b) => b.text().includes("Accessibilité"))!;

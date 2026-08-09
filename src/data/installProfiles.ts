@@ -17,8 +17,8 @@ export const installProfiles: InstallProfile[] = [
   {
     id: "developpement",
     label: "Développement",
-    description: "Outils de base pour coder et gérer des versions.",
-    appIds: ["git", "htop"],
+    description: "Éditeur de code, contrôle de version, chaîne de compilation C/C++ et deux langages courants.",
+    appIds: ["git", "vscode", "build-essential", "python3", "nodejs"],
   },
   {
     id: "creation",
