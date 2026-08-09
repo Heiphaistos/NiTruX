@@ -881,3 +881,13 @@ Suite de `DiagTabNetTools`. Contrairement à Ping/Recherche DNS/Scanner de ports
 5 nouveaux tests Rust (parsing pur incluant les 2 vraies lignes capturées sur cette machine + 1 cas avec métrique écrit à la main, honnêtement marqué comme non capturé en direct + test d'intégration réel confirmant une route par défaut) + 2 nouveaux tests frontend. 417/417 frontend (415→417, +2), 361/361 Rust (356→361, +5), `vue-tsc` clean. Version 0.25.114→0.25.115, commit `7c804dc`, poussé.
 
 **19 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Éléments en attente inchangés par ailleurs. Prochain cycle réel : **375** -- reste traceroute/ARP de `DiagTabNetTools` (HTTP check/bandwidth/net shares jugés hors périmètre pour un outil de diagnostic système généraliste, à confirmer si repris) ; sinon retour à la comparaison NiTriTe plus large ou reprise d'un signalement différé.
+
+## Mise à jour (2026-08-09, v0.25.116, cycle 375) — table ARP/voisins ajoutée à l'onglet Vue d'ensemble de la page Réseau
+
+Suite et clôture du volet "données passives" de `DiagTabNetTools` : table ARP (`ip neigh show`), même carte que la table de routage du cycle précédent, même onglet "Vue d'ensemble" (donnée en lecture seule récupérée au montage, pas une sonde active). `NetworkSnapshot` gagne un 6e champ `arp_entries: Vec<ArpEntry>`.
+
+**Vérifié en direct avant d'écrire le parseur, cas limite déclenché volontairement** : ping d'une adresse LAN sans rien en écoute pour produire une vraie entrée `INCOMPLETE`, confirmée n'avoir AUCUN champ `lladdr` (pas un champ vide) -- `ArpEntry::mac` reste donc un `Option<String>` honnête plutôt qu'une chaîne vide qui laisserait croire à une adresse MAC réelle mais vide.
+
+4 nouveaux tests Rust (parsing pur avec les 2 vraies lignes capturées incluant le cas INCOMPLETE + garde ligne trop courte + test d'intégration réel) + 3 nouveaux tests frontend. 419/419 frontend (417→419, +2), 365/365 Rust (361→365, +4), `vue-tsc` clean. Version 0.25.115→0.25.116, commit `dc3e19c`, poussé.
+
+**20 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** `DiagTabNetTools` désormais couvert pour toutes ses portions read-only et Ping/DNS Lookup ; reste uniquement traceroute (sonde active, portée similaire à Ping) comme candidat restant de ce composant. Prochain cycle réel : **376**.
