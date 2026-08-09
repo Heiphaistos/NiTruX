@@ -3141,3 +3141,20 @@ Corrigé avec 3 `try/catch` indépendants (pas un seul partagé), cohérent avec
 3 nouveaux tests (un par source : overview/docker/interfaces, chacun confirmant qu'un rejet affiche un message clair -- et pour Docker, confirmant explicitement que le mauvais message "pas installé" n'apparaît PAS). 446/446 frontend (443→446, +3), 376/376 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.127→0.25.128, commit `acd393b`, poussé.
 
 **32 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools").
+
+## Cycle 388 -- 2026-08-09T07:03:48Z
+
+Suite directe du conseil du cycle 387 : re-vérifier les pages à handlers multiples pour le même angle mort méthodologique (grep `try {` fichier entier au lieu du corps réel de `onMounted`). Écrit un vrai scanner (`check_onmounted_guard.js`, Node, via l'outil Write puis exécuté par chemin) qui extrait le corps réel de la fonction passée à `onMounted` (forme fléchée inline OU référence de fonction nommée) et vérifie que chaque appel `invoke(` qu'il contient tombe dans une plage `try {...}` balancée -- pas juste un comptage global.
+
+Passé sur les 33 pages utilisant `onMounted` : 4 vrais trous trouvés (au-delà des faux positifs déjà attendus : commentaire de `NetworkPage.vue` contenant le mot "invoke(", pattern `managerReady = invoke(...).then(...)` déjà délibéré dans `InstallProfilesPage.vue`/`QuickInstallPage.vue`, écriture clavier fire-and-forget déjà documentée dans `TerminalPage.vue`).
+
+**4 pages corrigées, même cycle/commit** (bug de même classe partout, cohérent avec le regroupement déjà pratiqué aux cycles 380-381) :
+- **`ProcessesPage.vue`** : AUCUNE gestion d'erreur du tout sur ses 4 appels (processus/services systemd/démarrage auto/tâches planifiées) -- le trou le plus large trouvé, page cœur "Processus & services".
+- **`HardwareDetailsPage.vue`** : `get_hardware_details` lui-même non gardé (seul le fetch GPU juste après l'était) -- son propre commentaire justifiait ça par "signature infaillible, pas besoin de try/catch", exactement le raisonnement déjà invalidé ailleurs pour la même catégorie rare-mais-réelle d'échec au niveau IPC.
+- **`InstalledSoftwarePage.vue`** / **`UninstallerPage.vue`** : même schéma -- un premier appel déjà gardé, un second appel sans rapport ajouté juste après sans garde. Les deux fichiers avaient un commentaire justifiant explicitement l'absence de garde par "infaillible" -- corrigés et commentaires mis à jour.
+
+Chaque page reçoit son propre `try/catch` + affichage d'erreur, cohérent avec la philosophie "each source degrades independently" déjà appliquée à `NetworkPage.vue` (cycle 387). 5 nouveaux tests (un par page sauf `ProcessesPage`/`InstalledSoftwarePage` qui suivent le style "erreur + les autres sources chargent quand même" de `PeripheralsPage.spec.ts`). Piège trouvé en écrivant les tests : le nouveau test de `HardwareDetailsPage.spec.ts` (utilisant `mockImplementation` non réinitialisé, convention déjà en place dans ce fichier) doit être placé EN DERNIER dans le fichier, sinon son override permanent casse le test suivant qui dépendait encore de `details` résolu.
+
+450/450 frontend (446→450, +4 nets après ce déplacement), 376/376 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.128→0.25.129, commit `62e740b`, poussé.
+
+**33 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Le scanner Node reste disponible (`check_onmounted_guard.js`) si un futur cycle veut re-balayer après un nouvel ajout de page. Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools").
