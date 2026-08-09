@@ -3073,3 +3073,15 @@ Corrigé les 4 en un seul cycle -- même correctif mécanique répété, cohére
 434/434 frontend (432→434, +2), 376/376 Rust (inchangé, aucun fichier Rust touché ce cycle), `vue-tsc` clean. Version 0.25.121→0.25.122. Commit `e27c11c`, poussé.
 
 **26 fonctionnalités/améliorations/correctifs accumulés depuis la release v0.25.96**. 26 cycles cumulés sous le nouveau mandat (356-381). Éléments en attente inchangés par ailleurs (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools").
+
+## Cycle 382 -- 2026-08-09T02:41:54Z
+
+Repris l'audit page par page (méthode qui avait payé aux cycles 380-381) sur les pages les moins mentionnées au journal : `DiskVisualizerPage.vue`, `DriversPage.vue`, `LogsPage.vue` -- toutes déjà saines (try/catch en place). En lisant `LogsPage.vue`, vérification d'une inquiétude en mémoire sur le champ `PRIORITY` de journald parfois absent : déjà corrigé dans `logs.rs` (constante `DEFAULT_PRIORITY`, test de régression dédié) -- piste fermée, pas un vrai trou.
+
+**`BootManagerPage.vue` était le vrai trou** : son `onMounted` appelait `get_boot_manager_snapshot` sans aucun try/catch, contrairement à absolument toutes les autres pages de l'app -- le trou identifié et censément fermé aux cycles 380-381 avait quand même une page qui lui avait échappé (le balayage n'avait jamais atteint cette page précise). Corrigé avec le même pattern établi partout ailleurs : ref `error`, try/catch, `<NxCard v-if="error" danger>`. Nouveau test de rejet dans `BootManagerPage.spec.ts`.
+
+**Second trouvé en vérifiant le premier** : en relançant la suite complète après le correctif, une "Unhandled Rejection" est apparue dans `App.spec.ts` -- `ReportGeneratorPage.vue:164` plantait sur `reports.length` (reports = null). Cause réelle : `list_reports` manquait dans la liste `ARRAY_RETURNING_COMMANDS` d'`App.spec.ts` (liste qui doit rester synchronisée avec les commandes Rust `-> Vec<T>`/`-> Result<Vec<T>>`), donc le mock par défaut du smoke-test lui renvoyait `null` au lieu d'un tableau vide. Vérifié la signature réelle (`report.rs:569`, `Result<Vec<ReportFile>, String>`) : jamais `null` en production, donc PAS de garde défensive ajoutée dans la page elle-même (ce serait défendre contre un cas impossible, contraire à la convention déjà documentée dans le commentaire au-dessus de la liste) -- juste l'entrée manquante ajoutée.
+
+435/435 frontend (434→435, +1), 376/376 Rust (inchangé, aucun fichier Rust touché ce cycle), `vue-tsc` clean. Version 0.25.122→0.25.123. Commit `be2128b`, poussé.
+
+**27 fonctionnalités/améliorations/correctifs accumulés depuis la release v0.25.96**. 27 cycles cumulés sous le nouveau mandat (356-382). Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools").

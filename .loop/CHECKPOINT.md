@@ -957,3 +957,15 @@ Reprise de l'audit page-par-page (`DnsSwitcherPage.vue` lue en entier) : son `re
 2 nouveaux tests frontend. 434/434 frontend (432→434, +2), 376/376 Rust (inchangé), `vue-tsc` clean. Version 0.25.121→0.25.122, commit `e27c11c`, poussé.
 
 **26 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Éléments en attente inchangés par ailleurs. Prochain cycle réel : **382**.
+
+## Mise à jour (2026-08-09, v0.25.123, cycle 382) — dernière page sans try/catch fermée, plus un second bug trouvé en vérifiant le premier
+
+Poursuite de l'audit page-par-page sur les pages les moins mentionnées au journal : `DiskVisualizerPage.vue`, `DriversPage.vue`, `LogsPage.vue` toutes déjà saines. En relisant `LogsPage.vue`, vérification d'une inquiétude en mémoire sur le champ `PRIORITY` de journald parfois absent -- déjà corrigé dans `logs.rs` avec test de régression dédié, piste fermée.
+
+`BootManagerPage.vue` était le vrai trou restant : son `onMounted` (forme fléchée inline, la même forme que le sweep du cycle 380 était censé avoir déjà couverte entièrement) appelait `get_boot_manager_snapshot` sans aucun `try/catch` -- le sweep n'avait simplement jamais atteint cette page précise. Corrigé avec le pattern établi (ref `error` + try/catch + `<NxCard v-if="error" danger>`).
+
+**Second bug trouvé en vérifiant le premier** : la suite complète relancée après le correctif a révélé une "Unhandled Rejection" dans `App.spec.ts` -- `ReportGeneratorPage.vue` plantait sur `reports.length` (reports = null). Cause : `list_reports` manquait dans `ARRAY_RETURNING_COMMANDS` d'`App.spec.ts` (liste qui doit rester synchronisée avec les commandes Rust `-> Vec<T>`), donc le mock par défaut renvoyait `null`. Signature réelle vérifiée (`report.rs:569`, `Result<Vec<ReportFile>, String>`) : jamais `null` en production -- entrée manquante ajoutée à la liste, **aucune garde défensive ajoutée dans la page elle-même** (défendrait contre un cas impossible, contraire à la convention déjà documentée dans le commentaire de la liste).
+
+1 nouveau test frontend. 435/435 frontend (434→435, +1), 376/376 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.122→0.25.123, commit `be2128b`, poussé.
+
+**27 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Le sweep try/catch app-wide (cycles 380-382) semble maintenant réellement complet -- aucune page restante trouvée sans garde sur son chargement `onMounted`. Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools"). Prochain cycle réel : **383** -- si l'audit page-par-page ne trouve plus rien de neuf, élargir via comparaison NiTriTe ou reprendre un signalement différé.
