@@ -62,4 +62,10 @@ export const installProfiles: InstallProfile[] = [
     description: "Lecteur d'écran, synthèse vocale, clavier virtuel et loupe.",
     appIds: ["orca", "espeak", "onboard", "kmag"],
   },
+  {
+    id: "virtualisation",
+    label: "Virtualisation & conteneurs",
+    description: "Machines virtuelles et conteneurs pour isoler des environnements.",
+    appIds: ["qemu-system", "virt-manager", "docker", "docker-compose"],
+  },
 ];
