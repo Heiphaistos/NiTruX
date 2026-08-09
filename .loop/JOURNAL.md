@@ -3107,3 +3107,13 @@ Suite directe du cycle 383. Vérification systématique croisée : chaque `appId
 2 nouveaux tests (assertion ciblée dans `installProfiles.spec.ts` + test UI de sélection dans `InstallProfilesPage.spec.ts`, même discipline que cycles 377-378-383). 439/439 frontend (437→439, +2), 376/376 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.124→0.25.125, commit `d6321cc`, poussé.
 
 **29 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** 10 profils couvrent désormais 8 des 29 catégories `appCatalog.ts`. Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools").
+
+## Cycle 385 -- 2026-08-09T06:14:24Z
+
+Suite directe des cycles 383-384. Candidat suivant de la liste laissée par le checkpoint 384 : "Cloud & Synchronisation" (5 entrées réelles `appCatalog.ts` : nextcloud-desktop, dropbox, syncthing, davfs2, gigolo), catégorie petite mais entièrement non couverte par les 10 profils existants.
+
+Nouveau profil "cloud-sync" : les 5 entrées de la catégorie entière (assez petite pour ne pas nécessiter de curation, contrairement à "Développement"/"Jeux" qui doivent choisir un sous-ensemble représentatif). Chaque `appId` vérifié individuellement contre le vrai `appCatalog.ts` avant ajout, même discipline que les cycles précédents.
+
+2 nouveaux tests (assertion ciblée `installProfiles.spec.ts` + test UI de sélection `InstallProfilesPage.spec.ts`). 441/441 frontend (439→441, +2), 376/376 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.125→0.25.126, commit `0c70d9e`, poussé.
+
+**30 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** 11 profils couvrent désormais 9 des 29 catégories `appCatalog.ts`. Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools").
