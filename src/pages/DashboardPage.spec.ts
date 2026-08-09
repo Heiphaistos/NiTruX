@@ -32,6 +32,7 @@ const defaultInvokeImpl = vi.hoisted(() => (cmd: string) => {
       { mountpoint: "/boot", total_bytes: 1_000_000_000, used_bytes: 900_000_000, used_percent: 90 },
     ]);
   }
+  if (cmd === "get_crash_events") return Promise.resolve([]);
   return Promise.resolve(null);
 });
 
@@ -114,6 +115,7 @@ describe("DashboardPage", () => {
         });
       }
       if (cmd === "list_disk_usage") return Promise.reject("lsblk introuvable");
+      if (cmd === "get_crash_events") return Promise.resolve([]);
       return Promise.resolve(null);
     });
     const wrapper = mount(DashboardPage);
@@ -184,6 +186,41 @@ describe("DashboardPage", () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain("Score système"));
     const saved = JSON.parse(localStorage.getItem("nitrux-dashboard-snapshot")!);
     expect(saved).toEqual({ cpu: 12.5, ram: 50, disk: 20 });
+  });
+
+  it("shows no crash banner when get_crash_events resolves empty", async () => {
+    const wrapper = mount(DashboardPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Test CPU"));
+    expect(wrapper.text()).not.toContain("panne(s) détectée(s)");
+  });
+
+  it("shows a crash banner with a count and navigates to the crash analyzer when clicked", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) => {
+      if (cmd === "get_crash_events") {
+        return Promise.resolve([
+          { kind: "OomKill", message: "Out of memory: Killed process 4821 (chromium)", unit: "kernel" },
+          { kind: "Segfault", message: "firefox[123]: segfault at 0", unit: "kernel" },
+        ]);
+      }
+      return defaultInvokeImpl(cmd);
+    });
+    const wrapper = mount(DashboardPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("2 panne(s) détectée(s)"));
+    const detailButton = wrapper.findAll("button").find((b) => b.text() === "Voir le détail")!;
+    await detailButton.trigger("click");
+    expect(wrapper.emitted("navigate")).toContainEqual(["crash-analyzer"]);
+  });
+
+  it("does not let a rejected get_crash_events block the rest of the dashboard from loading", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) => {
+      if (cmd === "get_crash_events") return Promise.reject("journalctl introuvable");
+      return defaultInvokeImpl(cmd);
+    });
+    const wrapper = mount(DashboardPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Test CPU"));
+    expect(wrapper.text()).not.toContain("panne(s) détectée(s)");
   });
 
   it("every quick-action gradient stop meets WCAG AA contrast against the tile's white text", async () => {
