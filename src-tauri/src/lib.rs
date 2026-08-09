@@ -44,6 +44,7 @@ mod subprocess;
 mod system;
 mod system_tools;
 mod terminal;
+mod traceroute;
 mod trash;
 mod update_history;
 
@@ -183,6 +184,7 @@ pub fn run() {
             portscan::scan_ports_cmd,
             ping::ping_host,
             dns_lookup::dns_lookup,
+            traceroute::traceroute_host,
             processes::get_processes,
             processes::get_systemd_services,
             processes::get_autostart_entries,

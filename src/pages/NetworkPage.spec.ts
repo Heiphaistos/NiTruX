@@ -421,6 +421,43 @@ describe("NetworkPage", () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain("Aucune entrée ARP détectée."));
   });
 
+  it("traces a route and shows each hop's host and per-probe times", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") return defaultInvokeImpl("get_network_snapshot");
+      if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
+      if (cmd === "traceroute_host") {
+        return Promise.resolve([
+          { hop: 1, host: "172.17.208.1", times_ms: [2.708, 2.685, 2.124] },
+          { hop: 2, host: null, times_ms: [] },
+        ]);
+      }
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await wrapper.findAll("button").find((b) => b.text() === "Traceroute")!.trigger("click");
+    await wrapper.find(".nx-input").setValue("8.8.8.8");
+    await wrapper.findAll("button").find((b) => b.text() === "Tracer")!.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("172.17.208.1"));
+    expect(wrapper.text()).toContain("2.708 ms");
+    expect(wrapper.text()).toContain("délai dépassé");
+    expect(invoke).toHaveBeenCalledWith("traceroute_host", { host: "8.8.8.8" });
+  });
+
+  it("shows an error message when the traceroute fails (e.g. host does not resolve)", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") return defaultInvokeImpl("get_network_snapshot");
+      if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
+      if (cmd === "traceroute_host") return Promise.reject("this-does-not-resolve: Temporary failure in name resolution");
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await wrapper.findAll("button").find((b) => b.text() === "Traceroute")!.trigger("click");
+    await wrapper.findAll("button").find((b) => b.text() === "Tracer")!.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Temporary failure in name resolution"));
+  });
+
   it("drops out-of-range port numbers before sending them, instead of crashing the scan on a raw IPC error", async () => {
     // Regression guard for the actual bug: scan_ports_cmd's backend
     // parameter is a Vec<u16> -- parseInt has no inherent range limit

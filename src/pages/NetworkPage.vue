@@ -14,6 +14,7 @@ interface RouteEntry { destination: string; gateway: string | null; interface: s
 interface ArpEntry { ip: string; mac: string | null; interface: string | null; state: string }
 interface NetworkSnapshot { wifi_networks: WifiNetwork[]; listening_ports: ListeningPort[]; dns_servers: string[]; hosts_file: string; routes: RouteEntry[]; arp_entries: ArpEntry[] }
 interface PortResult { port: number; open: boolean }
+interface TracerouteHop { hop: number; host: string | null; times_ms: number[] }
 interface PingSummary {
   packets_sent: number;
   packets_received: number;
@@ -27,7 +28,7 @@ interface DockerImageInfo { id: string; repository: string; tag: string; size: s
 interface DockerSnapshot { available: boolean; installed: boolean; error: string | null; containers: Container[]; images: DockerImageInfo[] }
 interface NetworkInterface { name: string; mac_address: string | null; rx_bytes_per_sec: number; tx_bytes_per_sec: number }
 
-type Tab = "overview" | "portscan" | "ping" | "dns" | "docker";
+type Tab = "overview" | "portscan" | "ping" | "dns" | "traceroute" | "docker";
 const activeTab = ref<Tab>("overview");
 
 const snapshot = ref<NetworkSnapshot | null>(null);
@@ -199,6 +200,24 @@ async function runDnsLookup() {
     dnsLookingUp.value = false;
   }
 }
+
+const tracerouteHost = ref("");
+const tracerouteHops = ref<TracerouteHop[] | null>(null);
+const tracerouteError = ref<string | null>(null);
+const traceroutingInProgress = ref(false);
+
+async function runTraceroute() {
+  traceroutingInProgress.value = true;
+  tracerouteError.value = null;
+  tracerouteHops.value = null;
+  try {
+    tracerouteHops.value = await invoke<TracerouteHop[]>("traceroute_host", { host: tracerouteHost.value });
+  } catch (e) {
+    tracerouteError.value = String(e);
+  } finally {
+    traceroutingInProgress.value = false;
+  }
+}
 </script>
 
 <template>
@@ -210,6 +229,7 @@ async function runDnsLookup() {
       <button :class="{ active: activeTab === 'portscan' }" @click="activeTab = 'portscan'">Scanner de ports</button>
       <button :class="{ active: activeTab === 'ping' }" @click="activeTab = 'ping'">Ping</button>
       <button :class="{ active: activeTab === 'dns' }" @click="activeTab = 'dns'">Recherche DNS</button>
+      <button :class="{ active: activeTab === 'traceroute' }" @click="activeTab = 'traceroute'">Traceroute</button>
       <button :class="{ active: activeTab === 'docker' }" @click="activeTab = 'docker'">Docker</button>
     </div>
 
@@ -331,6 +351,20 @@ async function runDnsLookup() {
       <div v-if="dnsLookupResults && dnsLookupResults.length === 0" class="net-empty">Aucun enregistrement {{ dnsLookupType }} trouvé pour cet hôte.</div>
       <div v-for="(r, ri) in dnsLookupResults ?? []" :key="`${r}-${ri}`" class="net-row">
         <span class="net-dns-record">{{ r }}</span>
+      </div>
+    </NxCard>
+
+    <NxCard v-else-if="activeTab === 'traceroute'">
+      <div class="net-form-row">
+        <NxInput v-model="tracerouteHost" placeholder="Hôte (ex: 8.8.8.8)" aria-label="Hôte à tracer" />
+        <NxButton :disabled="traceroutingInProgress" @click="runTraceroute">{{ traceroutingInProgress ? "Traceroute..." : "Tracer" }}</NxButton>
+      </div>
+      <NxCard v-if="tracerouteError" danger>{{ tracerouteError }}</NxCard>
+      <div v-if="tracerouteHops && tracerouteHops.length === 0" class="net-empty">Aucun saut détecté.</div>
+      <div v-for="h in tracerouteHops ?? []" :key="h.hop" class="net-row">
+        <span>{{ h.hop }}</span>
+        <span class="net-dns-record">{{ h.host ?? "*" }}</span>
+        <span>{{ h.times_ms.length > 0 ? h.times_ms.map((t) => `${t} ms`).join(" · ") : "délai dépassé" }}</span>
       </div>
     </NxCard>
 
