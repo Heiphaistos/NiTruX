@@ -5,6 +5,7 @@ import { invoke } from "@tauri-apps/api/core";
 import NxCard from "@/components/ui/NxCard.vue";
 import NxButton from "@/components/ui/NxButton.vue";
 import NxInput from "@/components/ui/NxInput.vue";
+import NxSelect from "@/components/ui/NxSelect.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 
 interface WifiNetwork { ssid: string; security: string; signal_percent: number; connected: boolean }
@@ -24,7 +25,7 @@ interface DockerImageInfo { id: string; repository: string; tag: string; size: s
 interface DockerSnapshot { available: boolean; installed: boolean; error: string | null; containers: Container[]; images: DockerImageInfo[] }
 interface NetworkInterface { name: string; mac_address: string | null; rx_bytes_per_sec: number; tx_bytes_per_sec: number }
 
-type Tab = "overview" | "portscan" | "ping" | "docker";
+type Tab = "overview" | "portscan" | "ping" | "dns" | "docker";
 const activeTab = ref<Tab>("overview");
 
 const snapshot = ref<NetworkSnapshot | null>(null);
@@ -168,6 +169,34 @@ async function runPing() {
     pinging.value = false;
   }
 }
+
+const DNS_QUERY_TYPE_OPTIONS = [
+  { value: "A", label: "A" },
+  { value: "AAAA", label: "AAAA" },
+  { value: "MX", label: "MX" },
+  { value: "TXT", label: "TXT" },
+  { value: "CNAME", label: "CNAME" },
+  { value: "NS", label: "NS" },
+];
+
+const dnsLookupHost = ref("");
+const dnsLookupType = ref("A");
+const dnsLookupResults = ref<string[] | null>(null);
+const dnsLookupError = ref<string | null>(null);
+const dnsLookingUp = ref(false);
+
+async function runDnsLookup() {
+  dnsLookingUp.value = true;
+  dnsLookupError.value = null;
+  dnsLookupResults.value = null;
+  try {
+    dnsLookupResults.value = await invoke<string[]>("dns_lookup", { host: dnsLookupHost.value, queryType: dnsLookupType.value });
+  } catch (e) {
+    dnsLookupError.value = String(e);
+  } finally {
+    dnsLookingUp.value = false;
+  }
+}
 </script>
 
 <template>
@@ -178,6 +207,7 @@ async function runPing() {
       <button :class="{ active: activeTab === 'overview' }" @click="activeTab = 'overview'">Vue d'ensemble</button>
       <button :class="{ active: activeTab === 'portscan' }" @click="activeTab = 'portscan'">Scanner de ports</button>
       <button :class="{ active: activeTab === 'ping' }" @click="activeTab = 'ping'">Ping</button>
+      <button :class="{ active: activeTab === 'dns' }" @click="activeTab = 'dns'">Recherche DNS</button>
       <button :class="{ active: activeTab === 'docker' }" @click="activeTab = 'docker'">Docker</button>
     </div>
 
@@ -267,6 +297,19 @@ async function runPing() {
       </div>
     </NxCard>
 
+    <NxCard v-else-if="activeTab === 'dns'">
+      <div class="net-form-row">
+        <NxInput v-model="dnsLookupHost" placeholder="Nom d'hôte (ex: example.com)" aria-label="Hôte à résoudre" />
+        <NxSelect v-model="dnsLookupType" :options="DNS_QUERY_TYPE_OPTIONS" aria-label="Type d'enregistrement DNS" />
+        <NxButton :disabled="dnsLookingUp" @click="runDnsLookup">{{ dnsLookingUp ? "Recherche..." : "Rechercher" }}</NxButton>
+      </div>
+      <NxCard v-if="dnsLookupError" danger>{{ dnsLookupError }}</NxCard>
+      <div v-if="dnsLookupResults && dnsLookupResults.length === 0" class="net-empty">Aucun enregistrement {{ dnsLookupType }} trouvé pour cet hôte.</div>
+      <div v-for="(r, ri) in dnsLookupResults ?? []" :key="`${r}-${ri}`" class="net-row">
+        <span class="net-dns-record">{{ r }}</span>
+      </div>
+    </NxCard>
+
     <NxCard v-else-if="activeTab === 'docker'">
       <div v-if="!docker?.available && !docker?.installed" class="net-empty">Docker n'est pas installé sur ce système.</div>
       <div v-else-if="!docker?.available" class="net-empty">
@@ -297,6 +340,7 @@ async function runPing() {
 .net-tabs button.active { color: var(--nx-text-primary); font-weight: 600; }
 .net-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; border-bottom: 1px solid var(--nx-style-border-color); }
 .net-proto { font-size: 10px; font-weight: 600; color: var(--nx-text-secondary); background: var(--nx-bg-elevated); border-radius: 4px; padding: 1px 5px; margin-left: 4px; }
+.net-dns-record { font-family: monospace; word-break: break-all; }
 .net-textarea { width: 100%; padding: 10px; border-radius: var(--nx-style-radius); border: var(--nx-style-border-width) solid var(--nx-style-border-color); background: var(--nx-style-bg); color: var(--nx-text-primary); font-family: monospace; font-size: 12px; margin-bottom: 8px; }
 .net-success { margin-top: 10px; padding: 10px 14px; border-radius: var(--nx-style-radius); background: color-mix(in srgb, var(--nx-accent-success) 15%, transparent); border: 1px solid var(--nx-accent-success); }
 .net-form-row { display: flex; gap: 10px; align-items: center; }

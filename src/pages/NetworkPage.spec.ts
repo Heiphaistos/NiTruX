@@ -235,13 +235,12 @@ describe("NetworkPage", () => {
 
   it("pings a host and shows packet/loss and latency results", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
-    vi.mocked(invoke).mockImplementation((cmd: string, args?: Record<string, unknown>) => {
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
       if (cmd === "get_network_snapshot") {
         return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n" });
       }
       if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
       if (cmd === "ping_host") {
-        expect(args).toEqual({ host: "8.8.8.8" });
         return Promise.resolve({ packets_sent: 4, packets_received: 4, loss_percent: 0, min_ms: 15.9, avg_ms: 18.3, max_ms: 22.8 });
       }
       return Promise.resolve(null);
@@ -251,6 +250,7 @@ describe("NetworkPage", () => {
     await wrapper.findAll("button").find((b) => b.text() === "Pinger")!.trigger("click");
     await vi.waitFor(() => expect(wrapper.text()).toContain("4 / 4 reçus"));
     expect(wrapper.text()).toContain("moy 18.3 ms");
+    expect(invoke).toHaveBeenCalledWith("ping_host", { host: "8.8.8.8" });
   });
 
   it("hides the latency row when every packet was lost (avg_ms is null)", async () => {
@@ -286,6 +286,56 @@ describe("NetworkPage", () => {
     await wrapper.findAll("button").find((b) => b.text() === "Ping")!.trigger("click");
     await wrapper.findAll("button").find((b) => b.text() === "Pinger")!.trigger("click");
     await vi.waitFor(() => expect(wrapper.text()).toContain("Name or service not known"));
+  });
+
+  it("looks up DNS records for a host and displays them", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") {
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n" });
+      }
+      if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
+      if (cmd === "dns_lookup") return Promise.resolve(["172.217.22.110"]);
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await wrapper.findAll("button").find((b) => b.text() === "Recherche DNS")!.trigger("click");
+    await wrapper.find(".nx-input").setValue("example.com");
+    await wrapper.findAll("button").find((b) => b.text() === "Rechercher")!.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("172.217.22.110"));
+    expect(invoke).toHaveBeenCalledWith("dns_lookup", { host: "example.com", queryType: "A" });
+  });
+
+  it("shows an empty-state message when a DNS lookup finds no matching records", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") {
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n" });
+      }
+      if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
+      if (cmd === "dns_lookup") return Promise.resolve([]);
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await wrapper.findAll("button").find((b) => b.text() === "Recherche DNS")!.trigger("click");
+    await wrapper.findAll("button").find((b) => b.text() === "Rechercher")!.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Aucun enregistrement"));
+  });
+
+  it("shows an error message when the DNS lookup fails", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") {
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "127.0.0.1 localhost\n" });
+      }
+      if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
+      if (cmd === "dns_lookup") return Promise.reject("hôte invalide : -oops");
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await wrapper.findAll("button").find((b) => b.text() === "Recherche DNS")!.trigger("click");
+    await wrapper.findAll("button").find((b) => b.text() === "Rechercher")!.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("hôte invalide"));
   });
 
   it("drops out-of-range port numbers before sending them, instead of crashing the scan on a raw IPC error", async () => {
