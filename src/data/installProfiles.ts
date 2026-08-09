@@ -50,4 +50,16 @@ export const installProfiles: InstallProfile[] = [
     description: "Pile web classique et interface d'administration.",
     appIds: ["nginx", "mariadb-server", "php-fpm", "cockpit"],
   },
+  {
+    id: "science-education",
+    label: "Science & Éducation",
+    description: "Calcul numérique, notebooks interactifs, mathématiques et astronomie.",
+    appIds: ["octave", "jupyter-notebook", "geogebra", "stellarium"],
+  },
+  {
+    id: "accessibilite",
+    label: "Accessibilité",
+    description: "Lecteur d'écran, synthèse vocale, clavier virtuel et loupe.",
+    appIds: ["orca", "espeak", "onboard", "kmag"],
+  },
 ];
