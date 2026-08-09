@@ -11,9 +11,14 @@ interface EfiBootEntry { id: string; label: string; is_current: boolean }
 interface BootManagerSnapshot { grub: GrubDefaults | null; efi_entries: EfiBootEntry[] | null }
 
 const snapshot = ref<BootManagerSnapshot | null>(null);
+const error = ref<string | null>(null);
 
 onMounted(async () => {
-  snapshot.value = await invoke<BootManagerSnapshot>("get_boot_manager_snapshot");
+  try {
+    snapshot.value = await invoke<BootManagerSnapshot>("get_boot_manager_snapshot");
+  } catch (e) {
+    error.value = String(e);
+  }
 });
 </script>
 
@@ -21,7 +26,9 @@ onMounted(async () => {
   <div class="bm-page">
     <NxSectionHeader title="Boot Manager" description="Configuration GRUB et entrées de démarrage EFI (lecture seule)." />
 
-    <div v-if="snapshot && !snapshot.grub && !snapshot.efi_entries" class="bm-empty">
+    <NxCard v-if="error" danger>{{ error }}</NxCard>
+
+    <div v-if="!error && snapshot && !snapshot.grub && !snapshot.efi_entries" class="bm-empty">
       Configuration de démarrage indisponible sur ce système.
     </div>
 
