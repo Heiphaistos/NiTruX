@@ -3097,3 +3097,13 @@ Reconstruit avec `git` + `vscode` + `build-essential` + `python3` + `nodejs` -- 
 2 nouveaux tests (assertion ciblée sur le contenu exact du profil dans `installProfiles.spec.ts` + test UI confirmant que 5 cases se cochent, pas l'ancien 2, dans `InstallProfilesPage.spec.ts`). 437/437 frontend (435→437, +2), 376/376 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.123→0.25.124, commit `7d1a87a`, poussé.
 
 **28 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools").
+
+## Cycle 384 -- 2026-08-09T03:00:52Z
+
+Suite directe du cycle 383. Vérification systématique croisée : chaque `appId` des 9 profils existants re-catégorisé contre son entrée réelle `appCatalog.ts` (celle qui avait révélé le bug `htop`) -- **0 autre miscatégorisation trouvée**, les 9 profils restent cohérents (ex: `keepassxc` en "essentiels" est catégorie `appCatalog` "Utilitaires" mais la description du profil mentionne explicitement "mot de passe", contrairement à `htop`/"coder et gérer des versions" qui ne correspondait à rien).
+
+**Vrai écart de couverture trouvé** : la catégorie `appCatalog` "Virtualisation" (6 entrées réelles : qemu-system, virt-manager, docker, docker-compose, podman, gnome-boxes) n'était couverte par AUCUN des 9 profils -- distincte de "developpement" (outils de code, pas VM/conteneurs). Nouveau profil "Virtualisation & conteneurs" : qemu-system, virt-manager, docker, docker-compose (taille alignée sur les autres profils). Chaque `appId` vérifié individuellement.
+
+2 nouveaux tests (assertion ciblée dans `installProfiles.spec.ts` + test UI de sélection dans `InstallProfilesPage.spec.ts`, même discipline que cycles 377-378-383). 439/439 frontend (437→439, +2), 376/376 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.124→0.25.125, commit `d6321cc`, poussé.
+
+**29 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** 10 profils couvrent désormais 8 des 29 catégories `appCatalog.ts`. Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools").
