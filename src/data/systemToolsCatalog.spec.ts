@@ -74,4 +74,14 @@ describe("systemToolsCatalog", () => {
       expect(tool!.command?.trimEnd().endsWith("|| true"), `${id}: "${tool!.command}"`).toBe(true);
     }
   });
+
+  it("includes a DNS cache flush action, a genuine gap against NiTriTe's equivalent Turbo Mode/Tools quick action", () => {
+    // Unlike the du/grep cases above, a failing `resolvectl flush-caches`
+    // (e.g. systemd-resolved not running) is a real, meaningful failure to
+    // surface -- no `|| true` warranted here.
+    const tool = systemToolsCatalog.find((t) => t.id === "resolvectl-flush-caches");
+    expect(tool).toBeDefined();
+    expect(tool!.command).toBe("resolvectl flush-caches");
+    expect(tool!.category).toBe("reseau");
+  });
 });
