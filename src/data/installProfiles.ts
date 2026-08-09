@@ -92,4 +92,10 @@ export const installProfiles: InstallProfile[] = [
     description: "Clients BitTorrent, FTP et partage sur le réseau local.",
     appIds: ["transmission", "qbittorrent", "warpinator", "gftp"],
   },
+  {
+    id: "cli-moderne",
+    label: "Ligne de commande modernisée",
+    description: "Remplacements modernes des commandes Unix classiques (ls, cat, find, grep).",
+    appIds: ["eza", "bat", "fd-find", "ripgrep", "fzf"],
+  },
 ];

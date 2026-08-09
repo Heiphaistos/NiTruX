@@ -28,6 +28,7 @@ describe("InstallProfilesPage", () => {
     expect(wrapper.text()).toContain("Productivité");
     expect(wrapper.text()).toContain("Émulation & compatibilité");
     expect(wrapper.text()).toContain("Partage de fichiers");
+    expect(wrapper.text()).toContain("Ligne de commande modernisée");
   });
 
   it("selecting the new 'Jeux' profile checks all its real appCatalog entries", async () => {
@@ -92,6 +93,14 @@ describe("InstallProfilesPage", () => {
     await button.trigger("click");
     const checkboxes = wrapper.findAll("input[type=checkbox]:checked");
     expect(checkboxes.length).toBe(4);
+  });
+
+  it("selecting the new 'Ligne de commande modernisée' profile checks all its real appCatalog entries", async () => {
+    const wrapper = mount(InstallProfilesPage);
+    const button = wrapper.findAll("button").find((b) => b.text().includes("Ligne de commande modernisée"))!;
+    await button.trigger("click");
+    const checkboxes = wrapper.findAll("input[type=checkbox]:checked");
+    expect(checkboxes.length).toBe(5);
   });
 
   it("filters the manual selection catalog by category, mirroring QuickInstallPage's chip filter", async () => {
