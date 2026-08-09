@@ -49,4 +49,9 @@ describe("installProfiles", () => {
     const ids = installProfiles.map((p) => p.id);
     expect(ids).toEqual(expect.arrayContaining(["jeux", "securite", "serveur-web"]));
   });
+
+  it("includes the profiles added for science/education and accessibility coverage", () => {
+    const ids = installProfiles.map((p) => p.id);
+    expect(ids).toEqual(expect.arrayContaining(["science-education", "accessibilite"]));
+  });
 });
