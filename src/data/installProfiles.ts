@@ -80,4 +80,10 @@ export const installProfiles: InstallProfile[] = [
     description: "Prise de notes et gestion de tâches.",
     appIds: ["obsidian", "joplin", "taskwarrior", "planner"],
   },
+  {
+    id: "emulation",
+    label: "Émulation & compatibilité",
+    description: "Faire tourner d'anciens jeux et des logiciels Windows.",
+    appIds: ["wine", "bottles", "dosbox", "scummvm", "dolphin-emu"],
+  },
 ];
