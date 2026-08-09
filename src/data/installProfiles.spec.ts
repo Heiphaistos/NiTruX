@@ -75,4 +75,17 @@ describe("installProfiles", () => {
     const profile = installProfiles.find((p) => p.id === "virtualisation")!;
     expect(profile.appIds).toEqual(expect.arrayContaining(["qemu-system", "virt-manager", "docker", "docker-compose"]));
   });
+
+  it("includes the new 'cloud-sync' profile, the entire small 'Cloud & Synchronisation' catalog category", () => {
+    // Only 5 real appCatalog entries exist under this category and none
+    // were covered by any profile -- small enough to include the category
+    // whole, unlike the larger categories (Développement, Jeux) that need
+    // curation down to a representative subset.
+    const ids = installProfiles.map((p) => p.id);
+    expect(ids).toContain("cloud-sync");
+    const profile = installProfiles.find((p) => p.id === "cloud-sync")!;
+    expect(profile.appIds).toEqual(
+      expect.arrayContaining(["nextcloud-desktop", "dropbox", "syncthing", "davfs2", "gigolo"])
+    );
+  });
 });

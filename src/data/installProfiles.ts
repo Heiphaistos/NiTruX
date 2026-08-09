@@ -68,4 +68,10 @@ export const installProfiles: InstallProfile[] = [
     description: "Machines virtuelles et conteneurs pour isoler des environnements.",
     appIds: ["qemu-system", "virt-manager", "docker", "docker-compose"],
   },
+  {
+    id: "cloud-sync",
+    label: "Cloud & Synchronisation",
+    description: "Clients de synchronisation cloud et accès à des stockages distants.",
+    appIds: ["nextcloud-desktop", "dropbox", "syncthing", "davfs2", "gigolo"],
+  },
 ];
