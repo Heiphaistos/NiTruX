@@ -901,3 +901,15 @@ Dernier sous-outil de `DiagTabNetTools` : Traceroute, même précédent de conce
 9 nouveaux tests Rust (parsing pur avec les 4 vraies lignes capturées incluant le cas ECMP + validation d'entrée) + 2 nouveaux tests frontend. Pas de test d'intégration réel bout-en-bout pour `traceroute_host` (le binaire n'existe pas sur cette machine) -- cohérent avec le précédent déjà établi (dnf/pacman/zypper absents en dev, documenté et accepté). 421/421 frontend (419→421, +2), 374/374 Rust (365→374, +9), `vue-tsc` clean. Version 0.25.116→0.25.117, commit `0773012`, poussé.
 
 **21 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** `DiagTabNetTools` entièrement clos (routes, ARP, ports en écoute, Ping, Recherche DNS, Traceroute -- tous les sous-outils pertinents pour Linux couverts, HTTP check/bandwidth/net shares jugés hors périmètre). Plus aucun onglet Diagnostic NiTriTe non évalué. Prochain cycle réel : **377** -- retour à une comparaison NiTriTe plus large (autre catégorie nav) ou reprise d'un signalement différé du CHECKPOINT (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools").
+
+## Mise à jour (2026-08-09, v0.25.118, cycle 377) — 3 nouveaux profils d'installation (Jeux, Sécurité, Serveur web)
+
+Chantier ouvert "catalogue à enrichir" (mentionné dès le mandat initial, jamais repris) : `installProfiles.ts` n'avait que 4 profils (Essentiels, Développement, Création & Média, Communication) alors que `appCatalog.ts` couvre 506 applications sur 29 catégories -- écart réel confirmé, pas déjà couvert. `DiagTabSecurity.vue` de NiTriTe évalué en premier (Secure Boot/TPM/UAC/Defender/SmartScreen/VBS -- quasi entièrement Windows-only, `/sys/firmware/efi` absent sur cette machine WSL2 donc Secure Boot invérifiable en direct ici, SELinux absent du catalogue outils de cette distro cible) et écarté comme trop mince pour une fonctionnalité "score de sécurité" fiable ce cycle -- réorienté vers l'enrichissement de catalogue à la place.
+
+3 nouveaux profils ajoutés (Jeux, Sécurité & vie privée, Serveur web), chaque `appId` référencé vérifié individuellement contre le vrai `appCatalog.ts` avant ajout (un id non résolu sous-installerait silencieusement sans aucune erreur affichée, selon le raisonnement déjà documenté dans le test de régression existant).
+
+Les tests génériques existants (bouclent déjà sur tous les profils) couvrent les 3 nouveaux gratuitement ; ajouté en plus une assertion ciblée (les tests génériques seuls n'auraient pas détecté une suppression accidentelle) + un test UI réel confirmant que le profil "Jeux" coche bien ses 4 applications via l'interface, pas seulement une vérification de forme de données.
+
+3 nouveaux tests. 423/423 frontend (421→423, +2 nets), 374/374 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.117→0.25.118, commit `1f416ae`, poussé.
+
+**22 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.96.** Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools"). Prochain cycle réel : **378**.
