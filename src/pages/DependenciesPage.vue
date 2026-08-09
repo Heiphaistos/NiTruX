@@ -8,15 +8,22 @@ import NxBadge from "@/components/ui/NxBadge.vue";
 interface MissingDependency { binary: string; missing_library: string }
 
 const results = ref<MissingDependency[] | null>(null);
+const error = ref<string | null>(null);
 
 onMounted(async () => {
-  results.value = await invoke<MissingDependency[]>("scan_missing_dependencies");
+  try {
+    results.value = await invoke<MissingDependency[]>("scan_missing_dependencies");
+  } catch (e) {
+    error.value = String(e);
+  }
 });
 </script>
 
 <template>
   <div class="dep-page">
     <NxSectionHeader title="Dépendances" description="Vérifie qu'un ensemble de binaires système courants ont toutes leurs bibliothèques partagées résolues." />
+
+    <NxCard v-if="error" danger>{{ error }}</NxCard>
 
     <div v-if="results && results.length === 0" class="dep-empty">Aucune dépendance manquante détectée.</div>
 

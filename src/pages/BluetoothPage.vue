@@ -10,15 +10,22 @@ interface BluetoothDevice { address: string; name: string }
 interface BluetoothStatus { adapter_present: boolean; powered: boolean; devices: BluetoothDevice[] }
 
 const status = ref<BluetoothStatus | null>(null);
+const error = ref<string | null>(null);
 
 onMounted(async () => {
-  status.value = await invoke<BluetoothStatus>("get_bluetooth_status");
+  try {
+    status.value = await invoke<BluetoothStatus>("get_bluetooth_status");
+  } catch (e) {
+    error.value = String(e);
+  }
 });
 </script>
 
 <template>
   <div class="bt-page">
     <NxSectionHeader title="Bluetooth" description="Statut de l'adaptateur et périphériques appairés (lecture seule)." />
+
+    <NxCard v-if="error" danger>{{ error }}</NxCard>
 
     <div v-if="status && !status.adapter_present" class="bt-empty">Aucun adaptateur Bluetooth détecté.</div>
 

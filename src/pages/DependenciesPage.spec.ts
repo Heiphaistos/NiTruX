@@ -19,4 +19,11 @@ describe("DependenciesPage", () => {
     const wrapper = mount(DependenciesPage);
     await vi.waitFor(() => expect(wrapper.text()).toContain("Aucune dépendance manquante"));
   });
+
+  it("shows an error message instead of a silently blank page when the backend call fails", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockRejectedValueOnce("ldd introuvable");
+    const wrapper = mount(DependenciesPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("ldd introuvable"));
+  });
 });
