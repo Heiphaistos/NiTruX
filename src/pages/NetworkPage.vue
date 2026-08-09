@@ -10,7 +10,8 @@ import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 
 interface WifiNetwork { ssid: string; security: string; signal_percent: number; connected: boolean }
 interface ListeningPort { port: number; process: string | null; protocol: string | null }
-interface NetworkSnapshot { wifi_networks: WifiNetwork[]; listening_ports: ListeningPort[]; dns_servers: string[]; hosts_file: string }
+interface RouteEntry { destination: string; gateway: string | null; interface: string | null; metric: number | null }
+interface NetworkSnapshot { wifi_networks: WifiNetwork[]; listening_ports: ListeningPort[]; dns_servers: string[]; hosts_file: string; routes: RouteEntry[] }
 interface PortResult { port: number; open: boolean }
 interface PingSummary {
   packets_sent: number;
@@ -235,6 +236,19 @@ async function runDnsLookup() {
         <div v-for="(p, pi) in snapshot.listening_ports" :key="`${p.port}-${p.protocol}-${pi}`" class="net-row">
           <span>{{ p.port }} <span v-if="p.protocol" class="net-proto">{{ p.protocol.toUpperCase() }}</span></span>
           <span>{{ p.process ?? "?" }}</span>
+        </div>
+      </NxCard>
+
+      <NxCard>
+        <NxSectionHeader title="Table de routage" />
+        <div v-if="snapshot.routes.length === 0" class="net-empty">Aucune route détectée.</div>
+        <div v-for="(r, ri) in snapshot.routes" :key="`${r.destination}-${ri}`" class="net-row">
+          <span class="net-dns-record">{{ r.destination }}</span>
+          <span>
+            <template v-if="r.gateway">via {{ r.gateway }} </template>
+            <template v-if="r.interface">dev {{ r.interface }} </template>
+            <template v-if="r.metric !== null">metric {{ r.metric }}</template>
+          </span>
         </div>
       </NxCard>
 

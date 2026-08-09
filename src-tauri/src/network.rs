@@ -1,6 +1,7 @@
-//! Aggregates four cheap, read-only network diagnostics (Wi-Fi status,
-//! listening ports, DNS servers, `/etc/hosts`) into one `NetworkSnapshot`,
-//! mirroring `system.rs`'s `SystemSnapshot`/`get_system_snapshot` shape.
+//! Aggregates five cheap, read-only network diagnostics (Wi-Fi status,
+//! listening ports, DNS servers, `/etc/hosts`, routing table) into one
+//! `NetworkSnapshot`, mirroring `system.rs`'s
+//! `SystemSnapshot`/`get_system_snapshot` shape.
 
 use crate::subprocess;
 use serde::Serialize;
@@ -22,12 +23,21 @@ pub struct ListeningPort {
     pub protocol: Option<String>,
 }
 
+#[derive(Serialize, Clone, Debug)]
+pub struct RouteEntry {
+    pub destination: String,
+    pub gateway: Option<String>,
+    pub interface: Option<String>,
+    pub metric: Option<u32>,
+}
+
 #[derive(Serialize, Clone)]
 pub struct NetworkSnapshot {
     pub wifi_networks: Vec<WifiNetwork>,
     pub listening_ports: Vec<ListeningPort>,
     pub dns_servers: Vec<String>,
     pub hosts_file: String,
+    pub routes: Vec<RouteEntry>,
 }
 
 /// Splits one line of `nmcli -t` output on `:`, honoring nmcli's terse-mode
@@ -110,6 +120,33 @@ pub fn parse_ss_line(line: &str) -> Option<ListeningPort> {
     Some(ListeningPort { port, process, protocol })
 }
 
+/// Parses one line of `ip route show` output, e.g. (captured live on this
+/// project's own dev machine):
+/// `"default via 172.17.208.1 dev eth0 proto kernel "` or
+/// `"172.17.208.0/20 dev eth0 proto kernel scope link src 172.17.211.228"`.
+/// The destination is always the first token; every field after it is a
+/// `key value` pair (`via <gw>`, `dev <iface>`, `proto <p>`, `scope <s>`,
+/// `src <ip>`, `metric <n>`, ...) in no fixed order or count, so this
+/// scans for the three keys this app actually surfaces rather than
+/// assuming a fixed position -- unrecognized keys (`proto`, `scope`,
+/// `src`) are simply skipped, not treated as a parse failure.
+pub fn parse_ip_route_line(line: &str) -> Option<RouteEntry> {
+    let fields: Vec<&str> = line.split_whitespace().collect();
+    let destination = (*fields.first()?).to_string();
+    let mut gateway = None;
+    let mut interface = None;
+    let mut metric = None;
+    for i in 1..fields.len().saturating_sub(1) {
+        match fields[i] {
+            "via" => gateway = Some(fields[i + 1].to_string()),
+            "dev" => interface = Some(fields[i + 1].to_string()),
+            "metric" => metric = fields[i + 1].parse().ok(),
+            _ => {}
+        }
+    }
+    Some(RouteEntry { destination, gateway, interface, metric })
+}
+
 /// Extracts `nameserver` entries from `/etc/resolv.conf` content, in order.
 pub fn parse_resolv_conf(content: &str) -> Vec<String> {
     content
@@ -145,7 +182,13 @@ fn read_hosts_file() -> String {
     fs::read_to_string("/etc/hosts").unwrap_or_default()
 }
 
-/// Intentionally infallible: each of the four sub-queries independently
+fn read_routes() -> Vec<RouteEntry> {
+    subprocess::run_with_timeout("ip", &["route", "show"], Duration::from_secs(5))
+        .map(|output| output.lines().filter_map(parse_ip_route_line).collect())
+        .unwrap_or_default()
+}
+
+/// Intentionally infallible: each of the five sub-queries independently
 /// degrades to empty/default on failure (e.g. no `nmcli` on a wired-only
 /// machine, no Wi-Fi hardware, `/etc/hosts` unreadable), matching
 /// `packages::universal::list_universal_updates()`'s "optional supplement,
@@ -158,6 +201,7 @@ pub fn get_network_snapshot() -> NetworkSnapshot {
         listening_ports: read_listening_ports(),
         dns_servers: read_dns_servers(),
         hosts_file: read_hosts_file(),
+        routes: read_routes(),
     }
 }
 
@@ -380,6 +424,62 @@ mod tests {
         let interfaces = get_network_interfaces();
         assert!(!interfaces.iter().any(|i| i.name == "lo"), "loopback must be excluded");
         assert!(!interfaces.is_empty(), "expected at least one non-loopback interface on this host");
+    }
+
+    #[test]
+    fn parses_a_route_with_a_metric() {
+        // Not captured live (this project's own dev machine has no route
+        // with an explicit metric, per real_ip_route_output_regression
+        // below) -- a hand-written literal for a real, well-documented
+        // `ip route` field seen on any multi-homed system or VPN setup.
+        let line = "192.168.56.0/24 dev vboxnet0 proto kernel scope link src 192.168.56.1 metric 100";
+        let route = parse_ip_route_line(line).expect("should parse");
+        assert_eq!(route.destination, "192.168.56.0/24");
+        assert_eq!(route.interface.as_deref(), Some("vboxnet0"));
+        assert_eq!(route.metric, Some(100));
+        assert_eq!(route.gateway, None);
+    }
+
+    #[test]
+    fn skips_an_empty_route_line() {
+        assert!(parse_ip_route_line("").is_none());
+    }
+}
+
+/// Not part of the plan's specified test suite — added to prove
+/// `parse_ip_route_line` against the ACTUAL `ip route show` output
+/// captured on this project's own dev machine. Kept as a permanent
+/// regression test, same rationale as `real_ss_output_regression`.
+#[cfg(test)]
+mod real_ip_route_output_regression {
+    use super::*;
+
+    #[test]
+    fn parses_the_real_default_route() {
+        let line = "default via 172.17.208.1 dev eth0 proto kernel ";
+        let route = parse_ip_route_line(line).expect("should parse");
+        assert_eq!(route.destination, "default");
+        assert_eq!(route.gateway.as_deref(), Some("172.17.208.1"));
+        assert_eq!(route.interface.as_deref(), Some("eth0"));
+        assert_eq!(route.metric, None);
+    }
+
+    #[test]
+    fn parses_the_real_link_local_route_with_no_gateway() {
+        let line = "172.17.208.0/20 dev eth0 proto kernel scope link src 172.17.211.228";
+        let route = parse_ip_route_line(line).expect("should parse");
+        assert_eq!(route.destination, "172.17.208.0/20");
+        assert_eq!(route.interface.as_deref(), Some("eth0"));
+        assert_eq!(route.gateway, None);
+    }
+
+    #[test]
+    fn get_network_snapshot_includes_at_least_this_hosts_real_default_route() {
+        // Real end-to-end call, not a mock: any host with working network
+        // connectivity (including this project's own dev machine) has a
+        // default route.
+        let snapshot = get_network_snapshot();
+        assert!(snapshot.routes.iter().any(|r| r.destination == "default"), "expected a default route on this host, got {:?}", snapshot.routes);
     }
 }
 
