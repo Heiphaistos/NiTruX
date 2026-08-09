@@ -30,6 +30,7 @@ const ARRAY_RETURNING_COMMANDS = new Set([
   "list_disk_usage",
   "list_disks",
   "list_installed_packages",
+  "list_reports",
   "list_snapshots",
   "list_trash",
   "list_updates",

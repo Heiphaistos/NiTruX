@@ -44,4 +44,11 @@ describe("BootManagerPage", () => {
     const wrapper = mount(BootManagerPage);
     await vi.waitFor(() => expect(wrapper.text()).toContain("Aucune entrée de démarrage EFI trouvée."));
   });
+
+  it("shows a clear error message instead of a blank page when the backend call is rejected", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error("grub2-editenv not found"));
+    const wrapper = mount(BootManagerPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("grub2-editenv not found"));
+  });
 });
