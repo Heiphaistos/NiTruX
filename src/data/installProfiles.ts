@@ -86,4 +86,10 @@ export const installProfiles: InstallProfile[] = [
     description: "Faire tourner d'anciens jeux et des logiciels Windows.",
     appIds: ["wine", "bottles", "dosbox", "scummvm", "dolphin-emu"],
   },
+  {
+    id: "partage-fichiers",
+    label: "Partage de fichiers",
+    description: "Clients BitTorrent, FTP et partage sur le réseau local.",
+    appIds: ["transmission", "qbittorrent", "warpinator", "gftp"],
+  },
 ];

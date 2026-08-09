@@ -110,4 +110,18 @@ describe("installProfiles", () => {
     const profile = installProfiles.find((p) => p.id === "emulation")!;
     expect(profile.appIds).toEqual(expect.arrayContaining(["wine", "bottles", "dosbox", "scummvm", "dolphin-emu"]));
   });
+
+  it("includes the new 'partage-fichiers' profile, a coherent slice of the large 'Réseau' catalog category", () => {
+    // "Réseau" has 29 real appCatalog entries spanning several unrelated
+    // themes (diagnostics like wireshark/nmap, VPN clients, torrent/file-
+    // sharing, remote access) -- too heterogeneous for one profile to
+    // represent well. Picked file-sharing/torrent specifically: it's the
+    // cleanest coherent slice, and unlike the diagnostics tools it doesn't
+    // conceptually overlap with NiTruX's own built-in network diagnostics
+    // (ping/traceroute/port scan already on the Réseau nav page).
+    const ids = installProfiles.map((p) => p.id);
+    expect(ids).toContain("partage-fichiers");
+    const profile = installProfiles.find((p) => p.id === "partage-fichiers")!;
+    expect(profile.appIds).toEqual(expect.arrayContaining(["transmission", "qbittorrent", "warpinator", "gftp"]));
+  });
 });
