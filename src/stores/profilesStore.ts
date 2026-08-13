@@ -37,7 +37,13 @@ function isValidStyleId(value: unknown): value is StyleId {
 function isValidPreferences(value: unknown): value is Preferences {
   if (typeof value !== "object" || value === null) return false;
   const v = value as Record<string, unknown>;
-  return typeof v.defaultScanDirectory === "string" && typeof v.dashboardRefreshIntervalMs === "number";
+  return (
+    typeof v.defaultScanDirectory === "string" &&
+    typeof v.dashboardRefreshIntervalMs === "number" &&
+    typeof v.cpuAlertThreshold === "number" &&
+    typeof v.ramAlertThreshold === "number" &&
+    typeof v.diskAlertThreshold === "number"
+  );
 }
 
 function isConfigProfile(value: unknown): value is ConfigProfile {
@@ -111,6 +117,15 @@ export const useProfilesStore = defineStore("profiles", {
       styleStore.setStyle(profile.style);
       preferencesStore.setDefaultScanDirectory(profile.preferences.defaultScanDirectory);
       preferencesStore.setDashboardRefreshIntervalMs(profile.preferences.dashboardRefreshIntervalMs);
+      // The three alert thresholds are captured by saveCurrentAs's full
+      // `{ ...preferencesStore.$state }` spread but were never restored
+      // here -- "Enregistrer" silently captured them while "Appliquer"
+      // silently dropped them, so switching profiles never actually
+      // switched a user's CPU/RAM/disk alert thresholds despite the page's
+      // own description promising the full "préférences actuelles".
+      preferencesStore.setCpuAlertThreshold(profile.preferences.cpuAlertThreshold);
+      preferencesStore.setRamAlertThreshold(profile.preferences.ramAlertThreshold);
+      preferencesStore.setDiskAlertThreshold(profile.preferences.diskAlertThreshold);
     },
     remove(id: string): void {
       this.profiles = this.profiles.filter((p) => p.id !== id);

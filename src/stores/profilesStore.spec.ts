@@ -89,6 +89,32 @@ describe("profilesStore", () => {
     expect(preferences.defaultScanDirectory).toBe("/home/dev/Downloads");
   });
 
+  it("applying a profile also restores the CPU/RAM/disk alert thresholds", () => {
+    // Regression guard for the actual bug: saveCurrentAs captures every
+    // field of preferencesStore's state via a full spread (including the
+    // three alert thresholds), but apply() only ever restored
+    // defaultScanDirectory/dashboardRefreshIntervalMs -- "Enregistrer"
+    // silently kept the thresholds while "Appliquer" silently dropped them.
+    const preferences = usePreferencesStore();
+    preferences.setCpuAlertThreshold(65);
+    preferences.setRamAlertThreshold(70);
+    preferences.setDiskAlertThreshold(90);
+
+    const profiles = useProfilesStore();
+    profiles.saveCurrentAs("Seuils personnalisés");
+
+    // Change every threshold away from the saved values before applying.
+    preferences.setCpuAlertThreshold(80);
+    preferences.setRamAlertThreshold(80);
+    preferences.setDiskAlertThreshold(85);
+
+    profiles.apply(profiles.profiles[0]);
+
+    expect(preferences.cpuAlertThreshold).toBe(65);
+    expect(preferences.ramAlertThreshold).toBe(70);
+    expect(preferences.diskAlertThreshold).toBe(90);
+  });
+
   it("removes a profile", () => {
     const profiles = useProfilesStore();
     profiles.saveCurrentAs("Bureau");
@@ -119,6 +145,23 @@ describe("profilesStore", () => {
     const result = profiles.importProfile(JSON.stringify(incomplete));
     expect(result.ok).toBe(false);
     expect(profiles.profiles).toEqual([]);
+  });
+
+  it("rejects an imported profile whose preferences object is missing an alert threshold field", () => {
+    // Regression guard: isValidPreferences used to check only
+    // defaultScanDirectory/dashboardRefreshIntervalMs, out of sync with the
+    // real 5-field Preferences interface -- a preferences object missing
+    // cpuAlertThreshold/ramAlertThreshold/diskAlertThreshold used to pass
+    // validation and get imported anyway.
+    const profiles = useProfilesStore();
+    profiles.saveCurrentAs("Valide");
+    const withoutThresholds = {
+      ...profiles.profiles[0],
+      preferences: { defaultScanDirectory: "/tmp", dashboardRefreshIntervalMs: 2000 },
+    };
+    const result = profiles.importProfile(JSON.stringify(withoutThresholds));
+    expect(result.ok).toBe(false);
+    expect(profiles.profiles.length).toBe(1); // only the original valid one
   });
 
   it("rejects malformed JSON", () => {
