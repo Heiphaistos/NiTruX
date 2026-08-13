@@ -3336,3 +3336,13 @@ Slice frais audité (6 modules Rust) : `ping.rs` (parse stats+rtt par suffixe de
 Baseline resté vert (aucun code touché). Version inchangée 0.25.140. Prochains modules frais à viser : duplicates, boot_manager, malwarescan, docker, network, processes, peripherals, hardware_details, hardware, drivers, sensors, smart, disks, packages/, portable_apps, trash, system, system_tools, terminal, network_write, disk_write, crash_analyzer, ou pages Vue.
 
 **1 correctif accumulé depuis v0.25.139** (accounts.rs cycle 399). Éléments en attente inchangés. Alerte Dependabot glib<0.20 = bloquée upstream (cf. cycle 400).
+
+## Cycle 402 -- CYCLE NÉGATIF HONNÊTE -- 2026-08-14
+
+Slice frais audité (6 modules Rust + 1 lib front) : `duplicates.rs` (bucketing par taille avant hash, skip symlinks, tri), `trash.rs` (path traversal `validate_trashed_name`, EXDEV fallback `move_path`, cleanup info best-effort non-`?`), `crash_analyzer.rs` (classif kernel via wording stable panic/OOM/segfault, kernel+prio≤2 pas ≤3 pour éviter les faux positifs USB), `boot_manager.rs` (parse `/etc/default/grub` sans éval shell, `efibootmgr` `*`=actif documenté), `hashcheck.rs` (md5/sha1/sha256, paste ligne `sha256sum`, casse-insensible), `malwarescan.rs` (clamscan exit 0/1=succès, stderr préservé, hint install ciblé au seul cas binaire-absent).
+
+**Aucun défaut.** Tous exemplaires + tests de régression sur la vraie sortie. **Faux écart écarté à raison** : `src/lib/accessibleColor.ts` (WCAG + conversions colorimétriques + solveur itératif) n'a pas de `.spec.ts` dédié contrairement à ses voisins -- mais il est couvert de bout en bout par `NxBadge.spec.ts` (contrastRatio=21 vérifié WCAG, `pickAccessibleTextColor` sur 4 statuts × tous les thèmes builtin ≥4.5:1, préservation de teinte, `mixHex` via le fond réellement rendu). Couverture existante via le consommateur unique -- vérifié AVANT d'écrire un test redondant (discipline : ne pas ajouter de boilerplate déjà couvert).
+
+Baseline resté vert (aucun code touché). Version inchangée 0.25.140. Reste à viser : network, processes, hardware_details, hardware, peripherals, system, system_tools, docker, portable_apps, network_write, disk_write, packages/ + pages Vue/stores.
+
+**1 correctif accumulé depuis v0.25.139** (accounts.rs cycle 399). Éléments en attente inchangés. Dependabot glib<0.20 = bloqué upstream.
