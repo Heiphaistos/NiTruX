@@ -144,7 +144,15 @@ async function removeFirewallRule() {
 
 const scanHost = ref("127.0.0.1");
 const scanPortsInput = ref("22,80,443,3000,8080");
-const scanResults = ref<PortResult[]>([]);
+// Nullable (not a bare []) so "never scanned yet" is distinguishable from
+// "scanned, got zero results" -- mirrors dnsLookupResults/tracerouteHops
+// just below, both of which already make this distinction on this same
+// page. scan_ports_cmd returns exactly one PortResult per requested port,
+// so an empty result set can only happen when every entry typed into the
+// comma-separated list was filtered out by isValidPort below -- without
+// this, that case rendered nothing at all: no results, no error, no
+// indication the click did anything.
+const scanResults = ref<PortResult[] | null>(null);
 const scanError = ref<string | null>(null);
 const scanning = ref(false);
 
@@ -164,6 +172,11 @@ function isValidPort(p: number): boolean {
 async function runScan() {
   scanning.value = true;
   scanError.value = null;
+  // Reset before the call, matching runPing/runDnsLookup/runTraceroute
+  // just below -- without this, a scan that fails after a previous
+  // successful one left the prior run's results on screen next to the new
+  // error, misleadingly implying they were still current.
+  scanResults.value = null;
   try {
     const ports = scanPortsInput.value
       .split(",")
@@ -343,7 +356,8 @@ async function runTraceroute() {
         <NxButton :disabled="scanning" @click="runScan">{{ scanning ? "Scan..." : "Scanner" }}</NxButton>
       </div>
       <NxCard v-if="scanError" danger>{{ scanError }}</NxCard>
-      <div v-for="(r, ri) in scanResults" :key="`${r.port}-${ri}`" class="net-row">
+      <div v-if="scanResults && scanResults.length === 0" class="net-empty">Aucun port valide indiqué -- entrez des numéros de port entre 0 et 65535, séparés par des virgules.</div>
+      <div v-for="(r, ri) in scanResults ?? []" :key="`${r.port}-${ri}`" class="net-row">
         <span>{{ r.port }}</span>
         <span :class="r.open ? 'net-open' : 'net-closed'">{{ r.open ? "ouvert" : "fermé" }}</span>
       </div>

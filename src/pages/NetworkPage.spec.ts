@@ -480,6 +480,58 @@ describe("NetworkPage", () => {
     expect(invoke).toHaveBeenCalledWith("scan_ports_cmd", { host: "127.0.0.1", ports: [22, 80] });
   });
 
+  it("shows an empty-state message instead of silently doing nothing when every typed port is invalid", async () => {
+    // Regression guard for the actual bug: scanResults used to be a plain
+    // `ref<PortResult[]>([])`, not nullable like dnsLookupResults/
+    // tracerouteHops on this same page -- so when isValidPort filters every
+    // entry out (leaving an empty `ports` array), scan_ports_cmd still
+    // succeeds with `[]`, and the page showed no results, no error, and no
+    // indication the click did anything at all.
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") return defaultInvokeImpl("get_network_snapshot");
+      if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
+      if (cmd === "scan_ports_cmd") return Promise.resolve([]);
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await wrapper.findAll("button").find((b) => b.text() === "Scanner de ports")!.trigger("click");
+
+    const inputs = wrapper.findAll("input");
+    const portsInput = inputs[1]; // host input is inputs[0]
+    await portsInput.setValue("abc,not-a-port");
+
+    await wrapper.findAll("button").find((b) => b.text() === "Scanner")!.trigger("click");
+
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Aucun port valide indiqué"));
+    expect(invoke).toHaveBeenCalledWith("scan_ports_cmd", { host: "127.0.0.1", ports: [] });
+  });
+
+  it("clears a previous scan's stale results when a rerun fails, instead of showing both at once", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    let scanCallCount = 0;
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") return defaultInvokeImpl("get_network_snapshot");
+      if (cmd === "get_docker_snapshot") return Promise.resolve({ available: false, containers: [], images: [] });
+      if (cmd === "scan_ports_cmd") {
+        scanCallCount++;
+        if (scanCallCount === 1) return Promise.resolve([{ port: 22, open: true }]);
+        return Promise.reject("trop de ports demandés (500), maximum 200 par scan");
+      }
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await wrapper.findAll("button").find((b) => b.text() === "Scanner de ports")!.trigger("click");
+    const scanButton = wrapper.findAll("button").find((b) => b.text() === "Scanner")!;
+
+    await scanButton.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("22"));
+
+    await scanButton.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("maximum 200 par scan"));
+    expect(wrapper.text()).not.toContain("22");
+  });
+
   // Regression guard for the actual bug: onMounted had no try/catch at all
   // around its 3 invoke() calls (get_network_snapshot, get_docker_snapshot,
   // get_network_interfaces) -- a rejection anywhere in that sequence left
