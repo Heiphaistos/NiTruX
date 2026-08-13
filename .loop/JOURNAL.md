@@ -3368,3 +3368,15 @@ Bascule vers le frontend (40 pages jamais auditées cette relance) après 3 cycl
 **Corrigé** : `apply()` appelle maintenant `setCpuAlertThreshold`/`setRamAlertThreshold`/`setDiskAlertThreshold` ; `isValidPreferences` vérifie les 5 champs. 2 tests de régression ajoutés (restauration des seuils à l'apply, rejet d'un import avec seuil manquant). 475/475 frontend (473→475, +2), 386/386 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.140→0.25.141, commit `a18b0a3`, poussé.
 
 **2 correctifs accumulés depuis v0.25.139** (accounts.rs cycle 399, profilesStore.ts cycle 404). Éléments en attente inchangés. Dependabot glib<0.20 = bloqué upstream.
+
+## Cycle 405 -- CYCLE NÉGATIF HONNÊTE -- 2026-08-14
+
+Poursuite du filon "validateur croisé avec le vrai type" (payant au cycle 404) : `layoutStore.ts`/`styleStore.ts` (validation par appartenance à un registre réel -- structurellement anti-dérive, `LayoutId`/`StyleId` ne peuvent pas diverger), `scriptsStore.ts` (`isSavedScript` aligné 2/2 avec `SavedScript`), `themeStore.ts` (`REQUIRED_COLOR_KEYS` dérivé de `CSS_VAR_MAP` typé `Record<keyof Theme["colors"], string>` -- garantie **compile-time** anti-dérive, immunisé par construction contre la classe de bug du cycle 404).
+
+**Candidat trouvé puis écarté à raison** : `Theme.mode: "dark"|"light"` n'est validé nulle part (`readPersistedTheme`/`readPersistedCustomThemes`/`importTheme` ne checkent que `id`+`colors`) -- mais `grep` confirme **zéro consommateur** de `theme.mode`/`data-theme-mode` dans tout `src/` en dehors de l'unique `root.dataset.themeMode = theme.mode` qui l'écrit. Un import sans `mode` écrirait `data-theme-mode="undefined"` en DOM, mais rien ne le lit -- impact observable nul. Pas corrigé (cohérent avec la discipline établie : ne pas fixer ce qui n'a aucune conséquence réelle, cf. `cache_size.rs` symlink cycle 19, `DisksPage` cycle 14).
+
+`SettingsPreferencesPage.vue` vérifié : câble déjà correctement les 5 champs `Preferences` (confirme que le fix du cycle 404 était complet, rien d'autre à corriger côté UI). `hardware_details.rs` (LC_ALL=C, dégradation par champ) et `system_tools.rs` (allowlist fermée 7 actions, exec-path dédié) audités, propres.
+
+Baseline resté vert (aucun code touché ce cycle). Version inchangée 0.25.141. Reste à viser : peripherals, system, portable_apps, network_write, disk_write, packages/ (dir), drivers, sensors, smart, disks -- ou ThemeEditorPage, BenchmarkPage, TemperaturesPage, PeripheralsPage, HardwareDetailsPage, PackagesPage, ProcessesPage, NetworkPage, FirewallPage.
+
+**2 correctifs accumulés depuis v0.25.139** (accounts.rs cycle 399, profilesStore.ts cycle 404). Dependabot glib<0.20 = bloqué upstream.
