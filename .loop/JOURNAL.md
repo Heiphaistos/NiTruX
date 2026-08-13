@@ -3380,3 +3380,13 @@ Poursuite du filon "validateur croisé avec le vrai type" (payant au cycle 404) 
 Baseline resté vert (aucun code touché ce cycle). Version inchangée 0.25.141. Reste à viser : peripherals, system, portable_apps, network_write, disk_write, packages/ (dir), drivers, sensors, smart, disks -- ou ThemeEditorPage, BenchmarkPage, TemperaturesPage, PeripheralsPage, HardwareDetailsPage, PackagesPage, ProcessesPage, NetworkPage, FirewallPage.
 
 **2 correctifs accumulés depuis v0.25.139** (accounts.rs cycle 399, profilesStore.ts cycle 404). Dependabot glib<0.20 = bloqué upstream.
+
+## Cycle 406 -- CYCLE NÉGATIF HONNÊTE -- 2026-08-14
+
+Slice frais audité (6 modules Rust, dont la zone la plus sensible du projet) : `peripherals.rs` (parse pactl/lpstat, freeform assumé par design), `system.rs` (delta CPU sur instance partagée, test `#[ignore]` timing-sensitive documenté), `drivers.rs` (parse `lspci -k` par blocs indentés, détection GPU par module), `sensors.rs` (batterie par répertoire `BAT*` trié, `sysinfo::Components` pour températures), `disk_write.rs` (**zone à plus haut risque** : `format_partition`/`extend_partition`/`clone_disk`, validation device par structure explicite -- anti-pattern `.contains('n')`/`.contains('p')` vacuous déjà caught et testé en régression, TOCTOU `clone_disk` documenté et fermé côté helper privilégié, `extend_partition` rejette les fs non-ext par avance), `network_write.rs` (exec-path dédié par action polkit, bornes port 1-65535 régressées contre le bug `ufw` silencieux déjà trouvé sur le côté lecture).
+
+**Aucun défaut trouvé.** La zone la plus sensible du projet (écritures disque privilégiées irréversibles) reste irréprochable -- défense en profondeur exemplaire, chaque piège historique documenté et couvert par régression.
+
+Baseline resté vert (aucun code touché). Version inchangée 0.25.141. Reste à viser : disks, smart, network (déjà propre 403, pas de nouveau filon là), portable_apps (backend), packages/ (dir) -- ou frontend : ThemeEditorPage, BenchmarkPage, TemperaturesPage, PeripheralsPage, HardwareDetailsPage, PackagesPage, ProcessesPage, NetworkPage, FirewallPage, DriversPage, DisksPage (déjà corrigé cycle 397), SmartPage.
+
+**2 correctifs accumulés depuis v0.25.139** (accounts.rs cycle 399, profilesStore.ts cycle 404). Dependabot glib<0.20 = bloqué upstream.
