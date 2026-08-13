@@ -3298,3 +3298,25 @@ Tag annoté `v0.25.139` poussé, release GitHub créée via `gh release create` 
 **Les 43 fonctionnalités/améliorations/correctifs accumulés depuis v0.25.132 (cycles 392-398) sont désormais tous publiés : https://github.com/Heiphaistos/NiTruX/releases/tag/v0.25.139. Plus aucun backlog de correctifs non livrés.**
 
 **Fin de session** : boucle NiTruX arrêtée sur demande explicite de l'utilisateur après 43 cycles (356-398) sous le nouveau mandat "features+corrections+améliorations", 2 releases publiées (v0.25.132 et v0.25.139). Mémoire projet mise à jour en conséquence.
+
+## Cycle 399 -- RELANCE BOUCLE (nouvelle session) -- 2026-08-13
+
+Reprise sur demande utilisateur ("fait une loop d amelioration et de correction et de test toutes les 10 min"). Mécanisme : boucle auto-cadencée en session (ScheduleWakeup 600s) -- une routine cloud CronCreate ne peut pas atteindre le chemin local Windows `D:\Projet\NiTruX`.
+
+Baseline vérifié vert d'abord : **frontend 473/473 (75 fichiers), Rust 386 passed / 0 failed**, master propre (aucun bruit CRLF cette fois).
+
+Audit d'un slice frais (modules non touchés par les cycles 393-398) : `certificates.rs`, `traceroute.rs`, `portscan.rs`, `report.rs` (parité des 4 formats txt/md/html/pdf re-confirmée complète) -- tous exemplaires, aucun bug. **Vraie incohérence trouvée dans `accounts.rs::parse_passwd_line`** : le commentaire annonçait "wrong field count" mais le code testait `fields.len() < 7`, acceptant donc les lignes à >7 champs. Or `/etc/passwd` a exactement 7 champs (le `:` est le séparateur, aucun champ ne peut en contenir) -- une ligne à 8 champs (colon parasite, édition manuelle) lisait home/shell depuis les colonnes décalées au lieu d'être ignorée. Resserré en `!= 7`, aligné sur le commentaire. 1 test de régression ajouté (ligne 8 champs → `None`). Même classe de correctif de cohérence que trash.rs (impact pratique faible sur système standard mais l'invariant devient correct).
+
+Vérif : `cargo test --lib accounts` 5/5, suite Rust complète 386 passed/0 failed, frontend inchangé 473/473. Version 0.25.139→0.25.140, commit `6226a06`, poussé master.
+
+**1 correctif accumulé depuis la release v0.25.139.** Éléments en attente inchangés (CSP désactivée, timeout `run_pkexec_with_stdin`, doublons catalogue, `WiFiAnalyzerPage::securityStatus`, "OS & USB Tools", "Turbo Mode").
+
+## Cycle 400 -- CYCLE NÉGATIF HONNÊTE -- 2026-08-13
+
+Slice frais audité en profondeur (7 modules Rust non touchés par les cycles récents) : `dns_lookup.rs` (parse `dig +short`, filtrage lignes vides), `update_history.rs` (parse blocs apt history.log, 6 en-têtes StateChanges, ligne 96k chars non tronquée), `dependencies.rs` (parse `ldd => not found`), `optimizations.rs` (swappiness/zram/fstrim.timer -- états systemd non localisés, u8 couvre swappiness 0-200), `snapshots.rs` (parse `timeshift --list` par forme de timestamp, explication d'erreur préservée depuis stdout), `security_write.rs` (validations pkexec : troubleshoot/snapshot-name/quarantine-path incluant rejet de `/`), `subprocess.rs` (helper partagé : drain concurrent anti-deadlock via `wait_with_output`, SIGKILL sur timeout, stderr préservé dans `run_capturing_exit_code`).
+
+**Aucun défaut trouvé.** Tous exemplaires -- vérifications de locale déjà couvertes (`LC_ALL=C` via `run_with_timeout_env`), timeouts bornés partout, statuts "inconnu"/vide honnêtes, validations d'input strictes. Conforme au plateau de maturité documenté (cf. cycles 192-198, 202-210). Pas de correctif forcé (discipline anti-complaisance : ne pas fabriquer un changement marginal pour justifier un bump).
+
+Baseline resté vert (frontend 473/473, Rust 386/0 échec vérifiés au cycle 399, aucun code touché depuis). Version inchangée 0.25.140. Prochain cycle : continuer sur d'autres modules frais (duplicates/largefiles/cache_size/benchmark/boot_manager/malwarescan/docker/logs/network/firewall/processes/peripherals/hardware_details) ou pages Vue.
+
+**1 correctif accumulé depuis la release v0.25.139** (accounts.rs cycle 399). Éléments en attente inchangés.
