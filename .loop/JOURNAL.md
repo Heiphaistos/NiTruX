@@ -3410,3 +3410,17 @@ Baseline resté vert (aucun code touché). Version inchangée 0.25.141. Reste à
 Baseline resté vert (aucun code touché). Version inchangée 0.25.141. Reste à viser : DataRecoveryPage, OptimizationsPage, UninstallerPage, UpdatesPage, InstalledSoftwarePage, InstallProfilesPage, QuickInstallPage, PackagesPage, ProcessesPage, NetworkPage, FirewallPage, DriversPage, TemperaturesPage, PeripheralsPage, HardwareDetailsPage, BenchmarkPage -- ou backend restant : disks, smart, portable_apps, packages/ (dir).
 
 **2 correctifs accumulés depuis v0.25.139** (accounts.rs cycle 399, profilesStore.ts cycle 404). Dependabot glib<0.20 = bloqué upstream.
+
+## Cycle 409 -- BACKEND AUDITÉ À 100% -- CYCLE NÉGATIF -- 2026-08-14
+
+Dernier morceau backend non couvert : `disks.rs` (filtre pseudo-fs `df` par préfixe `/dev/`, mountpoint avec espaces géré, `snapfuse` pinné 100% déjà exclu), `smart.rs` (interprétation bitmask exit-code smartctl -- bits 3-5 = vraie donnée santé pas une erreur, extraction d'explication stdout filtrant banner/copyright), `portable_apps.rs` (résolution asset GitHub avec filtrage arch/checksums, fix `curl -f` anti-404-silencieux déjà en place), puis `packages/` en entier (8 fichiers, 1063 lignes) : `apt.rs` (LC_ALL=C, filtre apt-mark showmanual), `dnf.rs` (exit-code 100=succès), `pacman.rs` (match `"(code 1)"` avec parenthèse fermante anti-faux-positif code 10/11/100), `zypper.rs` (limitation version documentée, cohérente avec la vérification man-page du cycle 300), `flatpak.rs` (remote-add idempotent), `universal.rs` (parsing snap "All snaps up to date" déjà déjoué, flatpak runtime sans version), `install.rs` (exec-path pkexec dédié par action), `mod.rs` (détection multi-manager).
+
+**Aucun défaut trouvé.** Tous exemplaires -- chaque piège historique de ce projet (locale apt/ufw, exit-codes non-standards dnf/pacman/clamscan, stderr silencieusement perdu, arch/checksum ambigus) déjà fermé et couvert par régression dans ce dernier tiers du code.
+
+**Le backend Rust est désormais audité à 100% cette relance** (399→409) : les ~41 modules/fichiers `src-tauri/src/**/*.rs` ont tous été relus au moins une fois, zéro défaut résiduel. Combiné aux ~30 pages/stores frontend déjà couverts (404-408), le codebase confirme son plateau de maturité de façon quasi-exhaustive.
+
+Baseline resté vert (aucun code touché). Version inchangée 0.25.141.
+
+**2 correctifs accumulés depuis v0.25.139** (accounts.rs cycle 399, profilesStore.ts cycle 404) -- backlog stable depuis 5 cycles, aucun nouveau trouvé. Reste frontend non audité : UpdatesPage, InstalledSoftwarePage, InstallProfilesPage, QuickInstallPage, PackagesPage, ProcessesPage, NetworkPage, FirewallPage, DriversPage, TemperaturesPage, PeripheralsPage, HardwareDetailsPage, BenchmarkPage, DataRecoveryPage, OptimizationsPage, UninstallerPage. Dependabot glib<0.20 = bloqué upstream.
+
+**Recommandation pour la prochaine session avec l'utilisateur** : envisager une coupure de release (2 correctifs accumulés) ou une pause de la boucle -- le rendement marginal par cycle baisse fortement, la quasi-totalité du code source lisible a été auditée au moins une fois.
