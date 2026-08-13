@@ -3346,3 +3346,13 @@ Slice frais audité (6 modules Rust + 1 lib front) : `duplicates.rs` (bucketing 
 Baseline resté vert (aucun code touché). Version inchangée 0.25.140. Reste à viser : network, processes, hardware_details, hardware, peripherals, system, system_tools, docker, portable_apps, network_write, disk_write, packages/ + pages Vue/stores.
 
 **1 correctif accumulé depuis v0.25.139** (accounts.rs cycle 399). Éléments en attente inchangés. Dependabot glib<0.20 = bloqué upstream.
+
+## Cycle 403 -- CYCLE NÉGATIF HONNÊTE -- 2026-08-14
+
+Slice frais audité (3 modules Rust, dont le plus gros module réseau) : `network.rs` (6 sources read-only dégradant indépendamment ; parsing nmcli terse-mode avec échappement `\:`/`\`, `ss -tulnp` LISTEN+UNCONN pour couvrir UDP, `ip route`/`ip neigh` par scan de clé tolérant à l'ordre, bornes de boucle protégées `saturating_sub`/garde de longueur avant `-1` -- vérifié : aucun risque d'underflow/panic malgré l'absence de `checked_sub` explicite partout), `processes.rs` (parse timer par suffixe `.timer`, filtrage naturel header/footer, `get_scheduled_tasks`/`get_autostart_entries` dégradent proprement si crontab/systemd absent), `docker.rs` (distinction `installed`/`available`/`error` bien pensée, parsing JSON-lines `{{json .}}` infaillible par design).
+
+**Aucun défaut trouvé.** Tous exemplaires. `network.rs` en particulier est le module le plus dense audité à ce jour (619 lignes, 6 sources, 3 modules de régression sur sortie réelle capturée) et reste irréprochable.
+
+Baseline resté vert (aucun code touché). Version inchangée 0.25.140. Reste à viser : hardware_details, hardware, peripherals, system, system_tools, portable_apps, network_write, disk_write, packages/ (dir), drivers, sensors, smart, disks -- ou pages Vue/stores/composants.
+
+**1 correctif accumulé depuis v0.25.139** (accounts.rs cycle 399). Éléments en attente inchangés. Dependabot glib<0.20 = bloqué upstream.
