@@ -3400,3 +3400,13 @@ Bascule franche frontend (backend quasi épuisé). 7 pages auditées : `ThemeEdi
 Baseline resté vert (aucun code touché). Version inchangée 0.25.141. Reste à viser : TroubleshootPage, CleanerPage, RestorePointsPage, AntivirusPage, DataRecoveryPage, LogsPage, CertificatesPage, DependenciesPage, OptimizationsPage, UninstallerPage, UpdatesPage, InstalledSoftwarePage, InstallProfilesPage, QuickInstallPage, PackagesPage, ProcessesPage, NetworkPage, FirewallPage, DriversPage, TemperaturesPage, PeripheralsPage, HardwareDetailsPage -- ou backend restant : disks, smart, portable_apps, packages/ (dir).
 
 **2 correctifs accumulés depuis v0.25.139** (accounts.rs cycle 399, profilesStore.ts cycle 404). Dependabot glib<0.20 = bloqué upstream.
+
+## Cycle 408 -- CYCLE NÉGATIF HONNÊTE -- 2026-08-14
+
+7 pages frontend auditées : `TroubleshootPage.vue`/`CleanerPage.vue` (verrou partagé sur actions privilégiées `run_troubleshoot_action`, déjà confirmé feature pas bug cycle 396), `AntivirusPage.vue` (type-to-confirm sur quarantaine irréversible, verrou partagé cohérent -- action pkexec), `CertificatesPage.vue` (classification expiré/expire-bientôt/valide alignée avec le backend, jamais d'état "inconnu" possible côté `certificates.rs` donc pas de risque de la classe "inconnu=danger"), `LogsPage.vue` (priorités syslog correctement mappées error/warning/info, `:key="i"` sur liste filtrée sans état par-ligne -- sans conséquence, pas un vrai bug), `DependenciesPage.vue` (clé composite unique), `RestorePointsPage.vue` (type-to-confirm suppression, verrou partagé cohérent -- `delete_snapshot` passe par pkexec/timeshift, même sous-système que `create_snapshot`).
+
+**Aucun défaut trouvé.** Le pattern "verrou partagé = feature pour actions privilégiées/destructives" (établi cycle 395-396) se confirme systématiquement sur toutes les pages destructives auditées cette relance (Antivirus, RestorePoints, Troubleshoot, Cleaner) -- aucune fausse instance.
+
+Baseline resté vert (aucun code touché). Version inchangée 0.25.141. Reste à viser : DataRecoveryPage, OptimizationsPage, UninstallerPage, UpdatesPage, InstalledSoftwarePage, InstallProfilesPage, QuickInstallPage, PackagesPage, ProcessesPage, NetworkPage, FirewallPage, DriversPage, TemperaturesPage, PeripheralsPage, HardwareDetailsPage, BenchmarkPage -- ou backend restant : disks, smart, portable_apps, packages/ (dir).
+
+**2 correctifs accumulés depuis v0.25.139** (accounts.rs cycle 399, profilesStore.ts cycle 404). Dependabot glib<0.20 = bloqué upstream.
