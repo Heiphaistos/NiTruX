@@ -3424,3 +3424,13 @@ Baseline resté vert (aucun code touché). Version inchangée 0.25.141.
 **2 correctifs accumulés depuis v0.25.139** (accounts.rs cycle 399, profilesStore.ts cycle 404) -- backlog stable depuis 5 cycles, aucun nouveau trouvé. Reste frontend non audité : UpdatesPage, InstalledSoftwarePage, InstallProfilesPage, QuickInstallPage, PackagesPage, ProcessesPage, NetworkPage, FirewallPage, DriversPage, TemperaturesPage, PeripheralsPage, HardwareDetailsPage, BenchmarkPage, DataRecoveryPage, OptimizationsPage, UninstallerPage. Dependabot glib<0.20 = bloqué upstream.
 
 **Recommandation pour la prochaine session avec l'utilisateur** : envisager une coupure de release (2 correctifs accumulés) ou une pause de la boucle -- le rendement marginal par cycle baisse fortement, la quasi-totalité du code source lisible a été auditée au moins une fois.
+
+## Cycle 410 -- VRAI CORRECTIF -- 2026-08-14
+
+Reliquat frontend : `UpdatesPage.vue`/`PackagesPage.vue` (quasi-identiques, mais vérifié via `App.vue` -- deux routes distinctes intentionnelles "updates"/"package-manager", chevauchement éditorial pas un bug, non touché), `ProcessesPage.vue`, `DriversPage.vue`, `TemperaturesPage.vue` propres.
+
+**Vrai bug trouvé sur `NetworkPage.vue`, onglet Scanner de ports** : `scanResults` était `ref<PortResult[]>([])`, non nullable -- contrairement à `dnsLookupResults`/`tracerouteHops` sur la MÊME page, tous deux `ref<T[] | null>(null)` avec message d'état vide dédié. Si l'utilisateur saisit des ports invalides (filtrés par `isValidPort`), `ports=[]` est envoyé, le scan réussit avec un tableau vide, et rien ne s'affiche -- aucun résultat, aucune erreur, aucune indication que le clic a fait quoi que ce soit. **Deuxième incohérence connexe** : `runScan()` ne réinitialisait pas `scanResults` avant l'appel, contrairement à `runPing`/`runDnsLookup`/`runTraceroute` juste en dessous -- un scan en échec après un scan réussi laissait les anciens résultats affichés à tort à côté de la nouvelle erreur.
+
+**Corrigé** : `scanResults` rendu nullable + reset à `null` avant chaque scan + message d'état vide dédié (`Aucun port valide indiqué...`). 2 tests de régression ajoutés (message vide sur ports tous invalides, anciens résultats effacés sur échec après succès). 477/477 frontend (475→477, +2), 386/386 Rust (inchangé), `vue-tsc` clean. Version 0.25.141→0.25.142, commit `072dca1`, poussé.
+
+**3 correctifs accumulés depuis v0.25.139** (accounts.rs cycle 399, profilesStore.ts cycle 404, NetworkPage.vue cycle 410).
