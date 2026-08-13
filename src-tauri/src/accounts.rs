@@ -13,9 +13,15 @@ pub struct UserAccount {
 /// malformed line (wrong field count) or a non-numeric uid, rather than
 /// panicking -- a hand-edited or unusual passwd file should degrade to
 /// "skip this line", never crash the whole listing.
+///
+/// A well-formed passwd entry has EXACTLY 7 colon-separated fields; the
+/// `:` is the field separator so no field (gecos included) may contain one.
+/// A line splitting into 8+ parts is therefore malformed, and accepting it
+/// would silently mis-assign `fields[5]`/`fields[6]` as home/shell from the
+/// wrong columns -- so this rejects any count other than 7, not just too few.
 pub fn parse_passwd_line(line: &str) -> Option<UserAccount> {
     let fields: Vec<&str> = line.split(':').collect();
-    if fields.len() < 7 {
+    if fields.len() != 7 {
         return None;
     }
     let uid: u32 = fields[2].parse().ok()?;
@@ -67,6 +73,16 @@ mod tests {
     #[test]
     fn returns_none_for_a_malformed_line() {
         assert!(parse_passwd_line("not:enough:fields").is_none());
+    }
+
+    #[test]
+    fn returns_none_for_a_line_with_too_many_fields() {
+        // A stray colon (a hand-edited/corrupted passwd) splits into 8
+        // parts. Accepting it would read home/shell from the shifted wrong
+        // columns -- here the real shell "/bin/bash" lands in fields[7],
+        // while fields[5]/fields[6] would wrongly become "/home" and "dev".
+        let line = "dev:x:1000:1000:dev,,,:/home:dev:/bin/bash";
+        assert!(parse_passwd_line(line).is_none());
     }
 
     #[test]
