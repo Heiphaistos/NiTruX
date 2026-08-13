@@ -3356,3 +3356,15 @@ Slice frais audité (3 modules Rust, dont le plus gros module réseau) : `networ
 Baseline resté vert (aucun code touché). Version inchangée 0.25.140. Reste à viser : hardware_details, hardware, peripherals, system, system_tools, portable_apps, network_write, disk_write, packages/ (dir), drivers, sensors, smart, disks -- ou pages Vue/stores/composants.
 
 **1 correctif accumulé depuis v0.25.139** (accounts.rs cycle 399). Éléments en attente inchangés. Dependabot glib<0.20 = bloqué upstream.
+
+## Cycle 404 -- VRAI CORRECTIF -- 2026-08-14
+
+Bascule vers le frontend (40 pages jamais auditées cette relance) après 3 cycles négatifs Rust. `ConfigProfilesPage.vue`/`PortableAppsPage.vue` propres (pas de verrou partagé, download bien scopé par-id). En creusant `profilesStore.ts` derrière `ConfigProfilesPage.vue` :
+
+**Vrai bug trouvé** : `saveCurrentAs()` capture les 5 champs de `Preferences` via `{ ...preferencesStore.$state }` (spread complet, y compris `cpuAlertThreshold`/`ramAlertThreshold`/`diskAlertThreshold`), mais `apply()` ne restaurait que 2 des 5 (`defaultScanDirectory`/`dashboardRefreshIntervalMs`) -- "Enregistrer" capturait silencieusement les seuils d'alerte, "Appliquer" les ignorait silencieusement. Confirmé non-intentionnel : le test existant "applying a profile restores theme, layout, style, and preferences" ne vérifiait jamais les seuils malgré son nom, aucune mention dans le spec.
+
+**Cause connexe, même classe "deux sources de vérité désynchronisées"** : `isValidPreferences` (validation import) ne checkait que 2 des 5 champs du type `Preferences`, désynchronisé de `preferencesStore.ts::isPreferences` qui lui checke les 5 -- un profil importé avec un objet `preferences` incomplet (seuils manquants) passait la validation.
+
+**Corrigé** : `apply()` appelle maintenant `setCpuAlertThreshold`/`setRamAlertThreshold`/`setDiskAlertThreshold` ; `isValidPreferences` vérifie les 5 champs. 2 tests de régression ajoutés (restauration des seuils à l'apply, rejet d'un import avec seuil manquant). 475/475 frontend (473→475, +2), 386/386 Rust (inchangé, aucun fichier Rust touché), `vue-tsc` clean. Version 0.25.140→0.25.141, commit `a18b0a3`, poussé.
+
+**2 correctifs accumulés depuis v0.25.139** (accounts.rs cycle 399, profilesStore.ts cycle 404). Éléments en attente inchangés. Dependabot glib<0.20 = bloqué upstream.
