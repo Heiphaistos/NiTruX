@@ -3390,3 +3390,13 @@ Slice frais audité (6 modules Rust, dont la zone la plus sensible du projet) : 
 Baseline resté vert (aucun code touché). Version inchangée 0.25.141. Reste à viser : disks, smart, network (déjà propre 403, pas de nouveau filon là), portable_apps (backend), packages/ (dir) -- ou frontend : ThemeEditorPage, BenchmarkPage, TemperaturesPage, PeripheralsPage, HardwareDetailsPage, PackagesPage, ProcessesPage, NetworkPage, FirewallPage, DriversPage, DisksPage (déjà corrigé cycle 397), SmartPage.
 
 **2 correctifs accumulés depuis v0.25.139** (accounts.rs cycle 399, profilesStore.ts cycle 404). Dependabot glib<0.20 = bloqué upstream.
+
+## Cycle 407 -- CYCLE NÉGATIF HONNÊTE -- 2026-08-14
+
+Bascule franche frontend (backend quasi épuisé). 7 pages auditées : `ThemeEditorPage.vue` (UUID anti-collision déjà en place, save/export/import cohérents, `saveCustomTheme`+`setTheme` pairés), `TerminalPage.vue` (try/catch spawn déjà présent depuis cycle 20, guard jsdom ResizeObserver), `PerfHistoryPage.vue`+`BackupPage.vue` (états loading/error/success propres), `DnsSwitcherPage.vue` (conversion bare-IP→ligne `nameserver` centralisée dans une seule fonction pour presets ET saisie manuelle, erreurs refresh/apply délibérément distinctes pour ne pas afficher "aucun" DNS sur un échec de lecture), `BluetoothPage.vue` (états vides adaptateur/périphériques gérés).
+
+**Candidat trouvé puis écarté à raison** : `PerfHistoryPage.vue` lit `preferences.dashboardRefreshIntervalMs` une seule fois au montage pour `setInterval` -- pas réactif si l'utilisateur change le réglage pendant que la page reste ouverte. Vérifié par comparaison : `DashboardPage.vue` a exactement la même limitation (même pattern, même ligne). Comportement **cohérent** entre les deux seuls consommateurs, pas une désynchronisation ni un bug -- juste une limitation de réactivité mineure partagée, pas corrigée (ne pas fabriquer un correctif pour une limitation cohérente et mineure).
+
+Baseline resté vert (aucun code touché). Version inchangée 0.25.141. Reste à viser : TroubleshootPage, CleanerPage, RestorePointsPage, AntivirusPage, DataRecoveryPage, LogsPage, CertificatesPage, DependenciesPage, OptimizationsPage, UninstallerPage, UpdatesPage, InstalledSoftwarePage, InstallProfilesPage, QuickInstallPage, PackagesPage, ProcessesPage, NetworkPage, FirewallPage, DriversPage, TemperaturesPage, PeripheralsPage, HardwareDetailsPage -- ou backend restant : disks, smart, portable_apps, packages/ (dir).
+
+**2 correctifs accumulés depuis v0.25.139** (accounts.rs cycle 399, profilesStore.ts cycle 404). Dependabot glib<0.20 = bloqué upstream.
