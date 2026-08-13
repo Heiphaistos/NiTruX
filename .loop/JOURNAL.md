@@ -3320,3 +3320,9 @@ Slice frais audité en profondeur (7 modules Rust non touchés par les cycles r�
 Baseline resté vert (frontend 473/473, Rust 386/0 échec vérifiés au cycle 399, aucun code touché depuis). Version inchangée 0.25.140. Prochain cycle : continuer sur d'autres modules frais (duplicates/largefiles/cache_size/benchmark/boot_manager/malwarescan/docker/logs/network/firewall/processes/peripherals/hardware_details) ou pages Vue.
 
 **1 correctif accumulé depuis la release v0.25.139** (accounts.rs cycle 399). Éléments en attente inchangés.
+
+### Cycle 400 -- suivi : alerte Dependabot investiguée (glib<0.20)
+
+Le push du cycle 400 a fait remonter 1 alerte Dependabot modérée. Investiguée : `glib` GHSA-wrw7-89jp-8q8g (unsoundness `Iterator`/`DoubleEndedIterator` de `VariantStrIter`), plage vulnérable `>=0.15.0 <0.20.0`, patchée en 0.20.0. **npm audit = 0 vuln** (côté Rust uniquement).
+
+**Prouvé bloqué upstream** via `cargo tree -i glib` : `glib 0.18.5` ← `atk/cairo/gdk 0.18` ← `gtk 0.18.2` ← `webkit2gtk 2.0.2`/`tao`/`wry`/`muda` ← **`tauri 2.11.5`** (version courante). Monter glib à 0.20 exigerait que toute la pile gtk-rs passe en 0.20, ce qui nécessite une release Tauri l'adoptant -- aucune ne le fait à ce jour (identique au constat cross-vérifié du sweep Dependabot 65 repos du 2026-08-13). Surface réelle quasi nulle : l'unsoundness est dans `VariantStrIter` (itérateur de chaînes GVariant), jamais utilisé directement par NiTruX -- c'est de la glue GTK interne à Tauri. Forcer un bump manuel casserait le build. **Décision : ne pas forcer, laisser l'alerte ouverte jusqu'à ce que Tauri adopte gtk-rs 0.20** (même traitement que les glib<0.20 des autres repos).
