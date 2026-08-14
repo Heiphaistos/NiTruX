@@ -3508,3 +3508,9 @@ Angle neuf : lecture complète (1ère fois cette relance) de `systemToolsCatalog
 Version bump 0.25.142 → **0.25.143** (package.json, Cargo.toml, tauri.conf.json, Cargo.lock). Poussé (2839e1d).
 
 Cadence resserrée à 10 min sur demande explicite de l'utilisateur.
+
+## Cycle 420 -- maintenance légère, négatif -- 2026-08-14
+
+Lecture complète (1ère fois cette relance) des 8 primitives UI partagées restantes de `src/components/ui/` : `NxBadge`, `NxButton`, `NxCard`, `NxInput`, `NxQuickActionTile`, `NxSectionHeader`, `NxSelect`, `NxStatTile` (`NxSparkline` déjà couvert cycle 412). Toutes propres et délibérément documentées : `NxBadge` régions live opt-in (évite le bruit lecteur d'écran sur les usages statiques majoritaires) + coloration accessible calculée par thème avec repli CSS si Pinia absent (tests) ; `NxCard` distingue `danger` (role="alert", contenu transitoire) de `staticDanger` (section statique avec contrôles focusables, alert déconseillé par WAI-ARIA) ; `NxInput`/`NxSelect` `ariaLabel` optionnel rétrocompatible (placeholder seul n'est pas un nom accessible, WCAG 3.3.2) ; `NxButton--danger` texte noir choisi après calcul de contraste réel sur les 13 thèmes (blanc échoue AA sur 11/13). Rien à corriger.
+
+Version inchangée 0.25.143. Cadence 10 min maintenue sur demande explicite.
