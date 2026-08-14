@@ -3572,3 +3572,9 @@ Version inchangée 0.25.145. Cadence 10 min maintenue.
 Deux vérifications rapides suite au correctif AppImage : (1) confirmé que `tauri.conf.json`'s tableau `resources` top-level (donc appliqué à AppImage/deb/rpm identiquement, pas seulement `linux.deb.files`) place bien les 6 fichiers sous `packaging/<nom>` -- exactement le chemin que `stage_resources_for_pkexec` attend (`resource_dir.join("packaging").join(name)`), cohérent sur les 3 formats de paquet, pas seulement le `.deb` déjà vérifié lors du build. (2) Lecture complète de `PortableAppsPage.vue` (jamais relue cette relance malgré son lien direct avec le bug curl corrigé) : gestion d'erreur par entrée correctement scopée (`downloadErrors` indexé par `entry.id`, pas global), états téléchargement/erreur propres. Rien à corriger côté frontend -- confirme que les bugs remontés étaient entièrement côté backend.
 
 Version inchangée 0.25.145. Cadence 10 min maintenue.
+
+## Cycle 427 -- maintenance légère, négatif -- 2026-08-14
+
+Lecture complète de `network_write.rs` (252 lignes) -- le seul autre point d'appel `pkexec` direct hors `subprocess.rs`, jamais relu en entier cette relance. `run_pkexec_with_stdin` (write-hosts/set-dns via stdin base64) et `add_firewall_rule`/`remove_firewall_rule` (via `subprocess::run_with_timeout`, donc déjà protégé par le fix `LD_LIBRARY_PATH`) : validation stricte hosts/dns/port-proto avant tout appel privilégié, bounds-check port 1-65535 (bug ufw déjà connu et corrigé), pas de nouveau défaut. `pkexec` lui-même non affecté par le bug `LD_LIBRARY_PATH` (confirmé cycle 424 : polkit sanitize l'environnement du processus élevé).
+
+Rien à corriger. Version inchangée 0.25.145. Cadence 10 min maintenue.
