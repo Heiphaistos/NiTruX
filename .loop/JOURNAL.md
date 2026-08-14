@@ -3434,3 +3434,17 @@ Reliquat frontend : `UpdatesPage.vue`/`PackagesPage.vue` (quasi-identiques, mais
 **Corrigé** : `scanResults` rendu nullable + reset à `null` avant chaque scan + message d'état vide dédié (`Aucun port valide indiqué...`). 2 tests de régression ajoutés (message vide sur ports tous invalides, anciens résultats effacés sur échec après succès). 477/477 frontend (475→477, +2), 386/386 Rust (inchangé), `vue-tsc` clean. Version 0.25.141→0.25.142, commit `072dca1`, poussé.
 
 **3 correctifs accumulés depuis v0.25.139** (accounts.rs cycle 399, profilesStore.ts cycle 404, NetworkPage.vue cycle 410).
+
+## Cycle 411 -- RELIQUAT FRONTEND ÉPUISÉ -- CYCLE NÉGATIF -- 2026-08-14
+
+9 dernières pages du reliquat auditées : `PeripheralsPage.vue` (4 try/catch indépendants xrandr/lsusb/pactl/lpstat), `HardwareDetailsPage.vue` (erreur GPU distincte de "genuinely no GPU" via 2 refs séparés), `BenchmarkPage.vue` (`healthStatus(null)=warning` cohérent avec le fix SMART cycle 397, caveat cache disque documenté = décision produit en attente non tranchée), `DataRecoveryPage.vue` (type-to-confirm suppression irréversible), `OptimizationsPage.vue` (badges ZRAM/fstrim correctement neutres/warning pas danger), `UninstallerPage.vue` (try/catch indépendants paquets/gestionnaire, recherche vs vide distingués), `InstalledSoftwarePage.vue` (idem, miroir explicite du pattern UninstallerPage), `InstallProfilesPage.vue` (installs séquentiels pour éviter la contention de verrou apt/dnf, résumé annoncé une seule fois pas par-app), `QuickInstallPage.vue` (état d'installation par-id, `managerReady` promise partagée anti-race).
+
+**Aucun défaut trouvé.** Toutes exemplaires.
+
+**Ceci épuise la liste explicite du reliquat frontend donné en tête de cycle.** Combiné au backend audité à 100% (cycle 409) et aux ~30 autres pages/stores couverts (404-410), la quasi-totalité du code source lisible du projet (`src/` + `src-tauri/src/`) a maintenant été relue au moins une fois cette relance (cycles 399-411, 13 cycles cumulés). 3 vrais correctifs livrés (accounts.rs, profilesStore.ts, NetworkPage.vue) sur ~45 modules Rust + ~35 pages/stores/libs frontend audités.
+
+**Décision** : espacement de la cadence plutôt que sur-audit répétitif du même code déjà confirmé propre. Prochains cycles à intervalle plus large, ciblant les zones restantes moins prioritaires (composants UI partagés `src/components/`, `src/lib/systemMetrics.ts`, `src/data/*.ts` restants) ou en attente d'une décision utilisateur (release, ou arrêt).
+
+Baseline resté vert (aucun code touché). Version inchangée 0.25.142.
+
+**3 correctifs accumulés depuis v0.25.139** attendent toujours une décision utilisateur (release ou pause). Dependabot glib<0.20 = bloqué upstream. `benchmark.rs` lecture-cache disque = décision produit en attente.
