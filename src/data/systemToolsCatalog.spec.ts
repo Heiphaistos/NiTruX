@@ -75,6 +75,20 @@ describe("systemToolsCatalog", () => {
     }
   });
 
+  // Same root cause as the `du` case above: `systemctl status <unit>` and
+  // `firewall-cmd --state` both follow the LSB init-script convention of
+  // returning a non-zero exit code for "inactive"/"not running" while still
+  // printing the real, useful status to stdout -- run_script would discard
+  // that informative output (and, unlike the `du` case, stderr is typically
+  // empty here too, so the resulting error message is uninformative).
+  it("keeps `|| true` on every `systemctl status`/`firewall-cmd --state` entry, since 'inactive' is a valid non-zero-exit answer", () => {
+    for (const tool of systemToolsCatalog) {
+      if (!tool.command) continue;
+      if (!/^(systemctl status |firewall-cmd --state)/.test(tool.command)) continue;
+      expect(tool.command.trimEnd().endsWith("|| true"), `${tool.id}: "${tool.command}"`).toBe(true);
+    }
+  });
+
   it("includes a DNS cache flush action, a genuine gap against NiTriTe's equivalent Turbo Mode/Tools quick action", () => {
     // Unlike the du/grep cases above, a failing `resolvectl flush-caches`
     // (e.g. systemd-resolved not running) is a real, meaningful failure to
