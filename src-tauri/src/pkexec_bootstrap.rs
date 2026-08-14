@@ -108,6 +108,39 @@ fn build_bootstrap_script() -> String {
     script
 }
 
+/// Stages a plain-filesystem copy of the resources `build_bootstrap_script`
+/// needs, before elevating. Required because `resource_dir` itself may be
+/// the AppImage's FUSE-mounted resource path: that mount is readable only
+/// by the user who launched the AppImage (AppImages don't set FUSE's
+/// `allow_other`), so `pkexec`'s root-run `cp` cannot read through it at
+/// all -- reproduced live on the shipped v0.25.142 AppImage: `cp: impossible
+/// d'évaluer '/tmp/.mount_Nitrux.../packaging/nitrux-pkexec-helper':
+/// Permission non accordée`, which then cascaded into every other
+/// pkexec-routed command failing too (the binaries this step should have
+/// created were simply never written). A `.deb`/`.rpm` install's
+/// `resource_dir` is already a normal on-disk path readable by root, so this
+/// staging step there is just a harmless extra copy, not a fix for anything.
+///
+/// Each file is written via `write_exclusively_owner_only` rather than
+/// `std::fs::copy`, for the same predictable-temp-path reason documented in
+/// `secure_temp`'s module doc (first found in this very file): a
+/// pre-positioned symlink at the staged destination must not be followed.
+fn stage_resources_for_pkexec(resource_dir: &Path) -> Result<PathBuf, String> {
+    let staging_dir = std::env::temp_dir().join(format!("nitrux-pkexec-stage-{}", std::process::id()));
+    let packaging_dir = staging_dir.join("packaging");
+    std::fs::create_dir_all(&packaging_dir)
+        .map_err(|e| format!("impossible de créer le dossier de préparation : {e}"))?;
+
+    let mut names: Vec<&str> = vec!["nitrux-pkexec-helper"];
+    names.extend_from_slice(POLKIT_POLICY_FILES);
+    for name in names {
+        let content = std::fs::read(resource_dir.join("packaging").join(name))
+            .map_err(|e| format!("impossible de lire {name} dans les ressources de l'application : {e}"))?;
+        write_exclusively_owner_only(&packaging_dir.join(name), &content)?;
+    }
+    Ok(staging_dir)
+}
+
 /// Installs the privileged-action integration on a system where it isn't
 /// present yet (the AppImage bootstrap path -- see this module's own doc
 /// comment). Relies on polkit's own built-in `org.freedesktop.policykit.exec`
@@ -136,13 +169,15 @@ pub fn install_pkexec_integration(app: tauri::AppHandle) -> Result<String, Strin
         return Err(format!("dossier de ressources invalide : {}", resource_dir.display()));
     }
 
+    let staging_dir = stage_resources_for_pkexec(&resource_dir)?;
     let script_path = write_bootstrap_script_to_temp()?;
     let result = subprocess::run_with_timeout(
         "pkexec",
-        &["sh", &script_path.to_string_lossy(), &resource_dir.to_string_lossy()],
+        &["sh", &script_path.to_string_lossy(), &staging_dir.to_string_lossy()],
         Duration::from_secs(60),
     );
     let _ = std::fs::remove_file(&script_path);
+    let _ = std::fs::remove_dir_all(&staging_dir);
     result.map(|_| "Intégration système installée avec succès.".to_string())
 }
 
@@ -158,6 +193,48 @@ fn write_bootstrap_script_to_temp() -> Result<PathBuf, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn stages_every_resource_file_into_a_plain_readable_copy() {
+        // Regression guard for the actual bug (v0.25.142 AppImage, reported
+        // live): passing resource_dir straight through to the root-run
+        // script failed with "Permission non accordée" because root cannot
+        // read into the AppImage's per-user FUSE mount at all. Staging a
+        // plain-filesystem copy first is the fix -- this proves every file
+        // the bootstrap script needs actually lands in the staging dir with
+        // its real content, not just that the function returns Ok.
+        let resource_dir = std::env::temp_dir().join(format!("nitrux-pkexec-stage-test-src-{}", std::process::id()));
+        let packaging_dir = resource_dir.join("packaging");
+        std::fs::create_dir_all(&packaging_dir).unwrap();
+        std::fs::write(packaging_dir.join("nitrux-pkexec-helper"), b"#!/bin/sh\necho helper\n").unwrap();
+        for policy in POLKIT_POLICY_FILES {
+            std::fs::write(packaging_dir.join(policy), b"<policyconfig/>").unwrap();
+        }
+
+        let result = stage_resources_for_pkexec(&resource_dir);
+        std::fs::remove_dir_all(&resource_dir).ok();
+
+        let staging_dir = result.expect("staging should succeed when every resource file is present");
+        let staged_helper = std::fs::read(staging_dir.join("packaging").join("nitrux-pkexec-helper"))
+            .expect("staged helper script should be readable");
+        assert_eq!(staged_helper, b"#!/bin/sh\necho helper\n");
+        for policy in POLKIT_POLICY_FILES {
+            assert!(staging_dir.join("packaging").join(policy).exists(), "staged copy of {policy} should exist");
+        }
+        std::fs::remove_dir_all(&staging_dir).ok();
+    }
+
+    #[test]
+    fn stage_resources_for_pkexec_surfaces_a_clear_error_when_a_resource_file_is_missing() {
+        let resource_dir = std::env::temp_dir().join(format!("nitrux-pkexec-stage-test-missing-{}", std::process::id()));
+        std::fs::create_dir_all(resource_dir.join("packaging")).unwrap();
+        // No files written -- resource_dir exists but is empty.
+
+        let err = stage_resources_for_pkexec(&resource_dir).expect_err("should fail when a resource file is absent");
+        std::fs::remove_dir_all(&resource_dir).ok();
+
+        assert!(err.contains("nitrux-pkexec-helper"), "error should name the missing file: {err}");
+    }
 
     #[test]
     fn representative_binary_present_reports_installed() {

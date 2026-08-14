@@ -62,35 +62,43 @@ function bytesToMb(bytes: number): string {
     <NxSectionHeader title="Processus & services" description="Processus en cours, services, démarrage automatique et tâches planifiées." />
 
     <NxCard>
-      <NxSectionHeader title="Processus" />
-      <NxCard v-if="processesError" danger>{{ processesError }}</NxCard>
-      <NxInput v-model="processFilter" placeholder="Filtrer par nom..." aria-label="Filtrer les processus par nom" />
-      <div v-if="processes && filteredProcesses.length === 0" class="proc-empty">Aucun processus trouvé.</div>
-      <div v-for="p in filteredProcesses" :key="p.pid" class="proc-row">
-        <span>{{ p.name }} ({{ p.pid }})</span>
-        <span>{{ p.cpu_percent.toFixed(1) }}% · {{ bytesToMb(p.memory_bytes) }} Mo</span>
-      </div>
+      <details class="proc-details" open>
+        <summary class="proc-summary">Processus ({{ processes?.length ?? 0 }})</summary>
+        <NxCard v-if="processesError" danger>{{ processesError }}</NxCard>
+        <NxInput v-model="processFilter" placeholder="Filtrer par nom..." aria-label="Filtrer les processus par nom" />
+        <div v-if="processes && filteredProcesses.length === 0" class="proc-empty">Aucun processus trouvé.</div>
+        <div v-for="p in filteredProcesses" :key="p.pid" class="proc-row">
+          <span>{{ p.name }} ({{ p.pid }})</span>
+          <span>{{ p.cpu_percent.toFixed(1) }}% · {{ bytesToMb(p.memory_bytes) }} Mo</span>
+        </div>
+      </details>
     </NxCard>
 
     <NxCard>
-      <NxSectionHeader title="Services systemd" />
-      <NxCard v-if="servicesError" danger>{{ servicesError }}</NxCard>
-      <div v-if="services && services.length === 0" class="proc-empty">Aucun service systemd trouvé.</div>
-      <div v-for="s in services ?? []" :key="s" class="proc-row">{{ s }}</div>
+      <details class="proc-details" open>
+        <summary class="proc-summary">Services systemd ({{ services?.length ?? 0 }})</summary>
+        <NxCard v-if="servicesError" danger>{{ servicesError }}</NxCard>
+        <div v-if="services && services.length === 0" class="proc-empty">Aucun service systemd trouvé.</div>
+        <div v-for="s in services ?? []" :key="s" class="proc-row">{{ s }}</div>
+      </details>
     </NxCard>
 
     <NxCard>
-      <NxSectionHeader title="Démarrage automatique" />
-      <NxCard v-if="autostartError" danger>{{ autostartError }}</NxCard>
-      <div v-if="autostart && autostart.length === 0" class="proc-empty">Aucune entrée de démarrage automatique.</div>
-      <div v-for="a in autostart ?? []" :key="a.name" class="proc-row">{{ a.name }}</div>
+      <details class="proc-details" open>
+        <summary class="proc-summary">Démarrage automatique ({{ autostart?.length ?? 0 }})</summary>
+        <NxCard v-if="autostartError" danger>{{ autostartError }}</NxCard>
+        <div v-if="autostart && autostart.length === 0" class="proc-empty">Aucune entrée de démarrage automatique.</div>
+        <div v-for="a in autostart ?? []" :key="a.name" class="proc-row">{{ a.name }}</div>
+      </details>
     </NxCard>
 
     <NxCard>
-      <NxSectionHeader title="Tâches planifiées" />
-      <NxCard v-if="scheduledTasksError" danger>{{ scheduledTasksError }}</NxCard>
-      <div v-if="scheduledTasks && scheduledTasks.length === 0" class="proc-empty">Aucune tâche planifiée.</div>
-      <div v-for="t in scheduledTasks ?? []" :key="t" class="proc-row">{{ t }}</div>
+      <details class="proc-details" open>
+        <summary class="proc-summary">Tâches planifiées ({{ scheduledTasks?.length ?? 0 }})</summary>
+        <NxCard v-if="scheduledTasksError" danger>{{ scheduledTasksError }}</NxCard>
+        <div v-if="scheduledTasks && scheduledTasks.length === 0" class="proc-empty">Aucune tâche planifiée.</div>
+        <div v-for="t in scheduledTasks ?? []" :key="t" class="proc-row">{{ t }}</div>
+      </details>
     </NxCard>
   </div>
 </template>
@@ -99,4 +107,13 @@ function bytesToMb(bytes: number): string {
 .proc-page { padding: 24px; display: flex; flex-direction: column; gap: 12px; }
 .proc-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 4px 0; font-size: 13px; }
 .proc-empty { color: var(--nx-text-secondary); font-size: 13px; }
+.proc-details > *:not(summary) { margin-top: 10px; }
+.proc-summary {
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--nx-text-primary);
+  font-family: var(--nx-style-font-family);
+  user-select: none;
+}
 </style>

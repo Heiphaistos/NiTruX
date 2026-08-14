@@ -63,6 +63,25 @@ fn interpret_smartctl_result(output: &str, code: i32) -> Result<Option<String>, 
     Ok(parse_health_line(output))
 }
 
+/// `run_capturing_exit_code` only ever produces "smartctl introuvable ou
+/// impossible à lancer : ..." when the binary genuinely doesn't exist on
+/// this system (an `ENOENT` from the `spawn()` call itself, not something
+/// `smartctl`'s own exit code or output could ever say) -- distinct from
+/// every other error this function can return, which are all about a
+/// *found* `smartctl` failing to read a *specific device*. Reported live
+/// (v0.25.142 AppImage): a system without `smartmontools` installed showed
+/// only the raw "Aucun fichier ou dossier de ce nom (os error 2)" text,
+/// accurate but not something a non-technical user can act on -- this adds
+/// the one actionable fact (which package to install) without touching the
+/// real, already-correct root cause reporting for every other failure mode.
+fn add_missing_binary_hint(err: String) -> String {
+    if err.starts_with("smartctl introuvable") {
+        format!("{err} (installez le paquet \"smartmontools\" pour activer le test de santé des disques)")
+    } else {
+        err
+    }
+}
+
 /// Queries SMART health for `device` (e.g. "/dev/sda"). `smartctl` commonly
 /// requires root to access the raw device — a permission-denied failure is
 /// surfaced as a normal `Err`, not a crash. This is a real, expected
@@ -70,7 +89,8 @@ fn interpret_smartctl_result(output: &str, code: i32) -> Result<Option<String>, 
 /// having the same root requirement), not something this task works around.
 #[tauri::command]
 pub fn get_smart_status(device: String) -> Result<SmartStatus, String> {
-    let (output, _stderr, code) = subprocess::run_capturing_exit_code("smartctl", &["-H", &device], Duration::from_secs(15))?;
+    let (output, _stderr, code) = subprocess::run_capturing_exit_code("smartctl", &["-H", &device], Duration::from_secs(15))
+        .map_err(add_missing_binary_hint)?;
     Ok(SmartStatus {
         device,
         health: interpret_smartctl_result(&output, code)?,
@@ -80,6 +100,24 @@ pub fn get_smart_status(device: String) -> Result<SmartStatus, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn hints_at_installing_smartmontools_when_the_binary_is_genuinely_missing() {
+        let err = add_missing_binary_hint(
+            "smartctl introuvable ou impossible à lancer : Aucun fichier ou dossier de ce nom (os error 2)".to_string(),
+        );
+        assert!(err.contains("smartmontools"), "should name the package to install: {err}");
+        assert!(err.contains("os error 2"), "should keep the original diagnostic text: {err}");
+    }
+
+    #[test]
+    fn leaves_every_other_error_untouched() {
+        // The hint is specific to "binary not found" -- a device-level
+        // failure (permission denied, no such device, ...) already carries
+        // smartctl's own real explanation and must not be altered.
+        let err = "smartctl n'a pas pu interroger le périphérique (code 2) : Permission denied".to_string();
+        assert_eq!(add_missing_binary_hint(err.clone()), err);
+    }
 
     #[test]
     fn parses_smart_overall_health_line() {
