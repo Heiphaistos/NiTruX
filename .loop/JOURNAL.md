@@ -3554,3 +3554,9 @@ Tests ajoutés : `subprocess::strips_ld_library_path_from_every_run_variant`, `p
 Version bump 0.25.144 → **0.25.145**. Build (deb+rpm+AppImage) vérifié (scripts bundlés identiques à la source), tag + **release GitHub publiée** : https://github.com/Heiphaistos/NiTruX/releases/tag/v0.25.145
 
 Boucle d'audit reprise après ce correctif prioritaire.
+
+## Cycle 424 -- vérification de complétude du fix LD_LIBRARY_PATH, négatif -- 2026-08-14
+
+Suite au correctif hors-cycle (v0.25.145), vérifié les 2 seuls autres points `Command::new` non couverts par le fix : `network_write.rs`'s `pkexec` direct (non affecté par construction -- pkexec sanitize lui-même l'environnement du processus élevé, ne préserve pas `LD_LIBRARY_PATH`, cohérent avec le fait que le bug #6 rapporté était "Permission denied" et non une erreur de symbole) et `packages/mod.rs::binary_exists` (`which <bin>`, simple lookup PATH sans dépendances exotiques -- risque nul, hors périmètre du fix). Couverture du correctif confirmée complète, rien à ajouter.
+
+Version inchangée 0.25.145. Cadence 10 min maintenue.
