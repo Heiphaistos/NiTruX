@@ -3496,3 +3496,15 @@ Boucle reprise immédiatement après la release, sur demande explicite. Cadence 
 Lecture complète (1ère fois cette relance) des 5 fichiers `.policy` polkit (`packages`/`network`/`security`/`disks`/`system-tools`, 15 actions au total) et de `nitrux-postrm-cleanup.sh`. Vérifié : les 15 `exec.path` sont tous distincts et correspondent 1:1 aux 15 binaires `nitrux-pkexec-*` (déjà revérifiés synchronisés au cycle 416) et aux 15 sous-commandes du helper (cycle 417) -- aucune action ne partage son chemin avec une autre, la discipline anti-ambiguïté établie depuis le bug v0.6.0 tient sur toute la surface. `nitrux-postrm-cleanup.sh` : distinction purge(deb)/argument-0(rpm) correcte, suppression scopée `/root` + `/home/*/.local/share/org.heiphaistos.nitrux` uniquement, jamais un chemin plus large. Aucun défaut trouvé -- toute la chaîne pkexec (policy → tauri.conf.json → pkexec_bootstrap.rs → helper script) est maintenant vérifiée cohérente de bout en bout cette relance.
 
 Version inchangée 0.25.142.
+
+## Cycle 419 -- correctif réel, 2026-08-14
+
+Angle neuf : lecture complète (1ère fois cette relance) de `systemToolsCatalog.ts` (603 entrées) + son spec. Le spec documente déjà un pattern connu -- `run_script` (scripts.rs → subprocess.rs::run_with_timeout) jette systématiquement stdout sur TOUT code de sortie non-zéro, remplacé par une erreur générique construite depuis stderr -- et curative déjà les cas `du`/grep affectés via `|| true`.
+
+**Trouvé 8 entrées de la même classe de bug jamais couvertes** : `systemctl status <unit> --no-pager` (systemd-timesyncd-status, cups-status, systemctl-docker-status, systemctl-postgresql-status, systemctl-mariadb-status, systemctl-redis-status, systemctl-nginx-status) et `firewall-cmd --state` -- ces commandes suivent la convention LSB (code non-zéro pour "inactif"/"not running") tout en imprimant la vraie réponse utile sur stdout, ET n'écrivent rien sur stderr dans ce cas -- donc l'erreur générique reconstruite serait même **vide**, pire que pour les cas `du` déjà connus. "Inactif"/"not running" est justement la réponse recherchée par l'utilisateur qui clique sur "État du service X", exactement comme "not found" est une réponse valide pour un grep de découverte.
+
+**Corrigé** : `|| true` ajouté aux 8 entrées, même mécanisme que les fixes existants. Ajouté un test spec générique (`/^(systemctl status |firewall-cmd --state)/`) qui couvre toute future entrée de cette forme, pas seulement les 8 trouvées. Suite complète (478 tests, 75 fichiers) verte après le fix.
+
+Version bump 0.25.142 → **0.25.143** (package.json, Cargo.toml, tauri.conf.json, Cargo.lock). Poussé (2839e1d).
+
+Cadence resserrée à 10 min sur demande explicite de l'utilisateur.
