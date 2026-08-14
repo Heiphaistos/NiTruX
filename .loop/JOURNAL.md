@@ -3480,3 +3480,13 @@ Lecture complète (470 lignes, 1ère fois cette relance) de `packaging/nitrux-pk
 **Un candidat retrouvé, déjà connu -- PAS une nouvelle découverte** : `quarantine-file` construit `dest` via `$(date +%s)-$(basename)` (granularité seconde) puis `mv` sans disambiguation -- même classe que le bug Date.now() déjà fixé ailleurs (profilesStore, ThemeEditorPage, report.rs). **Déjà documenté deux fois dans l'historique de ce fichier** (lignes 248 et 1771 du journal) : risque réel mais faible (le flux UI sérialise déjà les quarantaines via verrou partagé, collision quasi inatteignable en usage normal), correctif nécessiterait une modif du script pkexec + re-vérification VM live pour un gain marginal -- décision déjà prise de ne pas corriger. Reconfirmé, pas re-signalé comme nouveau.
 
 Version inchangée 0.25.142. 3 correctifs toujours en attente d'une décision utilisateur.
+
+## Hors cycle -- RELEASE PUBLIÉE -- 2026-08-14
+
+Sur demande explicite de l'utilisateur ("fait la release puis continu la loop"). `npm run tauri build` (WSL2) → 3 bundles générés sans erreur (`Nitrux_0.25.142_amd64.deb` 9,34 Mo, `Nitrux-0.25.142-1.x86_64.rpm` 9,35 Mo, `Nitrux_0.25.142_amd64.AppImage` 86,5 Mo ; AppImage lent car `sed` retraite `libwebkit2gtk-4.1.so.0`, ~8 min de build total). Vérification avant publication : `postrm` extrait du .deb identique à la source (diff vide) ; les 15 copies de `nitrux-pkexec-helper` dans le .deb toutes identiques à la source (diff vide sur chacune) ; confirme la synchronisation déjà revérifiée au cycle 416.
+
+Tag annoté `v0.25.142` poussé. Release GitHub créée via `gh release create` avec les 3 assets et des notes organisées (corrections : profilesStore seuils, NetworkPage scanner de ports, accounts.rs validation passwd ; sous le capot : campagne d'audit complète). Vérifié via `gh release view --json` : `isDraft=false`, `isPrerelease=false`, 3 assets présents.
+
+**Les 3 correctifs accumulés depuis v0.25.139 (cycles 399-410) sont désormais tous publiés : https://github.com/Heiphaistos/NiTruX/releases/tag/v0.25.142. Plus aucun backlog de correctifs non livrés.**
+
+Boucle reprise immédiatement après la release, sur demande explicite. Cadence maintenance 1h maintenue (codebase toujours au plateau de maturité confirmé cycles 399-417).
