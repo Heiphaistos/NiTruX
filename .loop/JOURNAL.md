@@ -3456,3 +3456,7 @@ Baseline resté vert (aucun code touché). Version inchangée 0.25.142.
 ## Cycle 413 -- maintenance légère, négatif -- 2026-08-14
 
 `LayoutShell.vue`/`layouts/registry.ts` (Record typé exhaustif anti-dérive, fallback sûr sur localStorage corrompu), `styles/registry.ts` (data statique), `CompactSidebarLayout.vue` (fix scrollbar R14 déjà en place). Tous propres. Version inchangée 0.25.142. 3 correctifs toujours en attente d'une décision utilisateur.
+
+## Cycle 414 -- maintenance légère, négatif -- 2026-08-14
+
+Vérification WCAG ciblée (angle neuf, jamais fait pour cette paire spécifique) : `textPrimary`/`textSecondary` vs `bgBase` ET `bgElevated` sur les 13 thèmes de `builtin.ts` (script Node réutilisant la formule `accessibleColor.ts`). Tous les `textPrimary` passent AA confortablement (≥5.57:1 sur bgElevated, ≥6.57:1 sur bgBase). `textSecondary` toujours ≥3:1 (seuil texte large/UI), cohérent avec son rôle de texte atténué délibéré -- pas un défaut. Aucune nouvelle faille a11y (les checks précédents cycles 246-297 portaient sur badges/accents, celui-ci couvre la paire fondamentale texte/fond, jamais vérifiée explicitement). Version inchangée 0.25.142. 3 correctifs toujours en attente d'une décision utilisateur.
