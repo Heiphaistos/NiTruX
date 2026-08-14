@@ -3524,3 +3524,9 @@ Angle neuf : lecture complète (1ère fois cette relance) de `accessibleColor.ts
 Version bump 0.25.143 → **0.25.144**. Poussé (914686e).
 
 Cadence 10 min maintenue.
+
+## Cycle 422 -- maintenance légère, négatif -- 2026-08-14
+
+Angle neuf, jamais fait sous cette forme mécanique cette relance : diff programmatique entre (a) les 85 commandes `#[tauri::command]` définies dans `src-tauri/src/` et la liste `generate_handler!` de `lib.rs`, (b) les ~83 noms de commandes invoquées via `invoke("...")` côté frontend (`src/`) et le même ensemble de commandes définies côté backend. Aucune commande définie non enregistrée (pas de commande morte/inatteignable), aucun nom invoqué côté frontend sans correspondance backend (pas de faute de frappe silencieuse -- cette classe de bug échouerait silencieusement à l'exécution, invisible en compilation TS comme en compilation Rust puisque `invoke()` prend une string). 3 faux positifs initiaux (`list_updates`, `detect_native_manager`, `get_environment_variables`) élucidés : définies sans `pub` car locales à `lib.rs` même, mon regex d'extraction exigeait `pub fn` -- pas un vrai écart.
+
+Rien à corriger. Version inchangée 0.25.144. Cadence 10 min maintenue.
