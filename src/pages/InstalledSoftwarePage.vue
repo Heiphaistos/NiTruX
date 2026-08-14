@@ -52,20 +52,24 @@ const filteredPackages = computed(() =>
     <NxCard v-if="loadError" danger>{{ loadError }}</NxCard>
 
     <NxCard>
-      <NxSectionHeader :title="`Paquets (${packages?.length ?? 0})`" />
-      <NxInput v-model="softwareFilter" placeholder="Filtrer par nom..." aria-label="Filtrer les logiciels installés par nom" />
-      <div v-for="p in filteredPackages" :key="p.name" class="sw-row">
-        <span>{{ p.name }}</span><span>{{ p.version }}</span>
-      </div>
-      <div v-if="packages && filteredPackages.length === 0" class="sw-empty">Aucun paquet ne correspond à cette recherche.</div>
+      <details class="sw-details" open>
+        <summary class="sw-summary">Paquets ({{ packages?.length ?? 0 }})</summary>
+        <NxInput v-model="softwareFilter" placeholder="Filtrer par nom..." aria-label="Filtrer les logiciels installés par nom" />
+        <div v-for="p in filteredPackages" :key="p.name" class="sw-row">
+          <span>{{ p.name }}</span><span>{{ p.version }}</span>
+        </div>
+        <div v-if="packages && filteredPackages.length === 0" class="sw-empty">Aucun paquet ne correspond à cette recherche.</div>
+      </details>
     </NxCard>
 
     <NxCard>
-      <NxSectionHeader title="Variables d'environnement" />
-      <NxCard v-if="envVarsError" danger>{{ envVarsError }}</NxCard>
-      <div v-for="[key, value] in envVars" :key="key" class="sw-row">
-        <span>{{ key }}</span><span>{{ value }}</span>
-      </div>
+      <details class="sw-details" open>
+        <summary class="sw-summary">Variables d'environnement ({{ envVars.length }})</summary>
+        <NxCard v-if="envVarsError" danger>{{ envVarsError }}</NxCard>
+        <div v-for="[key, value] in envVars" :key="key" class="sw-row">
+          <span>{{ key }}</span><span>{{ value }}</span>
+        </div>
+      </details>
     </NxCard>
   </div>
 </template>
@@ -74,4 +78,13 @@ const filteredPackages = computed(() =>
 .sw-page { padding: 24px; display: flex; flex-direction: column; gap: 12px; }
 .sw-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 4px 0; font-size: 13px; border-bottom: 1px solid var(--nx-style-border-color); }
 .sw-empty { color: var(--nx-text-secondary); font-size: 13px; }
+.sw-details > *:not(summary) { margin-top: 10px; }
+.sw-summary {
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--nx-text-primary);
+  font-family: var(--nx-style-font-family);
+  user-select: none;
+}
 </style>

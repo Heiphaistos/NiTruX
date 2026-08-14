@@ -6,6 +6,26 @@ use std::process::{Command, Stdio};
 use std::sync::mpsc;
 use std::time::Duration;
 
+/// The AppImage runtime (linuxdeploy's `AppRun`) prepends `$APPDIR/usr/lib`
+/// to `LD_LIBRARY_PATH` for NiTruX's own process so its bundled WebKitGTK
+/// stack resolves correctly -- but every child process this module spawns
+/// inherits that same variable, and then dynamically links *system*
+/// binaries against whichever of the AppImage's bundled libraries happens
+/// to share a name with one the system binary needs, version mismatch or
+/// not. Reproduced live on the shipped v0.25.142 AppImage: the system's own
+/// `curl`, run this way, resolved `/lib/x86_64-linux-gnu/libcurl.so.4`
+/// against the AppImage-bundled `libnghttp2` instead of the system's
+/// matching one and crashed with "undefined symbol" before running at all
+/// -- exit code 127, no useful output. Stripping the variable here (the one
+/// place every external command in this app is actually spawned) restores
+/// normal system-library resolution for the child regardless of which
+/// package format launched NiTruX itself; a `.deb`/`.rpm` install never had
+/// this variable set in the first place, so removing an unset variable is a
+/// no-op there.
+fn sanitize_child_env(command: &mut Command) {
+    command.env_remove("LD_LIBRARY_PATH");
+}
+
 /// Runs `program` with `args`, bounding the wait to `timeout`.
 ///
 /// - `Ok(stdout)` — the process exited with status 0; stdout is returned
@@ -14,10 +34,10 @@ use std::time::Duration;
 ///   exited non-zero, or it did not finish within `timeout`. In the timeout
 ///   case the child process is sent `SIGKILL` before returning.
 pub fn run_with_timeout(program: &str, args: &[&str], timeout: Duration) -> Result<String, String> {
-    let child = Command::new(program)
-        .args(args)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
+    let mut command = Command::new(program);
+    command.args(args).stdout(Stdio::piped()).stderr(Stdio::piped());
+    sanitize_child_env(&mut command);
+    let child = command
         .spawn()
         .map_err(|e| format!("{program} introuvable ou impossible à lancer : {e}"))?;
 
@@ -75,6 +95,7 @@ pub fn run_with_timeout_env(
 ) -> Result<String, String> {
     let mut command = Command::new(program);
     command.args(args).stdout(Stdio::piped()).stderr(Stdio::piped());
+    sanitize_child_env(&mut command);
     for (key, value) in envs {
         command.env(key, value);
     }
@@ -145,10 +166,10 @@ pub fn run_capturing_exit_code(
     args: &[&str],
     timeout: Duration,
 ) -> Result<(String, String, i32), String> {
-    let child = Command::new(program)
-        .args(args)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
+    let mut command = Command::new(program);
+    command.args(args).stdout(Stdio::piped()).stderr(Stdio::piped());
+    sanitize_child_env(&mut command);
+    let child = command
         .spawn()
         .map_err(|e| format!("{program} introuvable ou impossible à lancer : {e}"))?;
 
@@ -188,6 +209,40 @@ pub fn run_capturing_exit_code(
 mod tests {
     use super::*;
     use std::time::Instant;
+
+    #[test]
+    fn strips_ld_library_path_from_every_run_variant() {
+        // Regression guard for the actual bug (v0.25.142 AppImage, reported
+        // live): a child spawned while the AppImage's own LD_LIBRARY_PATH
+        // was still in scope resolved a system binary against a bundled
+        // library of a different version and crashed with an "undefined
+        // symbol" error instead of running -- see sanitize_child_env's doc
+        // comment. Setting the var on this test process itself (inherited
+        // by any child that doesn't scrub it) and asserting each variant
+        // reports it as absent proves the removal actually reaches the
+        // child's environment, not just that the code compiles.
+        std::env::set_var("LD_LIBRARY_PATH", "/tmp/nitrux-test-poison-path");
+
+        let out = run_with_timeout("sh", &["-c", "echo \"[$LD_LIBRARY_PATH]\""], Duration::from_secs(2))
+            .expect("should succeed");
+        assert_eq!(out.trim(), "[]", "run_with_timeout should scrub LD_LIBRARY_PATH");
+
+        let out = run_with_timeout_env(
+            "sh",
+            &["-c", "echo \"[$LD_LIBRARY_PATH]\""],
+            &[("NITRUX_UNRELATED", "x")],
+            Duration::from_secs(2),
+        )
+        .expect("should succeed");
+        assert_eq!(out.trim(), "[]", "run_with_timeout_env should scrub LD_LIBRARY_PATH");
+
+        let (stdout, _stderr, _code) =
+            run_capturing_exit_code("sh", &["-c", "echo \"[$LD_LIBRARY_PATH]\""], Duration::from_secs(2))
+                .expect("should succeed");
+        assert_eq!(stdout.trim(), "[]", "run_capturing_exit_code should scrub LD_LIBRARY_PATH");
+
+        std::env::remove_var("LD_LIBRARY_PATH");
+    }
 
     #[test]
     fn returns_ok_stdout_on_success() {

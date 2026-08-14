@@ -35,7 +35,14 @@ fn open_shell_pty(rows: u16, cols: u16) -> Result<PtyHandles, String> {
         .map_err(|e| format!("impossible d'ouvrir le pseudo-terminal : {e}"))?;
 
     let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
-    let cmd = CommandBuilder::new(shell);
+    let mut cmd = CommandBuilder::new(shell);
+    // If NiTruX itself is running as an AppImage, its own AppRun-set
+    // LD_LIBRARY_PATH would otherwise leak into this interactive shell --
+    // and from there into every command the user types in it (curl, git,
+    // ...), each hitting the exact "system binary linked against a
+    // mismatched bundled library" crash fixed in subprocess.rs for the
+    // app's own internal command invocations.
+    cmd.env_remove("LD_LIBRARY_PATH");
     let child = pair
         .slave
         .spawn_command(cmd)

@@ -179,7 +179,15 @@ pub fn launch_portable_app(filename: String) -> Result<(), String> {
     // Not run_with_timeout: an AppImage is a GUI app meant to keep running
     // indefinitely, not a short-lived command whose output this cares
     // about -- spawn and detach, exactly like TerminalPage's shell.
+    //
+    // env_remove: if NiTruX itself is running as an AppImage, its own
+    // AppRun-set LD_LIBRARY_PATH would otherwise leak into the launched
+    // app's process too -- the exact same "system binary linked against a
+    // mismatched bundled library" crash class fixed in subprocess.rs, just
+    // reachable here on a launched portable app instead of a spawned CLI
+    // tool.
     std::process::Command::new(&path)
+        .env_remove("LD_LIBRARY_PATH")
         .spawn()
         .map_err(|e| format!("impossible de lancer {filename} : {e}"))?;
     Ok(())
