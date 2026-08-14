@@ -3452,3 +3452,7 @@ Baseline resté vert (aucun code touché). Version inchangée 0.25.142.
 ## Cycle 412 -- maintenance légère, négatif -- 2026-08-14
 
 `systemMetrics.ts`, `NxSparkline.vue`, `PkexecIntegrationBanner.vue`, `AppNav.vue` vérifiés propres. Rien à corriger. Version inchangée 0.25.142. 3 correctifs toujours en attente d'une décision utilisateur.
+
+## Cycle 413 -- maintenance légère, négatif -- 2026-08-14
+
+`LayoutShell.vue`/`layouts/registry.ts` (Record typé exhaustif anti-dérive, fallback sûr sur localStorage corrompu), `styles/registry.ts` (data statique), `CompactSidebarLayout.vue` (fix scrollbar R14 déjà en place). Tous propres. Version inchangée 0.25.142. 3 correctifs toujours en attente d'une décision utilisateur.
