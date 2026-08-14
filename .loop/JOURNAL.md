@@ -3514,3 +3514,13 @@ Cadence resserrée à 10 min sur demande explicite de l'utilisateur.
 Lecture complète (1ère fois cette relance) des 8 primitives UI partagées restantes de `src/components/ui/` : `NxBadge`, `NxButton`, `NxCard`, `NxInput`, `NxQuickActionTile`, `NxSectionHeader`, `NxSelect`, `NxStatTile` (`NxSparkline` déjà couvert cycle 412). Toutes propres et délibérément documentées : `NxBadge` régions live opt-in (évite le bruit lecteur d'écran sur les usages statiques majoritaires) + coloration accessible calculée par thème avec repli CSS si Pinia absent (tests) ; `NxCard` distingue `danger` (role="alert", contenu transitoire) de `staticDanger` (section statique avec contrôles focusables, alert déconseillé par WAI-ARIA) ; `NxInput`/`NxSelect` `ariaLabel` optionnel rétrocompatible (placeholder seul n'est pas un nom accessible, WCAG 3.3.2) ; `NxButton--danger` texte noir choisi après calcul de contraste réel sur les 13 thèmes (blanc échoue AA sur 11/13). Rien à corriger.
 
 Version inchangée 0.25.143. Cadence 10 min maintenue sur demande explicite.
+
+## Cycle 421 -- lacune de couverture réelle, corrigée -- 2026-08-14
+
+Angle neuf : lecture complète (1ère fois cette relance) de `accessibleColor.ts` (97 lignes) -- le moteur de contraste WCAG dont dépend tout rendu `NxBadge` sur les 13 thèmes intégrés (et tout thème custom/importé). Logique non triviale (boucle de convergence HSL itérative, direction selon la luminosité du fond, repli clampé) -- **aucun fichier de spec n'existait pour ce module**, alors que tous les autres libs purs du projet en ont un. La mesure "31/52 paires (thème,statut) échouent AA" citée dans les commentaires de `NxBadge.vue` était une vérification ponctuelle (script one-off, cycle historique), jamais figée en test de non-régression.
+
+**Corrigé** : `accessibleColor.spec.ts` créé (8 tests) -- `contrastRatio`/`mixHex` (calculs de base), garantie AA sur un pire cas (contraste 1:1), et direction de correction (éclaircir vs assombrir) qui suit la luminosité du fond plutôt qu'appliquée aveuglément. Deux itérations : les deux premiers essais de fixtures "connues défaillantes" échouaient parce que les valeurs choisies passaient déjà AA ou étaient dans une bande où gris moyen réussit déjà des deux côtés -- remplacées par des fixtures déterministes (accent = fond, contraste 1:1 garanti) plutôt que des hex de thèmes réels devinés de mémoire. Suite complète verte après correction (486 tests, 76 fichiers, +8 vs cycle 419).
+
+Version bump 0.25.143 → **0.25.144**. Poussé (914686e).
+
+Cadence 10 min maintenue.
