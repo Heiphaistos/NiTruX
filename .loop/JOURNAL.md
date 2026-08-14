@@ -3448,3 +3448,7 @@ Reliquat frontend : `UpdatesPage.vue`/`PackagesPage.vue` (quasi-identiques, mais
 Baseline resté vert (aucun code touché). Version inchangée 0.25.142.
 
 **3 correctifs accumulés depuis v0.25.139** attendent toujours une décision utilisateur (release ou pause). Dependabot glib<0.20 = bloqué upstream. `benchmark.rs` lecture-cache disque = décision produit en attente.
+
+## Cycle 412 -- maintenance légère, négatif -- 2026-08-14
+
+`systemMetrics.ts`, `NxSparkline.vue`, `PkexecIntegrationBanner.vue`, `AppNav.vue` vérifiés propres. Rien à corriger. Version inchangée 0.25.142. 3 correctifs toujours en attente d'une décision utilisateur.
