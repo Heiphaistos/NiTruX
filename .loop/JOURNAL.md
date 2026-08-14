@@ -3460,3 +3460,9 @@ Baseline resté vert (aucun code touché). Version inchangée 0.25.142.
 ## Cycle 414 -- maintenance légère, négatif -- 2026-08-14
 
 Vérification WCAG ciblée (angle neuf, jamais fait pour cette paire spécifique) : `textPrimary`/`textSecondary` vs `bgBase` ET `bgElevated` sur les 13 thèmes de `builtin.ts` (script Node réutilisant la formule `accessibleColor.ts`). Tous les `textPrimary` passent AA confortablement (≥5.57:1 sur bgElevated, ≥6.57:1 sur bgBase). `textSecondary` toujours ≥3:1 (seuil texte large/UI), cohérent avec son rôle de texte atténué délibéré -- pas un défaut. Aucune nouvelle faille a11y (les checks précédents cycles 246-297 portaient sur badges/accents, celui-ci couvre la paire fondamentale texte/fond, jamais vérifiée explicitement). Version inchangée 0.25.142. 3 correctifs toujours en attente d'une décision utilisateur.
+
+## Cycle 415 -- maintenance légère, négatif -- 2026-08-14
+
+Angle neuf : script Node de cohérence interne sur `appCatalog.ts` (502 entrées) -- doublons d'id, doublons de `(installMethod, packageId)`, format flatpak (reverse-DNS), méthodes valides. Aucun id dupliqué, aucune méthode invalide, tous les flatpak ont un point. **6 doublons `(apt, packageId)` trouvés** (firefox/firefox-esr, xournalpp-office/xournalpp, galculator/gcp, syncthing/syncthing-server, freecad/freecad-3dp, kmag/gnome-boxes-util) -- vérifiés un par un : **exactement les 6 déjà signalés lors de la campagne 110-210** (le même paquet réel proposé sous deux id/catégories différentes, ex. freecad en Science&Éducation vs Impression 3D), décision de curation éditoriale déjà explicitement laissée à l'utilisateur, hors périmètre d'un correctif automatique. Rien de nouveau, pas retouché.
+
+Version inchangée 0.25.142. 3 correctifs toujours en attente d'une décision utilisateur.
