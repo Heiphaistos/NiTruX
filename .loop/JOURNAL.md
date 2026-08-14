@@ -3490,3 +3490,9 @@ Tag annoté `v0.25.142` poussé. Release GitHub créée via `gh release create` 
 **Les 3 correctifs accumulés depuis v0.25.139 (cycles 399-410) sont désormais tous publiés : https://github.com/Heiphaistos/NiTruX/releases/tag/v0.25.142. Plus aucun backlog de correctifs non livrés.**
 
 Boucle reprise immédiatement après la release, sur demande explicite. Cadence maintenance 1h maintenue (codebase toujours au plateau de maturité confirmé cycles 399-417).
+
+## Cycle 418 -- maintenance légère, négatif -- 2026-08-14
+
+Lecture complète (1ère fois cette relance) des 5 fichiers `.policy` polkit (`packages`/`network`/`security`/`disks`/`system-tools`, 15 actions au total) et de `nitrux-postrm-cleanup.sh`. Vérifié : les 15 `exec.path` sont tous distincts et correspondent 1:1 aux 15 binaires `nitrux-pkexec-*` (déjà revérifiés synchronisés au cycle 416) et aux 15 sous-commandes du helper (cycle 417) -- aucune action ne partage son chemin avec une autre, la discipline anti-ambiguïté établie depuis le bug v0.6.0 tient sur toute la surface. `nitrux-postrm-cleanup.sh` : distinction purge(deb)/argument-0(rpm) correcte, suppression scopée `/root` + `/home/*/.local/share/org.heiphaistos.nitrux` uniquement, jamais un chemin plus large. Aucun défaut trouvé -- toute la chaîne pkexec (policy → tauri.conf.json → pkexec_bootstrap.rs → helper script) est maintenant vérifiée cohérente de bout en bout cette relance.
+
+Version inchangée 0.25.142.
