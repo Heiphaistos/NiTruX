@@ -16,6 +16,21 @@ describe("PkexecIntegrationBanner", () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain("Fonctions privilégiées non activées"));
   });
 
+  it("shows the banner (defaulting to 'needed') when is_pkexec_integration_installed itself rejects", async () => {
+    // Regression guard for the actual bug: found live in a browser check,
+    // not by reading the source -- with no try/catch around the mounted
+    // hook's invoke() call, a rejection left `needed` stuck at `false`
+    // forever, silently hiding the only banner that tells an AppImage user
+    // their privileged actions are broken and how to fix them.
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) => {
+      if (cmd === "is_pkexec_integration_installed") return Promise.reject("IPC layer error");
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(PkexecIntegrationBanner);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Fonctions privilégiées non activées"));
+  });
+
   it("hides the banner without ever showing a success message when dismissed via 'Plus tard'", async () => {
     const wrapper = mount(PkexecIntegrationBanner);
     await vi.waitFor(() => expect(wrapper.text()).toContain("Fonctions privilégiées non activées"));

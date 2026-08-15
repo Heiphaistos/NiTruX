@@ -46,3 +46,6 @@ dist-ssr/
 *.sw?
 
 .loop/
+
+# Personal Claude Code permission overrides (not team config)
+.claude/settings.local.json
