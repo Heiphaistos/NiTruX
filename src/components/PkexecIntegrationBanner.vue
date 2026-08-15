@@ -17,7 +17,24 @@ const installError = ref<string | null>(null);
 const installSuccess = ref(false);
 
 onMounted(async () => {
-  needed.value = !(await invoke<boolean>("is_pkexec_integration_installed"));
+  // `is_pkexec_integration_installed` is infallible Rust (returns a bare
+  // `bool`), but the IPC call itself can still reject at the Tauri layer --
+  // the same rare-but-real category every other page in this app already
+  // guards (see e.g. InstalledSoftwarePage.vue's identical note). Found live
+  // via a browser-based check (never caught by a source read alone): with
+  // no try/catch here, a rejection left `needed` stuck at its initial
+  // `false` forever -- silently hiding the one banner that tells an
+  // AppImage user their privileged actions are broken and how to fix it,
+  // for the rest of the session. Defaulting to `true` on failure errs
+  // toward showing the banner: a false positive costs one dismiss click (or
+  // a harmless re-run of an idempotent install script) on a working .deb/
+  // .rpm install, while a false negative leaves an AppImage user stuck with
+  // no explanation at all.
+  try {
+    needed.value = !(await invoke<boolean>("is_pkexec_integration_installed"));
+  } catch {
+    needed.value = true;
+  }
 });
 
 async function install() {
