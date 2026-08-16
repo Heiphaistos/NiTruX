@@ -19,7 +19,11 @@ let resizeObserver: ResizeObserver | null = null;
 async function resizeAndNotify() {
   if (!term || !fitAddon) return;
   fitAddon.fit();
-  await invoke("resize_terminal", { id, rows: term.rows, cols: term.cols });
+  // .catch, not try/catch: unlike spawn_terminal, there is nothing more the
+  // UI can do about a failed resize (no separate error state to show) --
+  // this only guards against an unhandled promise rejection reaching the
+  // console when the pty is already gone (e.g. right as the tab closes).
+  await invoke("resize_terminal", { id, rows: term.rows, cols: term.cols }).catch(() => {});
 }
 
 onMounted(async () => {
@@ -31,7 +35,13 @@ onMounted(async () => {
   }
 
   term.onData((data: string) => {
-    invoke("write_to_terminal", { id, data });
+    // .catch, not try/catch: fires on every keystroke, so a dead pty (once
+    // spawn_terminal has already succeeded) would otherwise spam an
+    // unhandled promise rejection per character typed instead of just
+    // once. There is no separate error state to show here -- a dead pty
+    // is already surfaced the next time this page is opened, via
+    // spawn_terminal's own try/catch above.
+    invoke("write_to_terminal", { id, data }).catch(() => {});
   });
 
   const onData = new Channel<string>();

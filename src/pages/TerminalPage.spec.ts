@@ -60,6 +60,37 @@ describe("TerminalPage", () => {
     expect(invoke).toHaveBeenCalledWith("write_to_terminal", { id, data: "ls\n" });
   });
 
+  it("attaches a rejection handler to write_to_terminal's promise (dead pty must not go unhandled)", async () => {
+    // Regression guard: write_to_terminal fires on every keystroke with no
+    // try/catch (a bare `.catch(() => {})` guards it instead) -- before
+    // that fix, a dead pty would leave one unhandled promise rejection per
+    // character typed, since nothing awaited or caught the call's result.
+    // Asserted by spying directly on the returned promise's `.catch`
+    // (deterministic) rather than Node's `unhandledRejection` event, whose
+    // firing is timing-dependent across Vitest's worker boundary and does
+    // not reliably reproduce here even without the fix.
+    const { invoke } = await import("@tauri-apps/api/core");
+    const catchSpy = vi.fn();
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "write_to_terminal") {
+        const rejected = Promise.reject("pty closed");
+        const originalCatch = rejected.catch.bind(rejected);
+        rejected.catch = (...args: Parameters<typeof originalCatch>) => {
+          catchSpy();
+          return originalCatch(...args);
+        };
+        return rejected;
+      }
+      return Promise.resolve(null);
+    });
+
+    mount(TerminalPage);
+    const onDataCallback = mockTerm.onData.mock.calls[0][0] as (data: string) => void;
+    onDataCallback("x");
+
+    expect(catchSpy).toHaveBeenCalled();
+  });
+
   it("writes incoming channel data into the terminal", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     mount(TerminalPage);
