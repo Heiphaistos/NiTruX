@@ -3578,3 +3578,19 @@ Version inchangée 0.25.145. Cadence 10 min maintenue.
 Lecture complète de `network_write.rs` (252 lignes) -- le seul autre point d'appel `pkexec` direct hors `subprocess.rs`, jamais relu en entier cette relance. `run_pkexec_with_stdin` (write-hosts/set-dns via stdin base64) et `add_firewall_rule`/`remove_firewall_rule` (via `subprocess::run_with_timeout`, donc déjà protégé par le fix `LD_LIBRARY_PATH`) : validation stricte hosts/dns/port-proto avant tout appel privilégié, bounds-check port 1-65535 (bug ufw déjà connu et corrigé), pas de nouveau défaut. `pkexec` lui-même non affecté par le bug `LD_LIBRARY_PATH` (confirmé cycle 424 : polkit sanitize l'environnement du processus élevé).
 
 Rien à corriger. Version inchangée 0.25.145. Cadence 10 min maintenue.
+
+## Hors cycle -- bug réel trouvé en testant l'UI en navigateur, corrigé + release publiée -- 2026-08-15
+
+Suite au ship v0.25.145, décidé de vérifier visuellement les sections repliables ajoutées ce jour même (jamais fait, juste lu le code) -- serveur dev Vite lancé côté WSL, exposé via son IP (le `--host 127.0.0.1` initial n'était pas joignable depuis Windows ; `--host 0.0.0.0` + IP WSL a résolu), testé avec `gstack` (goto/click/screenshot/console).
+
+**Sections repliables confirmées fonctionnelles** : structure `<details>/<summary>` correcte, clic bascule bien `open`, styling cohérent, capturé en écran sur `ProcessesPage` et `InstalledSoftwarePage`.
+
+**Bug réel trouvé, jamais visible à la simple lecture du code** : `console --errors` a montré `[Vue warn]: Unhandled error during execution of mounted hook at <PkexecIntegrationBanner>`. `PkexecIntegrationBanner.vue`'s `onMounted` appelait `invoke("is_pkexec_integration_installed")` **sans try/catch** -- seul appel `invoke()` de tout le codebase sans ce filet, alors que le même fichier documente ailleurs (`InstalledSoftwarePage.vue`) que l'IPC Tauri peut échouer même pour une commande Rust infaillible. Conséquence réelle : un rejet laisserait `needed` bloqué à `false` pour toute la session -- masquant silencieusement la seule bannière qui indique à un utilisateur AppImage comment corriger les bugs pkexec (v0.25.145). **Corrigé** : try/catch ajouté, défaut à `needed = true` en cas d'échec (mieux vaut un faux positif dismissable qu'un faux négatif qui bloque l'utilisateur). Test de régression ajouté et vérifié en navigateur après correctif (plus de warning console).
+
+**Piège méthodologique noté** : le serveur Vite dans WSL2 a d'abord servi une version **périmée** du composant après édition -- chokidar ne détecte pas fiablement les modifications faites côté Windows sur un chemin `/mnt/d/...` (limitation DrvFs/inotify connue). Redémarrer le serveur (pas juste `reload` navigateur) après une édition faite côté Windows pour tout test WSL+navigateur futur.
+
+Version bump 0.25.145 → **0.25.146**. 487 tests frontend + 391 Rust verts. Build vérifié, **release GitHub publiée** : https://github.com/Heiphaistos/NiTruX/releases/tag/v0.25.146
+
+Cette découverte valide la valeur du test UI réel en navigateur au-delà de la relecture de code statique -- à refaire systématiquement après tout changement UI, pas seulement déclaré fait.
+
+Boucle d'audit reprise après ce correctif.
