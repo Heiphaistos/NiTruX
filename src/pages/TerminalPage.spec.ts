@@ -75,7 +75,12 @@ describe("TerminalPage", () => {
       if (cmd === "write_to_terminal") {
         const rejected = Promise.reject("pty closed");
         const originalCatch = rejected.catch.bind(rejected);
-        rejected.catch = (...args: Parameters<typeof originalCatch>) => {
+        // Promise.catch's generic return type can't be preserved through a
+        // reassignment like this (TResult is caller-chosen), so a plain
+        // structural override doesn't type-check -- `any` here is a test-
+        // only shim to intercept the call, not something production code
+        // does.
+        (rejected as unknown as { catch: unknown }).catch = (...args: Parameters<typeof originalCatch>) => {
           catchSpy();
           return originalCatch(...args);
         };
