@@ -3594,3 +3594,13 @@ Version bump 0.25.145 → **0.25.146**. 487 tests frontend + 391 Rust verts. Bui
 Cette découverte valide la valeur du test UI réel en navigateur au-delà de la relecture de code statique -- à refaire systématiquement après tout changement UI, pas seulement déclaré fait.
 
 Boucle d'audit reprise après ce correctif.
+
+## Cycle 429 -- bug réel trouvé par balayage mécanique + release -- 2026-08-16
+
+Suite au fix `PkexecIntegrationBanner`, balayage mécanique de tous les hooks `onMounted(async)` du frontend (23 fichiers) pour trouver d'autres `invoke()` non protégés -- comptage `invoke[<(]` vs `try {` par fichier, 2 suspects : `NetworkPage.vue` (faux positif, deux invoke sous un même try) et **`TerminalPage.vue`** (invoke=5, try=1, réel). Trouvé 2 appels fire-and-forget sans garde : `resize_terminal` et `write_to_terminal` (ce dernier déclenché à **chaque frappe clavier**). Corrigé avec `.catch(() => {})` (pas de try/catch : rien à afficher côté UI, un pty mort est déjà signalé au prochain lancement via le try/catch existant de `spawn_terminal`).
+
+**Piège méthodologique** : premier test de régression basé sur `process.on('unhandledRejection')` **passait même sans le correctif** -- timing non fiable à travers la frontière worker de Vitest. Remplacé par un test déterministe (spy direct sur `.catch` de la promesse retournée par le mock `invoke`), vérifié qu'il échoue sans le fix et passe avec.
+
+**Piège découvert en shippant** : `vitest run` ne fait **aucune vérification de types** (transform esbuild seulement) -- une erreur TS dans le nouveau test (réassignation de `Promise.catch`, incompatible avec son générique `TResult`) est passée inaperçue en test mais a fait **échouer le build production** (`vue-tsc --noEmit`). Corrigé avec un cast `unknown as {catch: unknown}` (le override est test-only, jamais fait en code de prod). Rebuild réussi.
+
+Version bump 0.25.146 → **0.25.147**. 488 tests frontend + 391 Rust verts. **Release GitHub publiée** : https://github.com/Heiphaistos/NiTruX/releases/tag/v0.25.147
