@@ -3612,3 +3612,11 @@ Suite au piège découvert la dernière session ("vitest run ne type-check pas")
 Confirme que la baseline du projet (types + lints) est saine après toute la série de correctifs AppImage de la session précédente (v0.25.142→v0.25.147).
 
 Version inchangée 0.25.147. Poussé (746911f). Cadence 10 min maintenue.
+
+## Cycle 431 -- cargo audit trouve une advisory réelle jamais vue + release -- 2026-08-17
+
+`cargo audit` (jamais relancé depuis plusieurs sessions) a signalé `RUSTSEC-2026-0253` (datée 2026-05-12, donc apparue APRÈS le dernier audit sur ce projet) : `lru` 0.16.4 unsound (use-after-free potentiel dans `LruCache::pop()` sans panic-safety) -- transitif via `printpdf → azul-layout → lru`. Vérifié via `cargo update -p printpdf --dry-run` que le bump patch-level 0.12.5→0.12.6 tire `azul-layout` 0.0.14 → `lru` 0.18.2 (corrigé), sans bump majeur ni changement d'API (build propre, aucun code à toucher). 23 tests `report.rs` (dont les 2 tests PDF réels : en-tête magique + round-trip `generate_pdf_report`) + suite complète 391 tests tous verts après.
+
+Version bump 0.25.147 → **0.25.148**. **Release GitHub publiée** : https://github.com/Heiphaistos/NiTruX/releases/tag/v0.25.148
+
+Cadence 10 min maintenue.
