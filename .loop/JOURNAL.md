@@ -3604,3 +3604,11 @@ Suite au fix `PkexecIntegrationBanner`, balayage mécanique de tous les hooks `o
 **Piège découvert en shippant** : `vitest run` ne fait **aucune vérification de types** (transform esbuild seulement) -- une erreur TS dans le nouveau test (réassignation de `Promise.catch`, incompatible avec son générique `TResult`) est passée inaperçue en test mais a fait **échouer le build production** (`vue-tsc --noEmit`). Corrigé avec un cast `unknown as {catch: unknown}` (le override est test-only, jamais fait en code de prod). Rebuild réussi.
 
 Version bump 0.25.146 → **0.25.147**. 488 tests frontend + 391 Rust verts. **Release GitHub publiée** : https://github.com/Heiphaistos/NiTruX/releases/tag/v0.25.147
+
+## Cycle 430 -- baseline propre reconfirmée + micro-fix -- 2026-08-17
+
+Suite au piège découvert la dernière session ("vitest run ne type-check pas"), lancé les deux vérifications mécaniques complètes jamais faites en sweep dédié cette relance : `npx vue-tsc --noEmit` (repo entier, exit 0, aucune erreur) et `cargo clippy --all-targets` (backend entier). Clippy : **1 seul warning** trouvé, `useless_vec` dans le fixture de test `crash_analyzer.rs` (style pur, un tableau simple suffit là où `entries.iter()` est le seul usage) -- corrigé (`vec![...]` → `[...]`), clippy et tests re-vérifiés propres après.
+
+Confirme que la baseline du projet (types + lints) est saine après toute la série de correctifs AppImage de la session précédente (v0.25.142→v0.25.147).
+
+Version inchangée 0.25.147. Poussé (746911f). Cadence 10 min maintenue.
