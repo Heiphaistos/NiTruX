@@ -125,7 +125,7 @@ mod tests {
         // Not calling the real #[tauri::command] (needs a live journalctl),
         // but classify_crash is the entire filtering logic it delegates
         // to -- exercised directly against a realistic mixed batch here.
-        let entries = vec![
+        let entries = [
             entry(6, "Starting Daily apt download activities...", "systemd"),
             entry(1, "Out of memory: Killed process 999 (java) total-vm:4096000kB", "kernel"),
             entry(4, "warning: low disk space", "systemd"),
