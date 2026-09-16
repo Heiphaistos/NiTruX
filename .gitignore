@@ -49,3 +49,6 @@ dist-ssr/
 
 # Personal Claude Code permission overrides (not team config)
 .claude/settings.local.json
+
+# Artefacts de publication (binaires, jamais dans le depot)
+release/

@@ -52,9 +52,16 @@ import CertificatesPage from "@/pages/CertificatesPage.vue";
 import CrashAnalyzerPage from "@/pages/CrashAnalyzerPage.vue";
 import SystemToolsPage from "@/pages/SystemToolsPage.vue";
 import TerminalPage from "@/pages/TerminalPage.vue";
+import { checkForUpdate } from "@/lib/autoUpdate";
 
 const themeStore = useThemeStore();
 onMounted(() => themeStore.setTheme(themeStore.active));
+
+// Update check, straight away rather than behind any of the startup work: it
+// does not block (void), and it has no reason to wait on anything else.
+onMounted(() => {
+  void checkForUpdate();
+});
 
 // styleStore.ts's applyToDom (sets the `data-nx-style` attribute the app's
 // style CSS selectors key off of) only ever runs inside setStyle() -- the
