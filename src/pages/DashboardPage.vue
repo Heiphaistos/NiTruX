@@ -33,6 +33,7 @@ interface DiskUsageEntry {
 }
 interface DashboardSnapshot { cpu: number; ram: number; disk: number }
 interface CrashEvent { kind: string; message: string; unit: string }
+interface ToolStatus { binary: string; package: string | null; feature: string; installed: boolean }
 
 const emit = defineEmits<{ navigate: [string] }>();
 
@@ -43,6 +44,7 @@ const sensors = ref<SensorSnapshot | null>(null);
 const sensorsError = ref<string | null>(null);
 const diskUsage = ref<DiskUsageEntry[]>([]);
 const crashEvents = ref<CrashEvent[]>([]);
+const missingToolCount = ref(0);
 let intervalId: number | undefined;
 
 // Inter-session comparison (NiTriTe Windows concept): the snapshot saved
@@ -132,13 +134,33 @@ async function refreshCrashEvents() {
   }
 }
 
+// Same once-on-mount treatment as the crash banner: which external tools
+// are installed only changes when the user installs one. Reported live: a
+// fresh system is missing most of them, every affected page shows its own
+// error, and nothing ever says "this is one missing package, here is where
+// to fix it" -- this banner is that single place.
+async function refreshMissingTools() {
+  try {
+    const tools = await invoke<ToolStatus[]>("check_required_tools");
+    missingToolCount.value = tools.filter((t) => !t.installed).length;
+  } catch {
+    missingToolCount.value = 0;
+  }
+}
+
 onMounted(async () => {
   loadPrevSnapshot();
   // Each refresher already catches its own errors and resolves normally
   // (see refreshDiskUsage above), so Promise.all here never rejects --
   // awaiting it just means the comparison snapshot is saved from real
   // first-load data instead of racing the initial fetch.
-  await Promise.all([refresh(), refreshSensors(), refreshDiskUsage(), refreshCrashEvents()]);
+  await Promise.all([
+    refresh(),
+    refreshSensors(),
+    refreshDiskUsage(),
+    refreshCrashEvents(),
+    refreshMissingTools(),
+  ]);
   saveSnapshotIfReady();
   intervalId = window.setInterval(() => {
     refresh();
@@ -248,6 +270,11 @@ const QUICK_ACTIONS = [
 
     <NxCard v-if="error" danger>Impossible de récupérer les informations système : {{ error }}</NxCard>
     <NxCard v-if="sensorsError" danger>Impossible de récupérer les capteurs : {{ sensorsError }}</NxCard>
+
+    <NxCard v-if="missingToolCount > 0" class="dash-crash-banner">
+      <span>{{ missingToolCount }} outil(s) système utilisé(s) par NiTruX ne sont pas installés : les fonctionnalités correspondantes restent indisponibles.</span>
+      <NxButton @click="emit('navigate', 'dependencies')">Voir et installer</NxButton>
+    </NxCard>
 
     <NxCard v-if="crashEvents.length > 0" danger class="dash-crash-banner">
       <span>{{ crashEvents.length }} panne(s) détectée(s) dans les journaux récents (paniques noyau, manques de mémoire, erreurs de segmentation).</span>

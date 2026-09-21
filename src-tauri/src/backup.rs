@@ -95,6 +95,49 @@ pub fn create_backup(source_dir: String) -> Result<String, String> {
 /// failing to do so is surfaced as an error rather than silently leaving
 /// a sensitive archive world-readable, since the whole point of this step
 /// is the confidentiality guarantee itself.
+#[derive(serde::Serialize, Clone)]
+pub struct BackupEntry {
+    pub path: String,
+    pub size_bytes: u64,
+    /// Seconds since the Unix epoch, taken from the file name rather than
+    /// its mtime: the name is what `create_backup` stamped, and it survives
+    /// a copy that would reset the mtime.
+    pub created_epoch_secs: u64,
+}
+
+/// Reads the epoch stamp back out of a name produced by `backup_filename`,
+/// and `None` for any other file -- the backup directory is `$HOME`, which
+/// holds plenty of unrelated files.
+pub fn parse_backup_filename(name: &str) -> Option<u64> {
+    name.strip_prefix("nitrux-backup-")?
+        .strip_suffix(".tar.gz")?
+        .parse()
+        .ok()
+}
+
+/// Lists the archives `create_backup` has produced. Creating a backup
+/// returned a path and nothing ever listed them again -- the only way to
+/// find an old one was a file manager.
+#[tauri::command]
+pub fn list_backups() -> Result<Vec<BackupEntry>, String> {
+    let home = std::env::var("HOME").map_err(|_| "variable HOME introuvable".to_string())?;
+    let entries = std::fs::read_dir(&home).map_err(|e| format!("lecture de {home} impossible : {e}"))?;
+
+    let mut backups: Vec<BackupEntry> = entries
+        .filter_map(Result::ok)
+        .filter_map(|entry| {
+            let created_epoch_secs = parse_backup_filename(entry.file_name().to_str()?)?;
+            Some(BackupEntry {
+                path: entry.path().to_string_lossy().into_owned(),
+                size_bytes: entry.metadata().ok()?.len(),
+                created_epoch_secs,
+            })
+        })
+        .collect();
+    backups.sort_by(|a, b| b.created_epoch_secs.cmp(&a.created_epoch_secs));
+    Ok(backups)
+}
+
 fn restrict_backup_to_owner(path: &str) -> Result<(), String> {
     std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))
         .map_err(|e| format!("archive créée mais impossible de restreindre ses permissions : {e}"))
@@ -103,6 +146,21 @@ fn restrict_backup_to_owner(path: &str) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reads_the_timestamp_back_out_of_a_generated_backup_name() {
+        // Round-trip against the generator itself, so a change to one
+        // without the other fails here rather than in the UI.
+        let name = backup_filename(1_726_900_000);
+        assert_eq!(parse_backup_filename(&name), Some(1_726_900_000));
+    }
+
+    #[test]
+    fn ignores_unrelated_files_in_the_home_directory() {
+        for other in ["notes.txt", "nitrux-backup-.tar.gz", "nitrux-backup-abc.tar.gz", "backup.tar.gz"] {
+            assert_eq!(parse_backup_filename(other), None, "{other} should be ignored");
+        }
+    }
 
     #[test]
     fn accepts_a_well_formed_absolute_source_path() {

@@ -48,9 +48,55 @@ pub fn scan_missing_dependencies() -> Vec<MissingDependency> {
     BINARIES_TO_CHECK.iter().flat_map(|b| check_binary(b)).collect()
 }
 
+/// One external tool NiTruX shells out to, and whether this system has it.
+#[derive(Serialize, Clone)]
+pub struct ToolStatus {
+    pub binary: String,
+    /// Package that provides it on *this* distribution, when the family is
+    /// known -- that is what makes the "Installer" button possible.
+    pub package: Option<String>,
+    pub feature: String,
+    pub installed: bool,
+}
+
+/// Inventory of every external tool NiTruX depends on, installed or not.
+///
+/// NiTruX deliberately declares almost none of these as hard package
+/// dependencies (a user with no printer should not be forced to install
+/// CUPS), so on a fresh system a large share of the pages depend on tools
+/// that simply are not there. Without this inventory the only way to find
+/// out was to open each page and read an error -- which is exactly what
+/// "three quarters of the app does not work" looks like from the outside.
+#[tauri::command]
+pub fn check_required_tools() -> Vec<ToolStatus> {
+    subprocess::EXTERNAL_TOOLS
+        .iter()
+        .map(|t| ToolStatus {
+            binary: t.binary.to_string(),
+            package: subprocess::package_for_this_system(t.binary).map(str::to_string),
+            feature: t.feature.to_string(),
+            installed: subprocess::binary_in_path(t.binary),
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reports_every_known_tool_with_its_feature_label() {
+        let tools = check_required_tools();
+        assert_eq!(tools.len(), subprocess::EXTERNAL_TOOLS.len());
+        // `sh` is guaranteed present anywhere this test can run, so at least
+        // one entry must report installed -- guards against a PATH-scan that
+        // silently always answers false.
+        assert!(
+            tools.iter().any(|t| t.installed),
+            "no tool detected at all -- PATH scan is probably broken"
+        );
+        assert!(tools.iter().all(|t| !t.feature.is_empty()));
+    }
 
     #[test]
     fn parses_a_missing_dependency_line() {

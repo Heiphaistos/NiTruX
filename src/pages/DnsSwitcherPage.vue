@@ -51,6 +51,28 @@ function toResolvConfContent(rawServers: string[]): string {
     .join("\n");
 }
 
+const flushing = ref(false);
+const flushResult = ref<string | null>(null);
+const flushError = ref<string | null>(null);
+
+// Unprivileged, like the same command already exposed in the quick-commands
+// catalogue: `resolvectl flush-caches` talks to systemd-resolved over D-Bus
+// as the calling user. Surfaced here because that is where someone looks
+// after switching DNS servers and still resolving the old address.
+async function flushDnsCache() {
+  flushing.value = true;
+  flushError.value = null;
+  flushResult.value = null;
+  try {
+    await invoke<string>("run_script", { content: "resolvectl flush-caches" });
+    flushResult.value = "Cache DNS vidé.";
+  } catch (e) {
+    flushError.value = String(e);
+  } finally {
+    flushing.value = false;
+  }
+}
+
 async function apply(servers: string[]) {
   applying.value = true;
   applyError.value = null;
@@ -85,6 +107,13 @@ async function apply(servers: string[]) {
       <textarea v-model="manualDns" class="dns-textarea" rows="4" placeholder="Un serveur DNS par ligne..."></textarea>
       <NxButton :disabled="applying || manualDns === ''" @click="apply(manualDns.split('\n'))">Appliquer</NxButton>
     </NxCard>
+
+    <NxCard class="dns-flush">
+      <NxSectionHeader title="Cache DNS" description="Vide le cache de résolution de systemd-resolved." />
+      <NxButton :disabled="flushing" @click="flushDnsCache">{{ flushing ? "Vidage..." : "Vider le cache DNS" }}</NxButton>
+      <NxBadge v-if="flushResult" status="success" live>{{ flushResult }}</NxBadge>
+      <NxCard v-if="flushError" danger>{{ flushError }}</NxCard>
+    </NxCard>
   </div>
 </template>
 
@@ -92,5 +121,6 @@ async function apply(servers: string[]) {
 .dns-page { padding: 24px; display: flex; flex-direction: column; gap: 12px; }
 .dns-presets { display: flex; gap: 10px; flex-wrap: wrap; }
 .dns-manual { display: flex; flex-direction: column; gap: 10px; }
+.dns-flush { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
 .dns-textarea { width: 100%; padding: 10px; border-radius: var(--nx-style-radius); border: var(--nx-style-border-width) solid var(--nx-style-border-color); background: var(--nx-style-bg); color: var(--nx-text-primary); font-family: monospace; font-size: 12px; }
 </style>

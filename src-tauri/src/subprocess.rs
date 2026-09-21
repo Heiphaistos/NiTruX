@@ -26,6 +26,131 @@ fn sanitize_child_env(command: &mut Command) {
     command.env_remove("LD_LIBRARY_PATH");
 }
 
+/// Which package provides each external binary NiTruX shells out to, per
+/// distribution family: `(binary, debian/ubuntu, fedora/rhel, arch)`.
+///
+/// NiTruX declares none of these as hard package dependencies on purpose --
+/// a user with no printer does not need `cups-client` installed to use the
+/// other 44 pages. The trade-off is that a missing tool must explain itself:
+/// before this table every absent binary surfaced as "<x> introuvable ou
+/// impossible à lancer : No such file or directory", which names the binary
+/// but never the package to install, and the binary name rarely matches it
+/// (`dig` -> `dnsutils`, `lspci` -> `pciutils`, `xrandr` ->
+/// `x11-xserver-utils`).
+pub struct ExternalTool {
+    pub binary: &'static str,
+    pub debian: &'static str,
+    pub fedora: &'static str,
+    pub arch: &'static str,
+    /// Which NiTruX feature stops working without it, in the user's words --
+    /// so the dependency screen can say "Températures" rather than
+    /// "lm-sensors".
+    pub feature: &'static str,
+}
+
+const fn tool(
+    binary: &'static str,
+    debian: &'static str,
+    fedora: &'static str,
+    arch: &'static str,
+    feature: &'static str,
+) -> ExternalTool {
+    ExternalTool { binary, debian, fedora, arch, feature }
+}
+
+pub const EXTERNAL_TOOLS: &[ExternalTool] = &[
+    tool("bluetoothctl", "bluez", "bluez", "bluez-utils", "Bluetooth"),
+    tool("clamscan", "clamav", "clamav", "clamav", "Antivirus"),
+    tool("crontab", "cron", "cronie", "cronie", "Tâches planifiées (Processus)"),
+    tool("curl", "curl", "curl", "curl", "Apps portables"),
+    tool("dig", "dnsutils", "bind-utils", "bind", "Résolution DNS (Réseau)"),
+    tool("docker", "docker.io", "moby-engine", "docker", "Conteneurs Docker (Réseau)"),
+    tool("efibootmgr", "efibootmgr", "efibootmgr", "efibootmgr", "Boot Manager (entrées EFI)"),
+    tool("flatpak", "flatpak", "flatpak", "flatpak", "Applications Flatpak"),
+    tool("lpstat", "cups-client", "cups-client", "cups", "Imprimantes (Périphériques)"),
+    tool("lspci", "pciutils", "pciutils", "pciutils", "Composants PCI, Pilotes"),
+    tool("lsusb", "usbutils", "usbutils", "usbutils", "Périphériques USB"),
+    tool("nmcli", "network-manager", "NetworkManager", "networkmanager", "WiFi Analyzer"),
+    tool("pactl", "pulseaudio-utils", "pulseaudio-utils", "libpulse", "Sorties audio (Périphériques)"),
+    tool("pkexec", "policykit-1", "polkit", "polkit", "TOUTES les actions administrateur"),
+    tool("sensors", "lm-sensors", "lm_sensors", "lm_sensors", "Températures"),
+    tool("smartctl", "smartmontools", "smartmontools", "smartmontools", "Santé S.M.A.R.T. des disques"),
+    tool("timeshift", "timeshift", "timeshift", "timeshift", "Points de restauration"),
+    tool("traceroute", "traceroute", "traceroute", "traceroute", "Traceroute (Réseau)"),
+    tool("ufw", "ufw", "ufw", "ufw", "Pare-feu"),
+    tool("xrandr", "x11-xserver-utils", "xrandr", "xorg-xrandr", "Moniteurs (Périphériques)"),
+];
+
+/// Which distribution family this system is, decided by which package
+/// manager binary exists. Checked against the filesystem rather than by
+/// spawning `which`, so building an error message can never itself spawn a
+/// process (and so it still works when `PATH` is unusual, e.g. inside an
+/// AppImage runtime).
+fn install_command_for_this_system() -> Option<(&'static str, usize)> {
+    // (install command prefix, index into PACKAGE_FOR_BINARY's per-family columns)
+    const FAMILIES: &[(&str, &str, usize)] = &[
+        ("/usr/bin/apt-get", "sudo apt install", 0),
+        ("/usr/bin/dnf", "sudo dnf install", 1),
+        ("/usr/bin/pacman", "sudo pacman -S", 2),
+        ("/usr/bin/zypper", "sudo zypper install", 1), // openSUSE names track Fedora's closely
+    ];
+    FAMILIES
+        .iter()
+        .find(|(probe, _, _)| std::path::Path::new(probe).exists())
+        .map(|(_, install, column)| (*install, *column))
+}
+
+fn find_tool(program: &str) -> Option<&'static ExternalTool> {
+    EXTERNAL_TOOLS.iter().find(|t| t.binary == program)
+}
+
+/// The package that provides `program` on *this* system, or `None` when the
+/// tool is unknown to NiTruX or the distribution family could not be
+/// identified.
+pub fn package_for_this_system(program: &str) -> Option<&'static str> {
+    let tool = find_tool(program)?;
+    let (_, column) = install_command_for_this_system()?;
+    Some([tool.debian, tool.fedora, tool.arch][column])
+}
+
+/// Whether `program` is reachable through `PATH`. Scans `PATH` directly
+/// instead of spawning `which`, so checking twenty tools costs twenty
+/// `stat` calls rather than twenty processes.
+pub fn binary_in_path(program: &str) -> bool {
+    let Some(path) = std::env::var_os("PATH") else {
+        return false;
+    };
+    std::env::split_paths(&path).any(|dir| dir.join(program).is_file())
+}
+
+/// The actionable half of a "binary not found" error: which package to
+/// install, phrased for this system when its package manager is known, or
+/// listing every family's name when it is not.
+pub fn missing_binary_hint(program: &str) -> Option<String> {
+    let tool = find_tool(program)?;
+    Some(match install_command_for_this_system() {
+        Some((install, column)) => {
+            let package = [tool.debian, tool.fedora, tool.arch][column];
+            format!("installez le paquet « {package} » : {install} {package}")
+        }
+        None => format!(
+            "installez le paquet correspondant : « {} » (Debian/Ubuntu), « {} » (Fedora/openSUSE), « {} » (Arch)",
+            tool.debian, tool.fedora, tool.arch
+        ),
+    })
+}
+
+/// Formats the error for a child process that could not even be spawned.
+/// Shared by all three run variants so the package hint can never be
+/// attached to one of them and forgotten on the others.
+fn spawn_error(program: &str, e: std::io::Error) -> String {
+    let base = format!("{program} introuvable ou impossible à lancer : {e}");
+    match missing_binary_hint(program) {
+        Some(hint) => format!("{base} — {hint}"),
+        None => base,
+    }
+}
+
 /// Runs `program` with `args`, bounding the wait to `timeout`.
 ///
 /// - `Ok(stdout)` — the process exited with status 0; stdout is returned
@@ -37,9 +162,7 @@ pub fn run_with_timeout(program: &str, args: &[&str], timeout: Duration) -> Resu
     let mut command = Command::new(program);
     command.args(args).stdout(Stdio::piped()).stderr(Stdio::piped());
     sanitize_child_env(&mut command);
-    let child = command
-        .spawn()
-        .map_err(|e| format!("{program} introuvable ou impossible à lancer : {e}"))?;
+    let child = command.spawn().map_err(|e| spawn_error(program, e))?;
 
     let pid = child.id();
     let (tx, rx) = mpsc::channel();
@@ -99,9 +222,7 @@ pub fn run_with_timeout_env(
     for (key, value) in envs {
         command.env(key, value);
     }
-    let child = command
-        .spawn()
-        .map_err(|e| format!("{program} introuvable ou impossible à lancer : {e}"))?;
+    let child = command.spawn().map_err(|e| spawn_error(program, e))?;
 
     let pid = child.id();
     let (tx, rx) = mpsc::channel();
@@ -169,9 +290,7 @@ pub fn run_capturing_exit_code(
     let mut command = Command::new(program);
     command.args(args).stdout(Stdio::piped()).stderr(Stdio::piped());
     sanitize_child_env(&mut command);
-    let child = command
-        .spawn()
-        .map_err(|e| format!("{program} introuvable ou impossible à lancer : {e}"))?;
+    let child = command.spawn().map_err(|e| spawn_error(program, e))?;
 
     let pid = child.id();
     let (tx, rx) = mpsc::channel();
@@ -261,6 +380,42 @@ mod tests {
         let err = run_with_timeout("definitely-not-a-real-binary-xyz", &[], Duration::from_secs(2))
             .expect_err("should fail");
         assert!(err.contains("introuvable"));
+    }
+
+    #[test]
+    fn missing_binary_error_names_the_package_to_install() {
+        // The whole point of the hint: the package name is not derivable
+        // from the binary name, so an error without it is a dead end for
+        // the user ("dig introuvable" -> install what?).
+        let hint = missing_binary_hint("dig").expect("dig is a known tool");
+        assert!(
+            hint.contains("dnsutils") || hint.contains("bind"),
+            "hint should name a real package: {hint}"
+        );
+    }
+
+    #[test]
+    fn unknown_binary_has_no_package_hint() {
+        assert!(missing_binary_hint("definitely-not-a-real-binary-xyz").is_none());
+    }
+
+    #[test]
+    fn every_package_mapping_is_complete_and_sorted() {
+        // Guards the table itself: an empty column would produce
+        // "installez le paquet «  »", and keeping it sorted keeps future
+        // additions from landing twice.
+        let mut previous = "";
+        for t in EXTERNAL_TOOLS {
+            assert!(
+                !t.binary.is_empty()
+                    && !t.debian.is_empty()
+                    && !t.fedora.is_empty()
+                    && !t.arch.is_empty()
+                    && !t.feature.is_empty()
+            );
+            assert!(t.binary > previous, "{} is out of order / duplicated", t.binary);
+            previous = t.binary;
+        }
     }
 
     #[test]

@@ -35,42 +35,86 @@ pub fn parse_lpstat_line(line: &str) -> Option<PrinterInfo> {
     Some(PrinterInfo { name: name.to_string(), status })
 }
 
+// These four commands used to swallow every failure with
+// `.unwrap_or_default()` and return an empty list. Their signatures were
+// plain `Vec<T>`, so the Tauri IPC layer could never reject -- the
+// `try/catch` around each `invoke()` in `PeripheralsPage.vue` was dead code
+// for the case that actually happens in the field, and "xrandr is not
+// installed" rendered exactly like "this machine has no monitor". Returning
+// `Result` is what makes the absence visible at all; the shared package
+// hint in `subprocess` then names the package to install.
+
 #[tauri::command]
-pub fn get_monitors() -> Vec<String> {
-    subprocess::run_with_timeout("xrandr", &["--query"], Duration::from_secs(5))
-        .map(|out| {
-            out.lines()
-                .filter(|l| l.contains(" connected"))
-                .map(|l| l.split_whitespace().next().unwrap_or("").to_string())
-                .collect()
-        })
-        .unwrap_or_default()
+pub fn get_monitors() -> Result<Vec<String>, String> {
+    let out = subprocess::run_with_timeout("xrandr", &["--query"], Duration::from_secs(5))?;
+    Ok(out
+        .lines()
+        .filter(|l| l.contains(" connected"))
+        .map(|l| l.split_whitespace().next().unwrap_or("").to_string())
+        .collect())
 }
 
 #[tauri::command]
-pub fn get_usb_devices() -> Vec<String> {
-    subprocess::run_with_timeout("lsusb", &[], Duration::from_secs(5))
-        .map(|out| out.lines().map(|l| l.to_string()).collect())
-        .unwrap_or_default()
+pub fn get_usb_devices() -> Result<Vec<String>, String> {
+    let out = subprocess::run_with_timeout("lsusb", &[], Duration::from_secs(5))?;
+    Ok(out.lines().map(|l| l.to_string()).collect())
 }
 
 #[tauri::command]
-pub fn get_audio_sinks() -> Vec<AudioSink> {
-    subprocess::run_with_timeout("pactl", &["list", "short", "sinks"], Duration::from_secs(5))
-        .map(|out| out.lines().filter_map(parse_pactl_sink_line).collect())
-        .unwrap_or_default()
+pub fn get_audio_sinks() -> Result<Vec<AudioSink>, String> {
+    let out = subprocess::run_with_timeout("pactl", &["list", "short", "sinks"], Duration::from_secs(5))?;
+    Ok(out.lines().filter_map(parse_pactl_sink_line).collect())
 }
 
 #[tauri::command]
-pub fn get_printers() -> Vec<PrinterInfo> {
-    subprocess::run_with_timeout("lpstat", &["-p"], Duration::from_secs(5))
-        .map(|out| out.lines().filter_map(parse_lpstat_line).collect())
-        .unwrap_or_default()
+pub fn get_printers() -> Result<Vec<PrinterInfo>, String> {
+    let out = subprocess::run_with_timeout("lpstat", &["-p"], Duration::from_secs(5))?;
+    Ok(out.lines().filter_map(parse_lpstat_line).collect())
+}
+
+/// CUPS queue names are restricted by CUPS itself to printable ASCII
+/// without space, `/`, `#` or control characters. Enforcing the narrower
+/// shape every real queue uses keeps a name coming from the frontend from
+/// turning into an extra `lpoptions` argument.
+pub fn validate_printer_name(name: &str) -> Result<(), String> {
+    if name.is_empty() || name.len() > 127 {
+        return Err("nom d'imprimante invalide".to_string());
+    }
+    // A leading dash passes the character check below but reaches
+    // `lpoptions` as a flag rather than a queue name.
+    if name.starts_with('-') {
+        return Err(format!("nom d'imprimante invalide : {name}"));
+    }
+    if !name.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.')) {
+        return Err(format!("nom d'imprimante invalide : {name}"));
+    }
+    Ok(())
+}
+
+/// Sets the user's default print queue. Unprivileged on purpose:
+/// `lpoptions -d` writes `~/.cups/lpoptions`, a per-user preference, so
+/// this needs no elevation at all.
+#[tauri::command]
+pub fn set_default_printer(name: String) -> Result<String, String> {
+    validate_printer_name(&name)?;
+    subprocess::run_with_timeout("lpoptions", &["-d", name.as_str()], Duration::from_secs(10))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn accepts_a_real_cups_queue_name() {
+        assert!(validate_printer_name("HP_LaserJet-1020.local").is_ok());
+    }
+
+    #[test]
+    fn refuses_a_printer_name_that_could_become_an_argument() {
+        for bad in ["", "-d", "HP LaserJet", "a/b", "x;rm -rf /"] {
+            assert!(validate_printer_name(bad).is_err(), "{bad} should be refused");
+        }
+    }
 
     #[test]
     fn parses_a_real_pactl_sink_line() {

@@ -47,8 +47,7 @@ pub fn parse_lspci_k_output(output: &str) -> Vec<DeviceDriver> {
 }
 
 fn run_lspci_k() -> Result<Vec<DeviceDriver>, String> {
-    let output = subprocess::run_with_timeout("lspci", &["-k"], Duration::from_secs(5))
-        .map_err(|e| format!("{e} (paquet requis : pciutils)"))?;
+    let output = subprocess::run_with_timeout("lspci", &["-k"], Duration::from_secs(5))?;
     Ok(parse_lspci_k_output(&output))
 }
 
@@ -57,6 +56,12 @@ pub struct DriverSnapshot {
     pub loaded_modules: Vec<String>,
     pub gpu_driver: String,
     pub devices: Vec<DeviceDriver>,
+    /// Why the per-device driver list is empty, when `lspci` could not run
+    /// (pciutils absent). The rest of the snapshot comes from `lsmod` and
+    /// stays valid, so this failure must not sink the whole command -- but
+    /// it was previously dropped by `.unwrap_or_default()`, leaving the
+    /// device table silently empty with no way to tell why.
+    pub devices_error: Option<String>,
 }
 
 pub fn parse_lsmod_line(line: &str) -> Option<String> {
@@ -90,8 +95,11 @@ fn run_lsmod() -> Result<Vec<String>, String> {
 pub fn get_driver_snapshot() -> Result<DriverSnapshot, String> {
     let loaded_modules = run_lsmod()?;
     let gpu_driver = detect_gpu_driver(&loaded_modules);
-    let devices = run_lspci_k().unwrap_or_default();
-    Ok(DriverSnapshot { loaded_modules, gpu_driver, devices })
+    let (devices, devices_error) = match run_lspci_k() {
+        Ok(devices) => (devices, None),
+        Err(e) => (Vec::new(), Some(e)),
+    };
+    Ok(DriverSnapshot { loaded_modules, gpu_driver, devices, devices_error })
 }
 
 #[cfg(test)]

@@ -1,7 +1,8 @@
 <!-- src/pages/NetworkPage.vue -->
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { invoke } from "@tauri-apps/api/core";
+import { parseHostsFile, toggleEntry, removeEntry, addEntry, isValidIp, isValidHostname } from "@/lib/hostsFile";
 import NxCard from "@/components/ui/NxCard.vue";
 import NxButton from "@/components/ui/NxButton.vue";
 import NxInput from "@/components/ui/NxInput.vue";
@@ -36,6 +37,11 @@ const docker = ref<DockerSnapshot | null>(null);
 const interfaces = ref<NetworkInterface[] | null>(null);
 const overviewError = ref<string | null>(null);
 const dockerFetchError = ref<string | null>(null);
+// Busy per container/image id, not one shared flag: acting on one container
+// must not freeze the buttons of every other row.
+const dockerBusy = ref<Record<string, boolean>>({});
+const dockerActionError = ref<string | null>(null);
+const containerLogs = ref<string | null>(null);
 const interfacesError = ref<string | null>(null);
 
 function formatThroughput(bytesPerSec: number): string {
@@ -56,6 +62,46 @@ const firewallPortProto = ref("");
 const firewallResult = ref<string | null>(null);
 const firewallError = ref<string | null>(null);
 const firewallBusy = ref(false);
+
+async function refreshDocker() {
+  try {
+    docker.value = await invoke<DockerSnapshot>("get_docker_snapshot");
+  } catch (e) {
+    dockerFetchError.value = String(e);
+  }
+}
+
+async function withDockerBusy(id: string, run: () => Promise<void>) {
+  dockerBusy.value = { ...dockerBusy.value, [id]: true };
+  dockerActionError.value = null;
+  try {
+    await run();
+  } catch (e) {
+    dockerActionError.value = String(e);
+  } finally {
+    dockerBusy.value = { ...dockerBusy.value, [id]: false };
+  }
+}
+
+async function runContainerAction(containerId: string, action: "start" | "stop" | "restart") {
+  await withDockerBusy(containerId, async () => {
+    await invoke<string>("docker_container_action", { containerId, action });
+    await refreshDocker();
+  });
+}
+
+async function showLogs(containerId: string) {
+  await withDockerBusy(containerId, async () => {
+    containerLogs.value = await invoke<string>("docker_container_logs", { containerId });
+  });
+}
+
+async function removeImage(imageId: string) {
+  await withDockerBusy(imageId, async () => {
+    await invoke<string>("docker_image_remove", { imageId });
+    await refreshDocker();
+  });
+}
 
 onMounted(async () => {
   // Each source degrades independently (matching the backend's own
@@ -85,6 +131,35 @@ onMounted(async () => {
     interfacesError.value = String(e);
   }
 });
+
+const hostsEntries = computed(() => parseHostsFile(hostsEditable.value));
+const newHostIp = ref("");
+const newHostNames = ref("");
+const newHostError = ref<string | null>(null);
+
+// Every per-entry edit goes through the same single privileged write the
+// raw textarea already used -- toggling a line is a whole-file write with
+// exactly one line changed, not a new backend surface.
+async function applyHostsChange(updatedContent: string) {
+  hostsEditable.value = updatedContent;
+  await saveHosts();
+}
+
+async function addHostsEntry() {
+  newHostError.value = null;
+  const names = newHostNames.value.trim().split(/\s+/).filter(Boolean);
+  if (!isValidIp(newHostIp.value.trim())) {
+    newHostError.value = `Adresse IP invalide : ${newHostIp.value}`;
+    return;
+  }
+  if (names.length === 0 || !names.every(isValidHostname)) {
+    newHostError.value = "Nom d'hôte invalide.";
+    return;
+  }
+  await applyHostsChange(addEntry(hostsEditable.value, newHostIp.value.trim(), names));
+  newHostIp.value = "";
+  newHostNames.value = "";
+}
 
 async function saveHosts() {
   hostsSaving.value = true;
@@ -321,7 +396,30 @@ async function runTraceroute() {
       </NxCard>
 
       <NxCard>
-        <NxSectionHeader title="Modifier /etc/hosts" />
+        <NxSectionHeader title="Entrées /etc/hosts" description="Activer, désactiver ou supprimer une entrée sans réécrire le fichier à la main." />
+        <div v-if="hostsEntries.length === 0" class="net-empty">Aucune entrée dans /etc/hosts.</div>
+        <div v-for="e in hostsEntries" :key="e.line" class="net-row net-hosts-row">
+          <span :class="{ 'net-hosts-disabled': e.disabled }">
+            {{ e.ip }} → {{ e.hostnames.join(" ") }}<template v-if="e.comment"> ({{ e.comment }})</template>
+          </span>
+          <span class="net-docker-actions">
+            <NxButton :disabled="hostsSaving" @click="applyHostsChange(toggleEntry(hostsEditable, e))">
+              {{ e.disabled ? "Activer" : "Désactiver" }}
+            </NxButton>
+            <NxButton variant="danger" :disabled="hostsSaving" @click="applyHostsChange(removeEntry(hostsEditable, e))">
+              Supprimer
+            </NxButton>
+          </span>
+        </div>
+
+        <div class="net-form-row">
+          <NxInput v-model="newHostIp" placeholder="Adresse IP (ex: 192.168.1.50)" aria-label="Adresse IP de la nouvelle entrée" />
+          <NxInput v-model="newHostNames" placeholder="Noms d'hôtes séparés par un espace" aria-label="Noms d'hôtes de la nouvelle entrée" />
+          <NxButton :disabled="hostsSaving" @click="addHostsEntry">Ajouter</NxButton>
+        </div>
+        <NxCard v-if="newHostError" danger>{{ newHostError }}</NxCard>
+
+        <NxSectionHeader title="Modifier /etc/hosts" description="Édition brute du fichier complet." />
         <textarea v-model="hostsEditable" class="net-textarea" rows="8"></textarea>
         <NxButton :disabled="hostsSaving" @click="saveHosts">{{ hostsSaving ? "Enregistrement..." : "Enregistrer" }}</NxButton>
         <NxCard v-if="hostsSaveError" danger>{{ hostsSaveError }}</NxCard>
@@ -416,15 +514,30 @@ async function runTraceroute() {
       </div>
       <template v-else>
         <NxSectionHeader title="Conteneurs" />
-        <div v-for="c in docker.containers" :key="c.id" class="net-row">
+        <div v-for="c in docker.containers" :key="c.id" class="net-row net-docker-row">
           <span>{{ c.name }} ({{ c.image }})</span>
-          <span>{{ c.status }}</span>
+          <span class="net-docker-status">{{ c.status }}</span>
+          <span class="net-docker-actions">
+            <NxButton :disabled="dockerBusy[c.id]" @click="runContainerAction(c.id, 'start')">Démarrer</NxButton>
+            <NxButton :disabled="dockerBusy[c.id]" @click="runContainerAction(c.id, 'stop')">Arrêter</NxButton>
+            <NxButton :disabled="dockerBusy[c.id]" @click="runContainerAction(c.id, 'restart')">Redémarrer</NxButton>
+            <NxButton :disabled="dockerBusy[c.id]" @click="showLogs(c.id)">Journaux</NxButton>
+          </span>
         </div>
         <div v-if="docker.containers.length === 0" class="net-empty">Aucun conteneur.</div>
+        <NxCard v-if="dockerActionError" danger>{{ dockerActionError }}</NxCard>
+        <NxCard v-if="containerLogs !== null">
+          <NxSectionHeader title="Journaux du conteneur" description="200 dernières lignes" />
+          <pre class="net-logs">{{ containerLogs || "(aucune sortie)" }}</pre>
+        </NxCard>
+
         <NxSectionHeader title="Images" />
-        <div v-for="(i, ii) in docker.images" :key="`${i.id}-${ii}`" class="net-row">
+        <div v-for="(i, ii) in docker.images" :key="`${i.id}-${ii}`" class="net-row net-docker-row">
           <span>{{ i.repository }}:{{ i.tag }}</span>
-          <span>{{ i.size }}</span>
+          <span class="net-docker-status">{{ i.size }}</span>
+          <span class="net-docker-actions">
+            <NxButton variant="danger" :disabled="dockerBusy[i.id]" @click="removeImage(i.id)">Supprimer</NxButton>
+          </span>
         </div>
         <div v-if="docker.images.length === 0" class="net-empty">Aucune image.</div>
       </template>
@@ -446,4 +559,10 @@ async function runTraceroute() {
 .net-open { color: var(--nx-accent-success); }
 .net-closed { color: var(--nx-text-secondary); }
 .net-empty { color: var(--nx-text-secondary); }
+.net-docker-row { flex-wrap: wrap; gap: 8px; align-items: center; }
+.net-docker-status { color: var(--nx-text-secondary); }
+.net-docker-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.net-hosts-row { flex-wrap: wrap; gap: 8px; align-items: center; }
+.net-hosts-disabled { text-decoration: line-through; color: var(--nx-text-secondary); }
+.net-logs { max-height: 320px; overflow: auto; font-size: 12px; white-space: pre-wrap; word-break: break-word; margin: 0; }
 </style>

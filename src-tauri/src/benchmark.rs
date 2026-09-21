@@ -19,6 +19,12 @@ pub struct DiskHealthEntry {
 #[derive(Serialize, Clone)]
 pub struct BenchmarkResult {
     pub cpu_hashes_per_sec: u64,
+    /// The same hashing loop run on every core at once. Without it the
+    /// benchmark measured one core and called it "CPU", which says nothing
+    /// about the machines this actually matters on (a 16-core chip scored
+    /// like a 4-core one at the same clock).
+    pub cpu_multicore_hashes_per_sec: u64,
+    pub cpu_cores_used: usize,
     pub disk_write_mbps: f64,
     pub disk_read_mbps: f64,
     /// The real reason `disk_write_mbps`/`disk_read_mbps` are `0.0`, when
@@ -78,6 +84,21 @@ pub fn benchmark_cpu(duration: Duration) -> u64 {
         count += 1;
     }
     count
+}
+
+/// Runs `benchmark_cpu` on every available core simultaneously and sums the
+/// results. Returns `(total_hashes, cores_used)`; `cores_used` is reported
+/// alongside because the total is meaningless without it.
+pub fn benchmark_cpu_multicore(duration: Duration) -> (u64, usize) {
+    let cores = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1);
+    let handles: Vec<_> = (0..cores)
+        .map(|_| std::thread::spawn(move || benchmark_cpu(duration)))
+        .collect();
+    // A panicking worker contributes 0 rather than poisoning the whole
+    // benchmark -- same "each source degrades independently" rule the rest
+    // of this module follows.
+    let total = handles.into_iter().map(|h| h.join().unwrap_or(0)).sum();
+    (total, cores)
 }
 
 /// Allocates a fixed-size buffer and repeatedly copies it into a second
@@ -169,6 +190,8 @@ fn resolve_disk_benchmark(result: Result<(f64, f64), String>) -> (f64, f64, Opti
 #[tauri::command]
 pub fn run_benchmark(state: tauri::State<Mutex<System>>) -> BenchmarkResult {
     let cpu_hashes_per_sec = benchmark_cpu(Duration::from_millis(800));
+    let (cpu_multicore_hashes_per_sec, cpu_cores_used) =
+        benchmark_cpu_multicore(Duration::from_millis(800));
     let memory_bandwidth_gbps = benchmark_memory(Duration::from_millis(500));
     let (disk_write_mbps, disk_read_mbps, disk_error) = resolve_disk_benchmark(benchmark_disk(50 * 1024 * 1024)); // 50 MB
 
@@ -180,6 +203,8 @@ pub fn run_benchmark(state: tauri::State<Mutex<System>>) -> BenchmarkResult {
 
     BenchmarkResult {
         cpu_hashes_per_sec,
+        cpu_multicore_hashes_per_sec,
+        cpu_cores_used,
         disk_write_mbps,
         disk_read_mbps,
         disk_error,
@@ -192,6 +217,20 @@ pub fn run_benchmark(state: tauri::State<Mutex<System>>) -> BenchmarkResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn multicore_benchmark_uses_every_core_and_outpaces_a_single_one() {
+        let (total, cores) = benchmark_cpu_multicore(Duration::from_millis(80));
+        assert_eq!(cores, std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1));
+        assert!(total > 0, "expected hashes from the multicore run, got {total}");
+        if cores > 1 {
+            // Not a strict cores-times-faster claim (scheduling, turbo,
+            // shared caches), just that running on every core beats a
+            // single one -- which is the whole point of the metric.
+            let single = benchmark_cpu(Duration::from_millis(80));
+            assert!(total > single, "multicore {total} should exceed single-core {single}");
+        }
+    }
 
     #[test]
     fn benchmark_cpu_completes_at_least_one_hash_in_a_nonzero_window() {
