@@ -13,6 +13,12 @@ pub struct BluetoothStatus {
     pub adapter_present: bool,
     pub powered: bool,
     pub devices: Vec<BluetoothDevice>,
+    /// Set only when `bluetoothctl` itself could not be run (bluez not
+    /// installed). Without it, a machine missing the tool looked exactly
+    /// like a machine with no Bluetooth adapter -- `adapter_present: false`
+    /// in both cases, and this command never returned `Result`, so the
+    /// frontend had nothing to show either.
+    pub tool_error: Option<String>,
 }
 
 /// Parses `Powered: yes`/`Powered: no` out of `bluetoothctl show` output.
@@ -42,12 +48,25 @@ pub fn get_bluetooth_status() -> BluetoothStatus {
     let show_output = subprocess::run_with_timeout("bluetoothctl", &["show"], Duration::from_secs(5));
     let adapter_present = show_output.is_ok();
     let powered = show_output.as_deref().map(parse_powered_status).unwrap_or(false);
+    let tool_error = match &show_output {
+        Err(e) if e.contains("introuvable ou impossible à lancer") => Some(e.clone()),
+        _ => None,
+    };
 
     let devices = subprocess::run_with_timeout("bluetoothctl", &["devices"], Duration::from_secs(5))
         .map(|output| output.lines().filter_map(parse_device_line).collect())
         .unwrap_or_default();
 
-    BluetoothStatus { adapter_present, powered, devices }
+    BluetoothStatus { adapter_present, powered, devices, tool_error }
+}
+
+/// Powers the adapter on or off. Unprivileged: `bluetoothctl power` talks
+/// to the user's own session over D-Bus and polkit already arbitrates it,
+/// so NiTruX adds no elevation path of its own here.
+#[tauri::command]
+pub fn set_bluetooth_power(on: bool) -> Result<String, String> {
+    let state = if on { "on" } else { "off" };
+    subprocess::run_with_timeout("bluetoothctl", &["power", state], Duration::from_secs(10))
 }
 
 #[cfg(test)]

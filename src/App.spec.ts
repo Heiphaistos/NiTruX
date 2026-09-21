@@ -12,6 +12,7 @@ import App from "./App.vue";
 // already passed. List kept in sync with the `-> Vec<T>`/`-> Result<Vec<T>>`
 // commands registered in src-tauri/src/lib.rs's generate_handler! macro.
 const ARRAY_RETURNING_COMMANDS = new Set([
+  "check_required_tools",
   "find_duplicate_files",
   "find_large_files_cmd",
   "get_audio_sinks",
@@ -28,6 +29,7 @@ const ARRAY_RETURNING_COMMANDS = new Set([
   "get_update_history",
   "get_usb_devices",
   "get_user_accounts",
+  "list_backups",
   "list_disk_usage",
   "list_disks",
   "list_installed_packages",

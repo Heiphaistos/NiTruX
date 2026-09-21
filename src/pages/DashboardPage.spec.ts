@@ -33,6 +33,7 @@ const defaultInvokeImpl = vi.hoisted(() => (cmd: string) => {
     ]);
   }
   if (cmd === "get_crash_events") return Promise.resolve([]);
+  if (cmd === "check_required_tools") return Promise.resolve([]);
   return Promise.resolve(null);
 });
 
@@ -186,6 +187,25 @@ describe("DashboardPage", () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain("Score système"));
     const saved = JSON.parse(localStorage.getItem("nitrux-dashboard-snapshot")!);
     expect(saved).toEqual({ cpu: 12.5, ram: 50, disk: 20 });
+  });
+
+  it("shows a banner counting the system tools that are not installed, and navigates to the dependency page", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "check_required_tools") {
+        return Promise.resolve([
+          { binary: "sensors", package: "lm-sensors", feature: "Températures", installed: false },
+          { binary: "smartctl", package: "smartmontools", feature: "S.M.A.R.T.", installed: false },
+          { binary: "lspci", package: "pciutils", feature: "PCI", installed: true },
+        ]);
+      }
+      return defaultInvokeImpl(cmd);
+    });
+    const wrapper = mount(DashboardPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("2 outil(s) système"));
+    const button = wrapper.findAll("button").find((b) => b.text() === "Voir et installer")!;
+    await button.trigger("click");
+    expect(wrapper.emitted("navigate")?.[0]).toEqual(["dependencies"]);
   });
 
   it("shows no crash banner when get_crash_events resolves empty", async () => {

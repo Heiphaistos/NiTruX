@@ -7,7 +7,7 @@ import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 import NxBadge from "@/components/ui/NxBadge.vue";
 
 interface DeviceDriver { slot: string; description: string; driver: string | null }
-interface DriverSnapshot { loaded_modules: string[]; gpu_driver: string; devices: DeviceDriver[] }
+interface DriverSnapshot { loaded_modules: string[]; gpu_driver: string; devices: DeviceDriver[]; devices_error: string | null }
 
 const snapshot = ref<DriverSnapshot | null>(null);
 const error = ref<string | null>(null);
@@ -44,7 +44,9 @@ onMounted(async () => {
 
       <NxCard>
         <NxSectionHeader title="Périphériques & pilotes" />
-        <div class="drv-table-scroll">
+        <NxCard v-if="snapshot.devices_error" danger>{{ snapshot.devices_error }}</NxCard>
+        <div v-else-if="snapshot.devices.length === 0" class="drv-empty">Aucun périphérique PCI détecté.</div>
+        <div v-else class="drv-table-scroll">
           <table class="drv-table">
             <thead>
               <tr><th>Emplacement</th><th>Périphérique</th><th>Pilote</th></tr>
@@ -78,6 +80,7 @@ onMounted(async () => {
 .drv-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
 .drv-note p { margin: 0; font-size: 13px; color: var(--nx-text-secondary); line-height: 1.5; }
 .drv-table-scroll { overflow-x: auto; }
+.drv-empty { color: var(--nx-text-secondary); font-size: 13px; }
 .drv-table { width: 100%; min-width: 480px; border-collapse: collapse; font-size: 13px; }
 .drv-table th { text-align: left; color: var(--nx-text-secondary); border-bottom: 1px solid var(--nx-style-border-color); padding: 8px; }
 .drv-table td { padding: 8px; border-bottom: 1px solid var(--nx-style-border-color); }

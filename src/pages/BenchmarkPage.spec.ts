@@ -5,6 +5,8 @@ import BenchmarkPage from "./BenchmarkPage.vue";
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn().mockResolvedValue({
     cpu_hashes_per_sec: 500_000,
+    cpu_multicore_hashes_per_sec: 3_800_000,
+    cpu_cores_used: 8,
     disk_write_mbps: 320.5,
     disk_read_mbps: 480.2,
     disk_error: null,
@@ -29,6 +31,16 @@ describe("BenchmarkPage", () => {
     expect(wrapper.text()).toContain("12.4");
   });
 
+  it("shows the multicore CPU result labelled with the number of cores used", async () => {
+    // The single-core figure alone said nothing about a many-core machine;
+    // the label has to carry the core count or the number is unreadable.
+    const wrapper = mount(BenchmarkPage);
+    const button = wrapper.findAll("button").find((b) => b.text() === "Lancer le benchmark")!;
+    await button.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("CPU 8 cœurs"));
+    expect(wrapper.text()).toContain("CPU 1 cœur");
+  });
+
   it("shows CPU frequency converted to GHz", async () => {
     const wrapper = mount(BenchmarkPage);
     const button = wrapper.findAll("button").find((b) => b.text() === "Lancer le benchmark")!;
@@ -50,6 +62,8 @@ describe("BenchmarkPage", () => {
     const { invoke } = await import("@tauri-apps/api/core");
     vi.mocked(invoke).mockResolvedValueOnce({
       cpu_hashes_per_sec: 1,
+      cpu_multicore_hashes_per_sec: 4,
+      cpu_cores_used: 4,
       disk_write_mbps: 1,
       disk_read_mbps: 1,
       disk_error: null,
@@ -73,6 +87,8 @@ describe("BenchmarkPage", () => {
     const { invoke } = await import("@tauri-apps/api/core");
     vi.mocked(invoke).mockResolvedValueOnce({
       cpu_hashes_per_sec: 500_000,
+      cpu_multicore_hashes_per_sec: 3_800_000,
+      cpu_cores_used: 8,
       disk_write_mbps: 0,
       disk_read_mbps: 0,
       disk_error: "disque plein",

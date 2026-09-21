@@ -4,6 +4,7 @@ import { ref, onMounted } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import NxCard from "@/components/ui/NxCard.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
+import NxButton from "@/components/ui/NxButton.vue";
 
 interface AudioSink { name: string; driver: string; state: string }
 interface PrinterInfo { name: string; status: string }
@@ -40,12 +41,32 @@ onMounted(async () => {
   } catch (e) {
     audioError.value = String(e);
   }
+  await loadPrinters();
+});
+
+async function loadPrinters() {
   try {
     printers.value = await invoke<PrinterInfo[]>("get_printers");
   } catch (e) {
     printersError.value = String(e);
   }
-});
+}
+
+const settingDefault = ref<Record<string, boolean>>({});
+const defaultPrinterError = ref<string | null>(null);
+
+async function setDefaultPrinter(name: string) {
+  settingDefault.value = { ...settingDefault.value, [name]: true };
+  defaultPrinterError.value = null;
+  try {
+    await invoke<string>("set_default_printer", { name });
+    await loadPrinters();
+  } catch (e) {
+    defaultPrinterError.value = String(e);
+  } finally {
+    settingDefault.value = { ...settingDefault.value, [name]: false };
+  }
+}
 </script>
 
 <template>
@@ -77,7 +98,13 @@ onMounted(async () => {
       <NxSectionHeader title="Imprimantes" />
       <NxCard v-if="printersError" danger>{{ printersError }}</NxCard>
       <div v-if="printers && printers.length === 0" class="ph-empty">Aucune imprimante détectée.</div>
-      <div v-for="p in printers ?? []" :key="p.name" class="ph-row">{{ p.name }} — {{ p.status }}</div>
+      <NxCard v-if="defaultPrinterError" danger>{{ defaultPrinterError }}</NxCard>
+      <div v-for="p in printers ?? []" :key="p.name" class="ph-row ph-printer-row">
+        <span>{{ p.name }} — {{ p.status }}</span>
+        <NxButton :disabled="settingDefault[p.name]" @click="setDefaultPrinter(p.name)">
+          {{ settingDefault[p.name] ? "…" : "Par défaut" }}
+        </NxButton>
+      </div>
     </NxCard>
   </div>
 </template>
@@ -86,4 +113,5 @@ onMounted(async () => {
 .ph-page { padding: 24px; display: flex; flex-direction: column; gap: 12px; }
 .ph-empty { color: var(--nx-text-secondary); font-size: 13px; }
 .ph-row { padding: 4px 0; font-size: 13px; }
+.ph-printer-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 </style>

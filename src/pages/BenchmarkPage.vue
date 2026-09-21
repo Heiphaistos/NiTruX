@@ -10,6 +10,8 @@ import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 interface DiskHealthEntry { device: string; health: string | null }
 interface BenchmarkResult {
   cpu_hashes_per_sec: number;
+  cpu_multicore_hashes_per_sec: number;
+  cpu_cores_used: number;
   disk_write_mbps: number;
   disk_read_mbps: number;
   disk_error: string | null;
@@ -52,7 +54,13 @@ async function run() {
     <NxCard v-if="error" danger>{{ error }}</NxCard>
 
     <div class="bench-grid" v-if="result">
-      <NxCard><NxStatTile label="CPU (hachages/s)" :value="result.cpu_hashes_per_sec.toLocaleString('fr-FR')" /></NxCard>
+      <NxCard><NxStatTile label="CPU 1 cœur (hachages/s)" :value="result.cpu_hashes_per_sec.toLocaleString('fr-FR')" /></NxCard>
+      <NxCard>
+        <NxStatTile
+          :label="`CPU ${result.cpu_cores_used} cœurs (hachages/s)`"
+          :value="result.cpu_multicore_hashes_per_sec.toLocaleString('fr-FR')"
+        />
+      </NxCard>
       <NxCard><NxStatTile label="Fréquence CPU" :value="result.cpu_frequency_mhz > 0 ? `${(result.cpu_frequency_mhz / 1000).toFixed(2)} GHz` : 'inconnue'" /></NxCard>
       <NxCard v-if="!result.disk_error"><NxStatTile label="Écriture disque" :value="`${result.disk_write_mbps.toFixed(1)} Mo/s`" /></NxCard>
       <NxCard v-if="!result.disk_error"><NxStatTile label="Lecture disque" :value="`${result.disk_read_mbps.toFixed(1)} Mo/s`" /></NxCard>

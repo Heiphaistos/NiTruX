@@ -20,8 +20,7 @@ pub fn parse_lspci_line(line: &str) -> Option<PciDevice> {
 }
 
 fn run_lspci() -> Result<Vec<PciDevice>, String> {
-    let stdout = subprocess::run_with_timeout("lspci", &[], Duration::from_secs(5))
-        .map_err(|e| format!("{e} (paquet requis : pciutils)"))?;
+    let stdout = subprocess::run_with_timeout("lspci", &[], Duration::from_secs(5))?;
     Ok(stdout.lines().filter_map(parse_lspci_line).collect())
 }
 

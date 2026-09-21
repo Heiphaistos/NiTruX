@@ -1,7 +1,7 @@
-[package]
+﻿[package]
 name = "nitrux"
-version = "0.25.149"
-description = "NiTruX — couteau suisse de maintenance et diagnostic pour Linux"
+version = "0.25.150"
+description = "NiTruX â€” couteau suisse de maintenance et diagnostic pour Linux"
 authors = ["Heiphaistos"]
 edition = "2021"
 

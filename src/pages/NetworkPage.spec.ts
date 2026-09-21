@@ -42,6 +42,60 @@ describe("NetworkPage", () => {
     expect(invoke).toHaveBeenCalledWith("get_docker_snapshot");
   });
 
+  it("starts a container and refreshes the Docker view afterwards", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") {
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "", routes: [], arp_entries: [] });
+      }
+      if (cmd === "get_docker_snapshot") {
+        return Promise.resolve({
+          available: true,
+          installed: true,
+          error: null,
+          containers: [{ id: "a1b2c3d4", image: "nginx:latest", name: "web", status: "Exited" }],
+          images: [],
+        });
+      }
+      if (cmd === "docker_container_action") return Promise.resolve("a1b2c3d4");
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("get_docker_snapshot"));
+    await wrapper.findAll("button").find((b) => b.text() === "Docker")!.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("web"));
+    await wrapper.findAll("button").find((b) => b.text() === "Démarrer")!.trigger("click");
+    await vi.waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith("docker_container_action", { containerId: "a1b2c3d4", action: "start" }),
+    );
+  });
+
+  it("shows a Docker action failure instead of leaving the button silently dead", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") {
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "", routes: [], arp_entries: [] });
+      }
+      if (cmd === "get_docker_snapshot") {
+        return Promise.resolve({
+          available: true,
+          installed: true,
+          error: null,
+          containers: [{ id: "a1b2c3d4", image: "nginx:latest", name: "web", status: "Up" }],
+          images: [],
+        });
+      }
+      if (cmd === "docker_container_action") return Promise.reject("permission denied on /var/run/docker.sock");
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("get_docker_snapshot"));
+    await wrapper.findAll("button").find((b) => b.text() === "Docker")!.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("web"));
+    await wrapper.findAll("button").find((b) => b.text() === "Arrêter")!.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("permission denied"));
+  });
+
   it("shows empty-state messages when Docker is available but has no containers or images", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     // Override just this test's docker response; keep get_network_snapshot's
