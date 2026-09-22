@@ -31,6 +31,8 @@ mod network;
 mod network_write;
 mod optimizations;
 mod packages;
+mod notifications;
+mod orphan_configs;
 mod perf_history;
 mod peripherals;
 mod ping;
@@ -240,6 +242,10 @@ pub fn run() {
             trash::list_trash,
             trash::restore_trash_item,
             trash::delete_trash_item_permanently,
+            trash::move_to_trash,
+            orphan_configs::list_orphan_configs,
+            notifications::send_desktop_notification,
+            processes::set_autostart_entry_enabled,
             update_history::get_update_history,
             system_tools::run_system_tool,
             terminal::spawn_terminal,

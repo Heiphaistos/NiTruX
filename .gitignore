@@ -2,6 +2,9 @@
 node_modules/
 dist/
 
+# Test run report, written by `npm test` for scripts/assert-suite-complete.mjs
+.vitest-report.json
+
 # Rust
 src-tauri/target/
 

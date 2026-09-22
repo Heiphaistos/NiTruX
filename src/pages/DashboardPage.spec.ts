@@ -189,6 +189,48 @@ describe("DashboardPage", () => {
     expect(saved).toEqual({ cpu: 12.5, ram: 50, disk: 20 });
   });
 
+  it("sends one desktop notification when a metric crosses its threshold, not one per refresh", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_system_snapshot") {
+        return Promise.resolve({
+          cpus: [{ name: "Test CPU", usage_percent: 97, usage_display: "97%" }],
+          memory_used_bytes: 1_000_000_000,
+          memory_total_bytes: 8_000_000_000,
+          process_count: 210,
+        });
+      }
+      return defaultInvokeImpl(cmd);
+    });
+    // The suite's beforeEach restores the implementation but not the call
+    // history, and this test counts calls.
+    vi.mocked(invoke).mockClear();
+    const wrapper = mount(DashboardPage);
+    await vi.waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith(
+        "send_desktop_notification",
+        expect.objectContaining({ urgency: "critical" }),
+      ),
+    );
+    const notifications = vi
+      .mocked(invoke)
+      .mock.calls.filter(([cmd]) => cmd === "send_desktop_notification");
+    expect(notifications).toHaveLength(1);
+    // Only the breached metric notifies; RAM at 12.5% must stay silent.
+    expect(String((notifications[0][1] as { summary: string }).summary)).toContain("Processeur");
+    expect(wrapper.exists()).toBe(true);
+  });
+
+  it("does not notify while every metric stays under its threshold", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockClear();
+    mount(DashboardPage);
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("get_system_snapshot"));
+    expect(
+      vi.mocked(invoke).mock.calls.filter(([cmd]) => cmd === "send_desktop_notification"),
+    ).toHaveLength(0);
+  });
+
   it("shows a banner counting the system tools that are not installed, and navigates to the dependency page", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     vi.mocked(invoke).mockImplementation((cmd: string) => {

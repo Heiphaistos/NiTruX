@@ -18,6 +18,19 @@ describe("ScriptsPage", () => {
     expect(wrapper.text()).toContain("Aucun script enregistré pour le moment.");
   });
 
+  it("loads a library snippet into the editor instead of running it straight away", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const wrapper = mount(ScriptsPage);
+    const load = wrapper.findAll("button").find((b) => b.text() === "Charger")!;
+    await load.trigger("click");
+    const nameInput = wrapper.find("input[placeholder*='Nom']").element as HTMLInputElement;
+    const contentInput = wrapper.find("textarea").element as HTMLTextAreaElement;
+    expect(nameInput.value).not.toBe("");
+    expect(contentInput.value).not.toBe("");
+    // The whole point: the user reviews it first, nothing is executed.
+    expect(invoke).not.toHaveBeenCalled();
+  });
+
   it("saves a new script and lists it", async () => {
     const wrapper = mount(ScriptsPage);
     await wrapper.find("input[placeholder*='Nom']").setValue("Test");

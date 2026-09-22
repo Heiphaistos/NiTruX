@@ -13,7 +13,51 @@ pub struct ProcessInfo {
 }
 
 #[derive(Serialize, Clone)]
-pub struct AutostartEntry { pub name: String }
+pub struct AutostartEntry {
+    pub name: String,
+    /// "unit" for a systemd --user unit, "desktop" for a
+    /// `~/.config/autostart/*.desktop` file. They are disabled in
+    /// completely different ways, so the frontend must not guess.
+    pub kind: String,
+    pub enabled: bool,
+}
+
+/// A `.desktop` autostart file stays in place when disabled; it is marked.
+/// Both keys are honoured by the major desktops, and either one being true
+/// (respectively false) means "do not start this".
+pub fn desktop_entry_is_enabled(content: &str) -> bool {
+    for line in content.lines() {
+        let line = line.trim();
+        if line.eq_ignore_ascii_case("hidden=true") {
+            return false;
+        }
+        if line.to_ascii_lowercase() == "x-gnome-autostart-enabled=false" {
+            return false;
+        }
+    }
+    true
+}
+
+/// Rewrites a `.desktop` file's content so it is enabled or disabled,
+/// leaving every other line untouched -- these files carry the command,
+/// icon and translated names, and rewriting them wholesale would lose all
+/// of it.
+pub fn set_desktop_entry_enabled(content: &str, enabled: bool) -> String {
+    let mut out: Vec<String> = content
+        .lines()
+        .filter(|line| {
+            let normalized = line.trim().to_ascii_lowercase();
+            !normalized.starts_with("hidden=") && !normalized.starts_with("x-gnome-autostart-enabled=")
+        })
+        .map(|l| l.to_string())
+        .collect();
+    if !enabled {
+        out.push("Hidden=true".to_string());
+    }
+    let mut joined = out.join("\n");
+    joined.push('\n');
+    joined
+}
 
 /// Parses one line of `systemctl list-timers --no-pager` output. The
 /// header row and the trailing summary line ("N timers listed.") are both
@@ -55,27 +99,75 @@ pub fn get_systemd_services() -> Vec<String> {
 
 #[tauri::command]
 pub fn get_autostart_entries() -> Vec<AutostartEntry> {
-    let mut names: Vec<String> = subprocess::run_with_timeout(
+    let mut entries: Vec<AutostartEntry> = subprocess::run_with_timeout(
         "systemctl",
         &["--user", "list-unit-files", "--state=enabled", "--no-pager", "--plain"],
         Duration::from_secs(10),
     )
-    .map(|out| out.lines().filter_map(|l| l.split_whitespace().next().map(|s| s.to_string())).collect())
+    .map(|out| {
+        out.lines()
+            .filter_map(|l| l.split_whitespace().next().map(|s| s.to_string()))
+            // Only units this listing reports, and it was filtered to
+            // enabled ones.
+            .map(|name| AutostartEntry { name, kind: "unit".to_string(), enabled: true })
+            .collect()
+    })
     .unwrap_or_default();
 
     if let Ok(home) = std::env::var("HOME") {
         let autostart_dir = std::path::Path::new(&home).join(".config/autostart");
-        if let Ok(entries) = std::fs::read_dir(autostart_dir) {
-            for entry in entries.flatten() {
-                if let Some(name) = entry.file_name().to_str() {
-                    if name.ends_with(".desktop") {
-                        names.push(name.to_string());
-                    }
+        if let Ok(dir_entries) = std::fs::read_dir(autostart_dir) {
+            for entry in dir_entries.flatten() {
+                let Some(name) = entry.file_name().to_str().map(|s| s.to_string()) else { continue };
+                if !name.ends_with(".desktop") {
+                    continue;
                 }
+                let enabled = std::fs::read_to_string(entry.path())
+                    .map(|c| desktop_entry_is_enabled(&c))
+                    .unwrap_or(true);
+                entries.push(AutostartEntry { name, kind: "desktop".to_string(), enabled });
             }
         }
     }
-    names.into_iter().map(|name| AutostartEntry { name }).collect()
+    entries
+}
+
+fn validate_autostart_name(name: &str) -> Result<(), String> {
+    if name.is_empty() || name.len() > 255 {
+        return Err("nom d'entrée de démarrage invalide".to_string());
+    }
+    if name.contains('/') || name.contains('\\') || name.starts_with('-') || name.contains("..") {
+        return Err(format!("nom d'entrée de démarrage invalide : {name}"));
+    }
+    Ok(())
+}
+
+/// Enables or disables one autostart entry, unprivileged in both cases: a
+/// `.desktop` file under `~/.config/autostart` is the user's own file, and
+/// `systemctl --user` acts on the user's own session manager.
+#[tauri::command]
+pub fn set_autostart_entry_enabled(name: String, kind: String, enabled: bool) -> Result<(), String> {
+    validate_autostart_name(&name)?;
+    match kind.as_str() {
+        "desktop" => {
+            let home = std::env::var("HOME").map_err(|_| "variable HOME introuvable".to_string())?;
+            let path = std::path::Path::new(&home).join(".config/autostart").join(&name);
+            let content = std::fs::read_to_string(&path)
+                .map_err(|e| format!("lecture de {} impossible : {e}", path.display()))?;
+            std::fs::write(&path, set_desktop_entry_enabled(&content, enabled))
+                .map_err(|e| format!("écriture de {} impossible : {e}", path.display()))
+        }
+        "unit" => {
+            let action = if enabled { "enable" } else { "disable" };
+            subprocess::run_with_timeout(
+                "systemctl",
+                &["--user", action, "--", name.as_str()],
+                Duration::from_secs(20),
+            )
+            .map(|_| ())
+        }
+        other => Err(format!("type d'entrée de démarrage inconnu : {other}")),
+    }
 }
 
 #[tauri::command]
@@ -99,6 +191,45 @@ pub fn get_scheduled_tasks() -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reads_the_disabled_markers_both_desktops_use() {
+        let base = "[Desktop Entry]\nType=Application\nExec=/usr/bin/foo\nName=Foo\n";
+        assert!(desktop_entry_is_enabled(base));
+        assert!(!desktop_entry_is_enabled(&format!("{base}Hidden=true\n")));
+        assert!(!desktop_entry_is_enabled(&format!("{base}X-GNOME-Autostart-enabled=false\n")));
+    }
+
+    #[test]
+    fn disabling_keeps_every_other_line_of_the_desktop_file() {
+        // These files carry the command, icon and translated names; a
+        // rewrite that dropped them would break the entry permanently.
+        let original = "[Desktop Entry]\nType=Application\nExec=/usr/bin/foo --flag\nIcon=foo\nName[fr]=Machin\n";
+        let disabled = set_desktop_entry_enabled(original, false);
+        assert!(disabled.contains("Exec=/usr/bin/foo --flag"));
+        assert!(disabled.contains("Name[fr]=Machin"));
+        assert!(!desktop_entry_is_enabled(&disabled));
+
+        let re_enabled = set_desktop_entry_enabled(&disabled, true);
+        assert!(desktop_entry_is_enabled(&re_enabled));
+        assert!(!re_enabled.contains("Hidden"), "re-enabling must remove the marker: {re_enabled}");
+        assert!(re_enabled.contains("Icon=foo"));
+    }
+
+    #[test]
+    fn refuses_an_autostart_name_that_escapes_the_directory() {
+        assert!(validate_autostart_name("foo.desktop").is_ok());
+        for bad in ["", "../../.bashrc", "sub/foo.desktop", "-x"] {
+            assert!(validate_autostart_name(bad).is_err(), "{bad} should be refused");
+        }
+    }
+
+    #[test]
+    fn refuses_an_unknown_autostart_kind() {
+        let err = set_autostart_entry_enabled("foo.desktop".to_string(), "registry".to_string(), false)
+            .expect_err("only desktop and unit exist on Linux");
+        assert!(err.contains("inconnu"), "{err}");
+    }
 
     #[test]
     fn parses_a_real_systemd_timer_line() {

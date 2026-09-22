@@ -4,10 +4,11 @@ import { ref, computed, onMounted } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import NxCard from "@/components/ui/NxCard.vue";
 import NxInput from "@/components/ui/NxInput.vue";
+import NxButton from "@/components/ui/NxButton.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 
 interface ProcessInfo { pid: number; name: string; cpu_percent: number; memory_bytes: number }
-interface AutostartEntry { name: string }
+interface AutostartEntry { name: string; kind: string; enabled: boolean }
 
 const processes = ref<ProcessInfo[] | null>(null);
 const services = ref<string[] | null>(null);
@@ -19,6 +20,28 @@ const processesError = ref<string | null>(null);
 const servicesError = ref<string | null>(null);
 const autostartError = ref<string | null>(null);
 const scheduledTasksError = ref<string | null>(null);
+
+const autostartBusy = ref<Record<string, boolean>>({});
+const autostartToggleError = ref<string | null>(null);
+
+// Unprivileged both ways: a `.desktop` file in ~/.config/autostart is the
+// user's own file, and `systemctl --user` acts on their own session.
+async function toggleAutostart(entry: AutostartEntry) {
+  autostartBusy.value = { ...autostartBusy.value, [entry.name]: true };
+  autostartToggleError.value = null;
+  try {
+    await invoke("set_autostart_entry_enabled", {
+      name: entry.name,
+      kind: entry.kind,
+      enabled: !entry.enabled,
+    });
+    autostart.value = await invoke<AutostartEntry[]>("get_autostart_entries");
+  } catch (e) {
+    autostartToggleError.value = String(e);
+  } finally {
+    autostartBusy.value = { ...autostartBusy.value, [entry.name]: false };
+  }
+}
 
 onMounted(async () => {
   // 4 independent sources (each backed by an infallible Vec<T>-returning
@@ -88,7 +111,13 @@ function bytesToMb(bytes: number): string {
         <summary class="proc-summary">Démarrage automatique ({{ autostart?.length ?? 0 }})</summary>
         <NxCard v-if="autostartError" danger>{{ autostartError }}</NxCard>
         <div v-if="autostart && autostart.length === 0" class="proc-empty">Aucune entrée de démarrage automatique.</div>
-        <div v-for="a in autostart ?? []" :key="a.name" class="proc-row">{{ a.name }}</div>
+        <NxCard v-if="autostartToggleError" danger>{{ autostartToggleError }}</NxCard>
+        <div v-for="a in autostart ?? []" :key="a.name" class="proc-row proc-autostart-row">
+          <span :class="{ 'proc-disabled': !a.enabled }">{{ a.name }}</span>
+          <NxButton :disabled="autostartBusy[a.name]" @click="toggleAutostart(a)">
+            {{ autostartBusy[a.name] ? "…" : a.enabled ? "Désactiver" : "Activer" }}
+          </NxButton>
+        </div>
       </details>
     </NxCard>
 
@@ -106,6 +135,8 @@ function bytesToMb(bytes: number): string {
 <style scoped>
 .proc-page { padding: 24px; display: flex; flex-direction: column; gap: 12px; }
 .proc-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 4px 0; font-size: 13px; }
+.proc-autostart-row { flex-wrap: wrap; }
+.proc-disabled { text-decoration: line-through; color: var(--nx-text-secondary); }
 .proc-empty { color: var(--nx-text-secondary); font-size: 13px; }
 .proc-details > *:not(summary) { margin-top: 10px; }
 .proc-summary {

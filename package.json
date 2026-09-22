@@ -1,14 +1,14 @@
 {
   "name": "tauri-app",
   "private": true,
-  "version": "0.25.151",
+  "version": "0.25.152",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "test": "vitest run"
+    "test": "vitest run --reporter=default --reporter=json --outputFile=.vitest-report.json && node scripts/assert-suite-complete.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

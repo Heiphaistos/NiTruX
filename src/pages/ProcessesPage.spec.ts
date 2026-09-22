@@ -6,7 +6,9 @@ vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((cmd: string) => {
     if (cmd === "get_processes") return Promise.resolve([{ pid: 1234, name: "nitrux", cpu_percent: 2.5, memory_bytes: 104857600 }]);
     if (cmd === "get_systemd_services") return Promise.resolve(["ssh.service"]);
-    if (cmd === "get_autostart_entries") return Promise.resolve([{ name: "nm-applet.desktop" }]);
+    if (cmd === "get_autostart_entries") {
+      return Promise.resolve([{ name: "nm-applet.desktop", kind: "desktop", enabled: true }]);
+    }
     if (cmd === "get_scheduled_tasks") return Promise.resolve(["fwupd-refresh.timer"]);
     return Promise.resolve(null);
   }),
@@ -19,6 +21,44 @@ describe("ProcessesPage", () => {
     expect(wrapper.text()).toContain("ssh.service");
     expect(wrapper.text()).toContain("nm-applet.desktop");
     expect(wrapper.text()).toContain("fwupd-refresh.timer");
+  });
+
+  it("disables an autostart entry and reloads the list", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_processes") return Promise.resolve([]);
+      if (cmd === "get_systemd_services") return Promise.resolve([]);
+      if (cmd === "get_scheduled_tasks") return Promise.resolve([]);
+      if (cmd === "get_autostart_entries") {
+        return Promise.resolve([{ name: "nm-applet.desktop", kind: "desktop", enabled: true }]);
+      }
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(ProcessesPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("nm-applet.desktop"));
+    await wrapper.findAll("button").find((b) => b.text() === "Désactiver")!.trigger("click");
+    await vi.waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith("set_autostart_entry_enabled", {
+        name: "nm-applet.desktop",
+        kind: "desktop",
+        enabled: false,
+      }),
+    );
+  });
+
+  it("shows why an autostart toggle failed", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_autostart_entries") {
+        return Promise.resolve([{ name: "foo.service", kind: "unit", enabled: true }]);
+      }
+      if (cmd === "set_autostart_entry_enabled") return Promise.reject("systemctl: unit foo.service not found");
+      return Promise.resolve([]);
+    });
+    const wrapper = mount(ProcessesPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("foo.service"));
+    await wrapper.findAll("button").find((b) => b.text() === "Désactiver")!.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("not found"));
   });
 
   it("filters the process list by name", async () => {
@@ -85,7 +125,9 @@ describe("ProcessesPage", () => {
     (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) => {
       if (cmd === "get_processes") return Promise.resolve([{ pid: 1, name: "nitrux", cpu_percent: 1, memory_bytes: 1000 }]);
       if (cmd === "get_systemd_services") return Promise.reject("systemctl introuvable");
-      if (cmd === "get_autostart_entries") return Promise.resolve([{ name: "nm-applet.desktop" }]);
+      if (cmd === "get_autostart_entries") {
+      return Promise.resolve([{ name: "nm-applet.desktop", kind: "desktop", enabled: true }]);
+    }
       if (cmd === "get_scheduled_tasks") return Promise.resolve(["fwupd-refresh.timer"]);
       return Promise.resolve(null);
     });

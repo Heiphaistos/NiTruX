@@ -66,6 +66,128 @@ pub fn parse_trashinfo(content: &str) -> Option<(String, String)> {
     path.map(|p| (p, date))
 }
 
+/// Escapes a path for a `.trashinfo` `Path=` value, the inverse of
+/// `decode_trash_path`. Only the space is encoded, matching what this
+/// module decodes -- writing an encoding we cannot read back would make our
+/// own trashed items unrestorable.
+fn encode_trash_path(path: &str) -> String {
+    path.replace(' ', "%20")
+}
+
+/// Picks a name inside `Trash/files/` that is not taken. A second deletion
+/// of `foo` becomes `foo.2`, matching the convention `list_trash`'s doc
+/// already describes.
+fn available_trash_name(files_dir: &std::path::Path, info_dir: &std::path::Path, base: &str) -> String {
+    if !files_dir.join(base).exists() && !info_dir.join(format!("{base}.trashinfo")).exists() {
+        return base.to_string();
+    }
+    for suffix in 2..10_000 {
+        let candidate = format!("{base}.{suffix}");
+        if !files_dir.join(&candidate).exists() && !info_dir.join(format!("{candidate}.trashinfo")).exists() {
+            return candidate;
+        }
+    }
+    format!("{base}.{}", std::process::id())
+}
+
+/// Moves `path` to the freedesktop trash instead of deleting it.
+///
+/// Every destructive action this app offers is reversible except
+/// `format-partition`; a "clean up orphaned configuration" button that
+/// unlinked directories outright would be a second exception, and the one
+/// most likely to be clicked by mistake. `rename` is used when possible
+/// (atomic, same filesystem) with a copy+remove fallback, since `$HOME` and
+/// the trash can legitimately sit on different mounts.
+#[tauri::command]
+pub fn move_to_trash(path: String) -> Result<String, String> {
+    let source = PathBuf::from(&path);
+    if !source.is_absolute() {
+        return Err(format!("chemin absolu attendu : {path}"));
+    }
+    let home = std::env::var("HOME").map_err(|_| "variable HOME introuvable".to_string())?;
+    let canonical = source
+        .canonicalize()
+        .map_err(|e| format!("chemin introuvable : {path} ({e})"))?;
+    // Refuse anything outside the user's own home: this command exists to
+    // clean up per-user leftovers, and the trash it writes to is per-user
+    // anyway -- a system path moved there would break the package that owns
+    // it and could not be restored without root.
+    if !canonical.starts_with(&home) {
+        return Err(format!("hors du dossier personnel, refusé : {}", canonical.display()));
+    }
+    if canonical == PathBuf::from(&home) {
+        return Err("le dossier personnel lui-même ne peut pas être mis à la corbeille".to_string());
+    }
+
+    let files_dir = trash_dir().join("files");
+    let info_dir = trash_dir().join("info");
+    std::fs::create_dir_all(&files_dir).map_err(|e| format!("corbeille inaccessible : {e}"))?;
+    std::fs::create_dir_all(&info_dir).map_err(|e| format!("corbeille inaccessible : {e}"))?;
+
+    let base = canonical
+        .file_name()
+        .and_then(|n| n.to_str())
+        .ok_or_else(|| format!("nom de fichier illisible : {}", canonical.display()))?;
+    let trashed_name = available_trash_name(&files_dir, &info_dir, base);
+
+    let destination = files_dir.join(&trashed_name);
+    if std::fs::rename(&canonical, &destination).is_err() {
+        // Cross-device move: copy then remove, and never remove the source
+        // until the copy succeeded.
+        let status = std::process::Command::new("cp")
+            .args(["-a", "--", &canonical.to_string_lossy(), &destination.to_string_lossy()])
+            .status()
+            .map_err(|e| format!("déplacement impossible : {e}"))?;
+        if !status.success() {
+            return Err(format!("déplacement vers la corbeille impossible : {}", canonical.display()));
+        }
+        let removed = if canonical.is_dir() {
+            std::fs::remove_dir_all(&canonical)
+        } else {
+            std::fs::remove_file(&canonical)
+        };
+        removed.map_err(|e| format!("copie faite mais original non supprimé : {e}"))?;
+    }
+
+    let info = format!(
+        "[Trash Info]\nPath={}\nDeletionDate={}\n",
+        encode_trash_path(&canonical.to_string_lossy()),
+        // Local time is what the spec asks for; seconds precision is enough
+        // and avoids pulling in a date crate for one line.
+        chrono_like_now()
+    );
+    std::fs::write(info_dir.join(format!("{trashed_name}.trashinfo")), info)
+        .map_err(|e| format!("élément déplacé mais fiche de corbeille non écrite : {e}"))?;
+    Ok(trashed_name)
+}
+
+/// `YYYY-MM-DDThh:mm:ss` from the system clock, computed by hand because
+/// this crate has no date dependency and one timestamp does not justify
+/// adding one.
+fn chrono_like_now() -> String {
+    let secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let days = secs / 86_400;
+    let time_of_day = secs % 86_400;
+    let (hours, minutes, seconds) = (time_of_day / 3600, (time_of_day % 3600) / 60, time_of_day % 60);
+
+    // Civil-from-days (Howard Hinnant's algorithm), shifted to a March-based
+    // year so leap days land at the end of the cycle.
+    let z = days as i64 + 719_468;
+    let era = z.div_euclid(146_097);
+    let doe = z.rem_euclid(146_097);
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let y = yoe + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = if m <= 2 { y + 1 } else { y };
+    format!("{y:04}-{m:02}-{d:02}T{hours:02}:{minutes:02}:{seconds:02}")
+}
+
 #[tauri::command]
 pub fn list_trash() -> Vec<TrashedItem> {
     let info_dir = trash_dir().join("info");
@@ -185,6 +307,80 @@ pub fn delete_trash_item_permanently(trashed_name: String) -> Result<(), String>
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn moves_a_real_directory_to_the_trash_and_can_list_it_back() {
+        // Exercises the real filesystem path: HOME is pointed at a scratch
+        // directory so this writes a genuine Trash/files + Trash/info pair.
+        let scratch = std::env::temp_dir().join(format!("nitrux-trash-test-{}", std::process::id()));
+        let victim = scratch.join(".config").join("orphan-app");
+        std::fs::create_dir_all(&victim).unwrap();
+        std::fs::write(victim.join("settings.conf"), b"x=1").unwrap();
+        let previous_home = std::env::var("HOME").ok();
+        std::env::set_var("HOME", &scratch);
+
+        let name = move_to_trash(victim.to_string_lossy().into_owned()).expect("should trash the directory");
+        assert!(!victim.exists(), "the original must be gone");
+        assert!(scratch.join(".local/share/Trash/files").join(&name).exists());
+
+        let info = std::fs::read_to_string(
+            scratch.join(".local/share/Trash/info").join(format!("{name}.trashinfo")),
+        )
+        .unwrap();
+        assert!(info.starts_with("[Trash Info]"));
+        assert!(info.contains("Path=/"), "the original absolute path must be recorded: {info}");
+
+        let listed = list_trash();
+        assert!(listed.iter().any(|i| i.trashed_name == name), "trashed item should be listed");
+
+        std::fs::remove_dir_all(&scratch).ok();
+        match previous_home {
+            Some(v) => std::env::set_var("HOME", v),
+            None => std::env::remove_var("HOME"),
+        }
+    }
+
+    #[test]
+    fn refuses_a_path_outside_the_home_directory() {
+        let previous_home = std::env::var("HOME").ok();
+        let scratch = std::env::temp_dir().join(format!("nitrux-trash-guard-{}", std::process::id()));
+        std::fs::create_dir_all(&scratch).unwrap();
+        std::env::set_var("HOME", &scratch);
+
+        // /etc exists everywhere this runs and is exactly what must never
+        // be trashable by a per-user cleanup button.
+        let err = move_to_trash("/etc".to_string()).expect_err("should refuse a system path");
+        assert!(err.contains("hors du dossier personnel"), "{err}");
+        assert!(move_to_trash("relative/path".to_string()).is_err());
+        assert!(
+            move_to_trash(scratch.to_string_lossy().into_owned()).is_err(),
+            "the home directory itself must be refused"
+        );
+
+        std::fs::remove_dir_all(&scratch).ok();
+        match previous_home {
+            Some(v) => std::env::set_var("HOME", v),
+            None => std::env::remove_var("HOME"),
+        }
+    }
+
+    #[test]
+    fn trashinfo_path_round_trips_through_our_own_decoder() {
+        // Writing an encoding we cannot read back would make our own
+        // trashed items unrestorable.
+        let original = "/home/dev/.config/mon application";
+        assert_eq!(decode_trash_path(&encode_trash_path(original)), original);
+    }
+
+    #[test]
+    fn deletion_date_has_the_shape_the_spec_asks_for() {
+        let now = chrono_like_now();
+        assert_eq!(now.len(), 19, "expected YYYY-MM-DDThh:mm:ss, got {now}");
+        assert_eq!(&now[4..5], "-");
+        assert_eq!(&now[10..11], "T");
+        let year: i32 = now[..4].parse().expect("year should parse");
+        assert!((2026..2100).contains(&year), "implausible year in {now}");
+    }
 
     #[test]
     fn rejects_empty_trashed_name() {

@@ -93,8 +93,48 @@ async function refresh() {
   try {
     snapshot.value = await invoke<SystemSnapshot>("get_system_snapshot");
     error.value = null;
+    await notifyThresholdBreaches();
   } catch (err) {
     error.value = err instanceof Error ? err.message : String(err);
+  }
+}
+
+// One notification per metric per breach, not per refresh tick: the
+// dashboard polls every few seconds, and a machine sitting at 95% CPU would
+// otherwise bury the desktop under identical popups. The flag resets when
+// the metric comes back under its threshold, so a second breach notifies
+// again.
+const notified = ref<Record<"cpu" | "ram" | "disk", boolean>>({ cpu: false, ram: false, disk: false });
+
+async function notifyThresholdBreaches() {
+  const checks: { key: "cpu" | "ram" | "disk"; value: number | null; threshold: number; label: string }[] = [
+    {
+      key: "cpu",
+      value: snapshot.value ? averageCpuPercent(snapshot.value.cpus) : null,
+      threshold: preferences.cpuAlertThreshold,
+      label: "Processeur",
+    },
+    { key: "ram", value: ramPercent.value, threshold: preferences.ramAlertThreshold, label: "Mémoire" },
+    { key: "disk", value: rootDiskPercent.value, threshold: preferences.diskAlertThreshold, label: "Disque" },
+  ];
+  for (const check of checks) {
+    if (check.value === null) continue;
+    const breached = check.value >= check.threshold;
+    if (breached && !notified.value[check.key]) {
+      notified.value = { ...notified.value, [check.key]: true };
+      try {
+        await invoke("send_desktop_notification", {
+          summary: `${check.label} à ${Math.round(check.value)} %`,
+          body: `Seuil d'alerte de ${check.threshold} % dépassé.`,
+          urgency: "critical",
+        });
+      } catch {
+        // notify-send absent or no notification daemon: the on-screen
+        // tile is already red, so this must never surface as an error.
+      }
+    } else if (!breached && notified.value[check.key]) {
+      notified.value = { ...notified.value, [check.key]: false };
+    }
   }
 }
 
