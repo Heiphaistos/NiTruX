@@ -8,6 +8,16 @@ pub struct CpuDetails {
     pub sockets: Option<String>,
     pub cores_per_socket: Option<String>,
     pub threads_per_core: Option<String>,
+    /// L1d/L1i/L2/L3 sizes as `lscpu` reports them. Read from the same
+    /// output as everything else above rather than a second `lscpu -C`
+    /// call: the plain output already carries these lines.
+    pub caches: Vec<CacheEntry>,
+}
+
+#[derive(Serialize, Clone, PartialEq, Debug)]
+pub struct CacheEntry {
+    pub level: String,
+    pub size: String,
 }
 
 #[derive(Serialize, Clone)]
@@ -42,18 +52,25 @@ pub fn parse_lscpu_output(output: &str) -> CpuDetails {
     let mut sockets = None;
     let mut cores_per_socket = None;
     let mut threads_per_core = None;
+    let mut caches = Vec::new();
     for line in output.lines() {
         let Some((key, value)) = line.split_once(':') else { continue };
         let value = value.trim().to_string();
-        match key.trim() {
+        let key = key.trim();
+        match key {
             "Model name" => model_name = Some(value),
             "Socket(s)" => sockets = Some(value),
             "Core(s) per socket" => cores_per_socket = Some(value),
             "Thread(s) per core" => threads_per_core = Some(value),
+            // "L1d cache", "L2 cache", ... -- the level count varies by
+            // CPU, so they are collected rather than named individually.
+            _ if key.ends_with(" cache") && !value.is_empty() => {
+                caches.push(CacheEntry { level: key.trim_end_matches(" cache").to_string(), size: value });
+            }
             _ => {}
         }
     }
-    CpuDetails { model_name, sockets, cores_per_socket, threads_per_core }
+    CpuDetails { model_name, sockets, cores_per_socket, threads_per_core, caches }
 }
 
 /// Reads one `/sys/class/dmi/id/*` field -- readable without root on every
@@ -103,7 +120,13 @@ pub fn parse_meminfo(content: &str) -> MemoryDetails {
 pub fn get_hardware_details() -> HardwareDetails {
     let cpu = subprocess::run_with_timeout_env("lscpu", &[], &[("LC_ALL", "C")], Duration::from_secs(10))
         .map(|out| parse_lscpu_output(&out))
-        .unwrap_or(CpuDetails { model_name: None, sockets: None, cores_per_socket: None, threads_per_core: None });
+        .unwrap_or(CpuDetails {
+            model_name: None,
+            sockets: None,
+            cores_per_socket: None,
+            threads_per_core: None,
+            caches: Vec::new(),
+        });
     let board = get_board_details();
     let memory = std::fs::read_to_string("/proc/meminfo")
         .ok()
@@ -124,6 +147,17 @@ mod tests {
         assert_eq!(cpu.sockets.as_deref(), Some("1"));
         assert_eq!(cpu.cores_per_socket.as_deref(), Some("3"));
         assert_eq!(cpu.threads_per_core.as_deref(), Some("2"));
+    }
+
+    #[test]
+    fn collects_every_cache_level_lscpu_reports() {
+        // Real `lscpu` shape: the number of levels varies by CPU, and the
+        // per-instance count in parentheses is part of the value.
+        let output = "Model name:  Test CPU\nL1d cache:                           144 KiB (6 instances)\nL1i cache:                           192 KiB (6 instances)\nL2 cache:                            7.5 MiB (6 instances)\nL3 cache:                            12 MiB (1 instance)\n";
+        let cpu = parse_lscpu_output(output);
+        assert_eq!(cpu.caches.len(), 4);
+        assert_eq!(cpu.caches[0], CacheEntry { level: "L1d".into(), size: "144 KiB (6 instances)".into() });
+        assert_eq!(cpu.caches[3].level, "L3");
     }
 
     #[test]

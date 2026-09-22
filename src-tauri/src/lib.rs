@@ -11,6 +11,7 @@ mod cache_size;
 mod certificates;
 mod crash_analyzer;
 mod dependencies;
+mod disk_tree;
 mod disk_write;
 mod disks;
 mod dns_lookup;
@@ -18,8 +19,10 @@ mod docker;
 mod drivers;
 mod duplicates;
 mod firewall;
+mod gpu;
 mod hardware;
 mod hardware_details;
+mod hosts_blocklist;
 mod hashcheck;
 mod largefiles;
 mod logs;
@@ -28,6 +31,7 @@ mod network;
 mod network_write;
 mod optimizations;
 mod packages;
+mod perf_history;
 mod peripherals;
 mod ping;
 mod pkexec_bootstrap;
@@ -155,6 +159,7 @@ pub fn run() {
             system::get_system_snapshot,
             accounts::get_user_accounts,
             sensors::get_sensor_snapshot,
+            gpu::get_gpu_snapshot,
             hardware::get_pci_devices,
             hardware_details::get_hardware_details,
             drivers::get_driver_snapshot,
@@ -164,6 +169,9 @@ pub fn run() {
             detect_native_manager,
             get_environment_variables,
             packages::list_installed_packages,
+            perf_history::get_perf_history,
+            perf_history::record_perf_sample,
+            perf_history::clear_perf_history,
             peripherals::get_monitors,
             peripherals::get_usb_devices,
             peripherals::get_audio_sinks,
@@ -180,6 +188,7 @@ pub fn run() {
             benchmark::run_benchmark,
             disks::list_disks,
             disks::list_disk_usage,
+            disk_tree::get_directory_breakdown,
             duplicates::find_duplicate_files,
             largefiles::find_large_files_cmd,
             hashcheck::compute_file_hash,
@@ -207,6 +216,7 @@ pub fn run() {
             packages::install::upgrade_all_packages,
             packages::install::install_snap_package,
             network_write::write_hosts_file,
+            hosts_blocklist::download_hosts_blocklist,
             network_write::set_dns_servers,
             network_write::add_firewall_rule,
             network_write::remove_firewall_rule,

@@ -28,6 +28,7 @@ const ARRAY_RETURNING_COMMANDS = new Set([
   "get_systemd_services",
   "get_update_history",
   "get_usb_devices",
+  "get_perf_history",
   "get_user_accounts",
   "list_backups",
   "list_disk_usage",

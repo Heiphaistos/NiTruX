@@ -6,7 +6,16 @@ vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((cmd: string) => {
     if (cmd === "get_hardware_details") {
       return Promise.resolve({
-        cpu: { model_name: "11th Gen Intel(R) Core(TM) i5-11400H", sockets: "1", cores_per_socket: "3", threads_per_core: "2" },
+        cpu: {
+          model_name: "11th Gen Intel(R) Core(TM) i5-11400H",
+          sockets: "1",
+          cores_per_socket: "3",
+          threads_per_core: "2",
+          caches: [
+            { level: "L1d", size: "144 KiB (6 instances)" },
+            { level: "L3", size: "12 MiB (1 instance)" },
+          ],
+        },
         board: { product_name: "Virtual Machine", sys_vendor: "Microsoft Corporation", board_name: null, bios_version: "Hyper-V UEFI Release v4.1" },
         memory: { total_kb: 10231988, available_kb: 6614532, cached_kb: 5031560, swap_total_kb: 2097148 },
       });
@@ -27,6 +36,13 @@ describe("HardwareDetailsPage", () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain("11th Gen Intel"));
     expect(wrapper.text()).toContain("Virtual Machine");
     expect(wrapper.text()).toContain("Hyper-V UEFI Release v4.1");
+  });
+
+  it("shows each CPU cache level reported by lscpu", async () => {
+    const wrapper = mount(HardwareDetailsPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Cache L1d"));
+    expect(wrapper.text()).toContain("144 KiB (6 instances)");
+    expect(wrapper.text()).toContain("Cache L3");
   });
 
   it("shows only GPU-class PCI devices, not every PCI device", async () => {

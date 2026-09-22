@@ -161,6 +161,45 @@ async function addHostsEntry() {
   newHostNames.value = "";
 }
 
+const BLOCKLIST_PRESETS = [
+  { label: "StevenBlack (publicité + malware)", url: "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts" },
+  { label: "AdAway (mobile, léger)", url: "https://adaway.org/hosts.txt" },
+];
+
+const blocklistUrl = ref(BLOCKLIST_PRESETS[0].url);
+const blocklistBusy = ref(false);
+const blocklistError = ref<string | null>(null);
+const blocklistResult = ref<string | null>(null);
+
+// Merged, not appended: published lists overlap heavily with each other and
+// with what a previous import already wrote, and /etc/hosts is read on
+// every resolution -- duplicating 150 000 lines would be paid on every
+// lookup for nothing.
+async function importBlocklist() {
+  blocklistBusy.value = true;
+  blocklistError.value = null;
+  blocklistResult.value = null;
+  try {
+    const domains = await invoke<string[]>("download_hosts_blocklist", { url: blocklistUrl.value });
+    const already = new Set(
+      parseHostsFile(hostsEditable.value).flatMap((e) => e.hostnames.map((h) => h.toLowerCase())),
+    );
+    const added = domains.filter((d) => !already.has(d));
+    if (added.length === 0) {
+      blocklistResult.value = `Rien à ajouter : les ${domains.length} domaines de cette liste sont déjà présents.`;
+      return;
+    }
+    const block = added.map((d) => `0.0.0.0\t${d}`).join("\n");
+    const base = hostsEditable.value.endsWith("\n") ? hostsEditable.value : `${hostsEditable.value}\n`;
+    await applyHostsChange(`${base}# NiTruX blocklist\n${block}\n`);
+    blocklistResult.value = `${added.length} domaines bloqués ajoutés.`;
+  } catch (e) {
+    blocklistError.value = String(e);
+  } finally {
+    blocklistBusy.value = false;
+  }
+}
+
 async function saveHosts() {
   hostsSaving.value = true;
   hostsSaveError.value = null;
@@ -418,6 +457,20 @@ async function runTraceroute() {
           <NxButton :disabled="hostsSaving" @click="addHostsEntry">Ajouter</NxButton>
         </div>
         <NxCard v-if="newHostError" danger>{{ newHostError }}</NxCard>
+
+        <NxSectionHeader title="Importer une liste de blocage" description="Ajoute les domaines d'une liste au format hosts, sans doublon." />
+        <div class="net-form-row">
+          <NxSelect
+            v-model="blocklistUrl"
+            :options="BLOCKLIST_PRESETS.map((p) => ({ value: p.url, label: p.label }))"
+            aria-label="Liste de blocage"
+          />
+          <NxButton :disabled="blocklistBusy" @click="importBlocklist">
+            {{ blocklistBusy ? "Import..." : "Importer" }}
+          </NxButton>
+        </div>
+        <NxCard v-if="blocklistError" danger>{{ blocklistError }}</NxCard>
+        <div v-if="blocklistResult" class="net-success">{{ blocklistResult }}</div>
 
         <NxSectionHeader title="Modifier /etc/hosts" description="Édition brute du fichier complet." />
         <textarea v-model="hostsEditable" class="net-textarea" rows="8"></textarea>
