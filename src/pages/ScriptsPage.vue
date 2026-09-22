@@ -1,11 +1,13 @@
 <!-- src/pages/ScriptsPage.vue -->
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import NxCard from "@/components/ui/NxCard.vue";
 import NxButton from "@/components/ui/NxButton.vue";
 import NxInput from "@/components/ui/NxInput.vue";
+import NxSelect from "@/components/ui/NxSelect.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
+import { scriptLibrary, scriptLibraryCategories, type LibraryScript } from "@/data/scriptLibrary";
 import { useScriptsStore } from "@/stores/scriptsStore";
 
 const store = useScriptsStore();
@@ -41,6 +43,18 @@ const running = ref<Record<string, boolean>>({});
 const outputs = ref<Record<string, string>>({});
 const errors = ref<Record<string, string>>({});
 
+const libraryCategory = ref(scriptLibraryCategories[0]);
+const visibleLibrary = computed(() => scriptLibrary.filter((s) => s.category === libraryCategory.value));
+
+// Loads the snippet into the editor above rather than running it straight
+// away: the user sees what they are about to execute, and can adapt it
+// before saving it as their own script.
+function useLibraryScript(script: LibraryScript) {
+  newName.value = script.name;
+  newContent.value = script.content;
+  saveError.value = null;
+}
+
 async function runScript(name: string, content: string) {
   running.value = { ...running.value, [name]: true };
   delete errors.value[name];
@@ -66,6 +80,25 @@ async function runScript(name: string, content: string) {
       <NxCard v-if="saveError" danger>{{ saveError }}</NxCard>
     </NxCard>
 
+    <NxCard>
+      <NxSectionHeader
+        title="Bibliothèque"
+        description="Snippets prêts à l'emploi, chargés dans l'éditeur ci-dessus pour être relus avant exécution."
+      />
+      <NxSelect
+        v-model="libraryCategory"
+        :options="scriptLibraryCategories.map((c) => ({ value: c, label: c }))"
+        aria-label="Catégorie de la bibliothèque"
+      />
+      <div v-for="s in visibleLibrary" :key="s.name" class="scr-library-row">
+        <span class="scr-library-text">
+          <strong>{{ s.name }}</strong>
+          <span class="scr-library-desc">{{ s.description }}</span>
+        </span>
+        <NxButton @click="useLibraryScript(s)">Charger</NxButton>
+      </div>
+    </NxCard>
+
     <NxCard v-for="s in store.scripts" :key="s.name" class="scr-item">
       <div class="scr-item-header">
         <span>{{ s.name }}</span>
@@ -89,6 +122,9 @@ async function runScript(name: string, content: string) {
 .scr-new { display: flex; flex-direction: column; gap: 10px; }
 .scr-textarea { width: 100%; padding: 10px; border-radius: var(--nx-style-radius); border: var(--nx-style-border-width) solid var(--nx-style-border-color); background: var(--nx-style-bg); color: var(--nx-text-primary); font-family: monospace; font-size: 12px; }
 .scr-item { display: flex; flex-direction: column; gap: 8px; }
+.scr-library-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px solid var(--nx-style-border-color); }
+.scr-library-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 13px; }
+.scr-library-desc { color: var(--nx-text-secondary); font-size: 12px; }
 .scr-item-header { display: flex; justify-content: space-between; align-items: center; }
 .scr-item-actions { display: flex; gap: 8px; }
 .scr-content, .scr-output { font-size: 12px; margin: 0; white-space: pre-wrap; word-break: break-word; }

@@ -31,6 +31,7 @@ const ARRAY_RETURNING_COMMANDS = new Set([
   "get_perf_history",
   "get_user_accounts",
   "list_backups",
+  "list_orphan_configs",
   "list_disk_usage",
   "list_disks",
   "list_installed_packages",
