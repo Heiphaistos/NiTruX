@@ -4,6 +4,17 @@
 A lancer APRES `npx tauri build` cote Linux, avec TAURI_SIGNING_PRIVATE_KEY dans
 l'environnement (sinon les artefacts de mise a jour ne sont pas signes).
 
+Sans cette variable, `tauri build` produit bien les trois bundles puis s'arrete
+sur « A public key has been found, but no private key » APRES les avoir ecrits :
+la construction a l'air reussie, mais aucun `.sig` n'existe et toute mise a jour
+serait refusee chez les utilisateurs deja installes. Construire ainsi :
+
+    TAURI_SIGNING_PRIVATE_KEY="$(cat <cle>)" TAURI_SIGNING_PRIVATE_KEY_PASSWORD="" \\
+        npm run tauri build
+
+Le televersement se fait par `scp` vers le VPS : le lancer depuis l'environnement
+qui detient la cle SSH (ici Windows, pas WSL2).
+
 Ce que produit ce script :
 
   Pour le client, sur la page GitHub -- les trois formes, chacune dit ce
@@ -39,7 +50,15 @@ from datetime import datetime, timezone
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUNDLE = os.path.join(RACINE, "src-tauri", "target", "release", "bundle")
 SORTIE = os.path.join(RACINE, "release")
-CLE = os.path.expanduser("~/.tauri/nitrux-updater.key")
+# La cle privee, dans l'ordre ou on la cherche. Le PRD prevoyait
+# `~/.tauri/`, mais la paire vit en fait dans le coffre `D:\mdp` avec les
+# autres cles de publication -- chercher aux deux endroits evite de
+# redecouvrir ca a chaque version.
+CLES_POSSIBLES = [
+    os.path.expanduser("~/.tauri/nitrux-updater.key"),
+    "D:/mdp/tauri-updater-keys/nitrux-updater.key",
+    "/mnt/d/mdp/tauri-updater-keys/nitrux-updater.key",
+]
 VPS = "root@212.227.140.45"
 VPS_DIR = "/var/www/nitrux-maj"
 BASE_URL = "https://nitrite.heiphaistos.org/maj-linux"
@@ -80,9 +99,15 @@ def signature(chemin):
         if os.path.exists(candidat):
             with io.open(candidat, encoding="utf-8") as f:
                 return f.read().strip(), candidat
-    if not os.path.exists(CLE):
-        raise SystemExit("cle privee introuvable : %s" % CLE)
-    executer(["npx", "tauri", "signer", "sign", "-f", CLE, "-p", "", chemin],
+    cle = next((c for c in CLES_POSSIBLES if os.path.exists(c)), None)
+    if cle is None:
+        raise SystemExit(
+            "cle privee introuvable, cherchee dans :\n  %s\n"
+            "Le plus simple reste de construire avec TAURI_SIGNING_PRIVATE_KEY "
+            "dans l'environnement : le bundler produit alors les .sig lui-meme."
+            % "\n  ".join(CLES_POSSIBLES)
+        )
+    executer(["npx", "tauri", "signer", "sign", "-f", cle, "-p", "", chemin],
              stdout=subprocess.DEVNULL)
     with io.open(chemin + ".sig", encoding="utf-8") as f:
         return f.read().strip(), chemin + ".sig"
