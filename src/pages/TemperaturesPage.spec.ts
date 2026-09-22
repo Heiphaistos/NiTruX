@@ -1,9 +1,10 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import TemperaturesPage from "./TemperaturesPage.vue";
 
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: vi.fn().mockResolvedValue({
+const defaultInvokeImpl = vi.hoisted(() => (cmd: string) => {
+  if (cmd === "get_gpu_snapshot") return Promise.resolve({ nvidia_available: false, gpus: [] });
+  return Promise.resolve({
     battery_percent: 80,
     battery_charging: false,
     temperatures: [
@@ -11,10 +12,46 @@ vi.mock("@tauri-apps/api/core", () => ({
       { label: "GPU", celsius: 72.8 },
       { label: "NVMe", celsius: 91.0 },
     ],
-  }),
-}));
+  });
+});
+
+vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn(defaultInvokeImpl) }));
 
 describe("TemperaturesPage", () => {
+  beforeEach(async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation(defaultInvokeImpl);
+  });
+
+  it("shows NVIDIA card temperature and utilisation when nvidia-smi is available", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_gpu_snapshot") {
+        return Promise.resolve({
+          nvidia_available: true,
+          gpus: [
+            {
+              name: "NVIDIA GeForce RTX 3070",
+              temperature_celsius: 54,
+              utilization_percent: 12,
+              memory_used_mb: 1024,
+              memory_total_mb: 8192,
+            },
+          ],
+        });
+      }
+      return defaultInvokeImpl(cmd);
+    });
+    const wrapper = mount(TemperaturesPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("RTX 3070"));
+    expect(wrapper.text()).toContain("54°C");
+    expect(wrapper.text()).toContain("12%");
+  });
+
+  it("says no NVIDIA card is present rather than showing an error on AMD/Intel machines", async () => {
+    const wrapper = mount(TemperaturesPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Aucune carte NVIDIA"));
+  });
   it("renders one card per sensor with a threshold-colored badge", async () => {
     const wrapper = mount(TemperaturesPage);
     await vi.waitFor(() => expect(wrapper.text()).toContain("CPU"));

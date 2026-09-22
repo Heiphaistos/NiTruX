@@ -42,6 +42,60 @@ describe("NetworkPage", () => {
     expect(invoke).toHaveBeenCalledWith("get_docker_snapshot");
   });
 
+  it("imports a blocklist, skipping the domains already in /etc/hosts", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    let written = "";
+    vi.mocked(invoke).mockImplementation((cmd: string, args) => {
+      if (cmd === "get_network_snapshot") {
+        return Promise.resolve({
+          wifi_networks: [],
+          listening_ports: [],
+          dns_servers: [],
+          // ads.example.com is already blocked: the import must not add it twice.
+          hosts_file: "127.0.0.1 localhost\n0.0.0.0\tads.example.com\n",
+          routes: [],
+          arp_entries: [],
+        });
+      }
+      if (cmd === "download_hosts_blocklist") {
+        return Promise.resolve(["ads.example.com", "tracker.example.net"]);
+      }
+      if (cmd === "write_hosts_file") {
+        written = (args as { content: string }).content;
+        return Promise.resolve("ok");
+      }
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    // The hosts card only renders once the snapshot has arrived; waiting on
+    // the invoke call alone leaves the button not yet in the DOM.
+    const findImport = () => wrapper.findAll("button").find((b) => b.text() === "Importer");
+    await vi.waitFor(() => expect(findImport()).toBeDefined());
+    await findImport()!.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("1 domaines bloqués ajoutés"));
+    expect(written).toContain("0.0.0.0\ttracker.example.net");
+    expect(written.match(/ads\.example\.com/g)).toHaveLength(1);
+    expect(written).toContain("127.0.0.1 localhost");
+  });
+
+  it("surfaces a refused blocklist URL instead of failing silently", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "get_network_snapshot") {
+        return Promise.resolve({ wifi_networks: [], listening_ports: [], dns_servers: [], hosts_file: "", routes: [], arp_entries: [] });
+      }
+      if (cmd === "download_hosts_blocklist") {
+        return Promise.reject("URL refusée : 169.254.169.254 est une adresse locale ou privée");
+      }
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(NetworkPage);
+    const findImport = () => wrapper.findAll("button").find((b) => b.text() === "Importer");
+    await vi.waitFor(() => expect(findImport()).toBeDefined());
+    await findImport()!.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("adresse locale ou privée"));
+  });
+
   it("starts a container and refreshes the Docker view afterwards", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     vi.mocked(invoke).mockImplementation((cmd: string) => {

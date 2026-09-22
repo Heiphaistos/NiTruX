@@ -5,7 +5,8 @@ import { invoke } from "@tauri-apps/api/core";
 import NxCard from "@/components/ui/NxCard.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 
-interface CpuDetails { model_name: string | null; sockets: string | null; cores_per_socket: string | null; threads_per_core: string | null }
+interface CacheEntry { level: string; size: string }
+interface CpuDetails { model_name: string | null; sockets: string | null; cores_per_socket: string | null; threads_per_core: string | null; caches: CacheEntry[] }
 interface BoardDetails { product_name: string | null; sys_vendor: string | null; board_name: string | null; bios_version: string | null }
 interface MemoryDetails { total_kb: number | null; available_kb: number | null; cached_kb: number | null; swap_total_kb: number | null }
 interface HardwareDetails { cpu: CpuDetails; board: BoardDetails; memory: MemoryDetails }
@@ -65,6 +66,9 @@ const memoryRows = computed(() => details.value ? [
         <div class="hd-row"><span>Socket(s)</span><span>{{ details.cpu.sockets ?? "—" }}</span></div>
         <div class="hd-row"><span>Cœurs par socket</span><span>{{ details.cpu.cores_per_socket ?? "—" }}</span></div>
         <div class="hd-row"><span>Threads par cœur</span><span>{{ details.cpu.threads_per_core ?? "—" }}</span></div>
+        <div v-for="c in details.cpu.caches ?? []" :key="c.level" class="hd-row">
+          <span>Cache {{ c.level }}</span><span>{{ c.size }}</span>
+        </div>
       </NxCard>
 
       <NxCard>
