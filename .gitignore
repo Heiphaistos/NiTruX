@@ -55,3 +55,8 @@ dist-ssr/
 
 # Artefacts de publication (binaires, jamais dans le depot)
 release/
+
+# Signature de code : empreinte locale, gitignoree pour ne pas casser le build
+# de qui ne possede pas le certificat (CI comprise).
+# Voir D:/Projet/outils/signer/LISEZMOI.md
+src-tauri/tauri.windows.conf.json
