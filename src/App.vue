@@ -188,6 +188,11 @@ const pages: Record<string, Component> = {
   box-sizing: border-box;
 }
 
+/* Native widgets (select popups, checkboxes, date pickers, scrollbars)
+   follow the active theme's mode instead of the GTK default light look. */
+:root[data-theme-mode="dark"] { color-scheme: dark; }
+:root[data-theme-mode="light"] { color-scheme: light; }
+
 body {
   margin: 0;
   overflow-x: hidden;
