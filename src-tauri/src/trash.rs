@@ -115,7 +115,7 @@ pub fn move_to_trash(path: String) -> Result<String, String> {
     if !canonical.starts_with(&home) {
         return Err(format!("hors du dossier personnel, refusé : {}", canonical.display()));
     }
-    if canonical == PathBuf::from(&home) {
+    if canonical == std::path::Path::new(&home) {
         return Err("le dossier personnel lui-même ne peut pas être mis à la corbeille".to_string());
     }
 

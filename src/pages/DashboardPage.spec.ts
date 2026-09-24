@@ -66,6 +66,28 @@ describe("DashboardPage", () => {
     setIntervalSpy.mockRestore();
   });
 
+  it("never starts polling when the page is left before its first load finishes", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    let releaseSnapshot!: () => void;
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) =>
+      cmd === "get_system_snapshot"
+        ? new Promise((resolve) => {
+            releaseSnapshot = () => resolve(defaultInvokeImpl(cmd));
+          })
+        : defaultInvokeImpl(cmd),
+    );
+    const setIntervalSpy = vi.spyOn(window, "setInterval");
+
+    const wrapper = mount(DashboardPage);
+    wrapper.unmount();
+    releaseSnapshot();
+    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(setIntervalSpy).not.toHaveBeenCalled();
+    setIntervalSpy.mockRestore();
+  });
+
   it("renders system stats inside NxCard and 5 quick-action tiles", async () => {
     const wrapper = mount(DashboardPage);
     await vi.waitFor(() => expect(wrapper.text()).toContain("Test CPU"));
