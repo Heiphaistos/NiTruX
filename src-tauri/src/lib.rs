@@ -211,6 +211,8 @@ pub fn run() {
             docker::docker_container_logs,
             docker::docker_image_remove,
             firewall::get_firewall_status,
+            firewall::get_firewall_rules_privileged,
+            firewall::set_firewall_enabled,
             malwarescan::scan_for_malware,
             snapshots::list_snapshots,
             packages::install::install_package,
