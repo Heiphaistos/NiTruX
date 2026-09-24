@@ -21,12 +21,17 @@ const scanDir = ref(preferences.defaultScanDirectory);
 const duplicateGroups = ref<DuplicateGroup[]>([]);
 const duplicatesError = ref<string | null>(null);
 const duplicatesLoading = ref(false);
+// Whether a scan has completed: an empty result must say "nothing found"
+// rather than look exactly like a scan that never ran.
+const duplicatesScanned = ref(false);
 
 async function scanDuplicates() {
   duplicatesLoading.value = true;
   duplicatesError.value = null;
+  duplicatesScanned.value = false;
   try {
     duplicateGroups.value = await invoke<DuplicateGroup[]>("find_duplicate_files", { directory: scanDir.value });
+    duplicatesScanned.value = true;
   } catch (e) {
     duplicatesError.value = String(e);
   } finally {
@@ -39,16 +44,19 @@ const minSizeMb = ref("100");
 const largeFiles = ref<LargeFile[]>([]);
 const largeFilesError = ref<string | null>(null);
 const largeFilesLoading = ref(false);
+const largeFilesScanned = ref(false);
 
 async function scanLargeFiles() {
   largeFilesError.value = null;
+  largeFilesScanned.value = false;
   // "MB min" is a free-text NxInput (no type="number" guard at the DOM
   // level), so an empty/non-numeric/negative value must be caught here --
   // otherwise Number() silently produces NaN and the invoke call fails with
   // a raw Tauri IPC deserialization error instead of a message the user can
   // act on. The only other Number() conversion in the app (preferences
   // refresh interval) is always fed by a fixed <select>, never free text.
-  const minSizeMbValue = Number(minSizeMb.value);
+  // French decimal comma ("1,5") is what users of this app type.
+  const minSizeMbValue = Number(minSizeMb.value.trim().replace(",", "."));
   if (!Number.isFinite(minSizeMbValue) || minSizeMbValue < 0) {
     largeFilesError.value = "Veuillez entrer une taille minimale valide (nombre positif, en Mo).";
     return;
@@ -57,8 +65,9 @@ async function scanLargeFiles() {
   try {
     largeFiles.value = await invoke<LargeFile[]>("find_large_files_cmd", {
       directory: largeFileDir.value,
-      minSizeBytes: minSizeMbValue * 1024 * 1024,
+      minSizeBytes: Math.round(minSizeMbValue * 1024 * 1024),
     });
+    largeFilesScanned.value = true;
   } catch (e) {
     largeFilesError.value = String(e);
   } finally {
@@ -126,6 +135,8 @@ function bytesToMb(bytes: number): string {
         <NxButton :disabled="duplicatesLoading" @click="scanDuplicates">{{ duplicatesLoading ? "Analyse..." : "Rechercher" }}</NxButton>
       </div>
       <NxCard v-if="duplicatesError" danger>{{ duplicatesError }}</NxCard>
+      <p v-if="duplicatesScanned && duplicateGroups.length === 0" class="ft-empty">Aucun doublon trouvé.</p>
+      <p v-else-if="duplicatesScanned" class="ft-empty">{{ duplicateGroups.length }} groupe(s) de doublons.</p>
       <div v-for="g in duplicateGroups" :key="g.hash" class="ft-dup-group">
         <div>{{ g.paths.length }} fichiers identiques ({{ bytesToMb(g.size_bytes) }} Mo chacun)</div>
         <ul><li v-for="p in g.paths" :key="p">{{ p }}</li></ul>
@@ -139,6 +150,7 @@ function bytesToMb(bytes: number): string {
         <NxButton :disabled="largeFilesLoading" @click="scanLargeFiles">{{ largeFilesLoading ? "Analyse..." : "Rechercher" }}</NxButton>
       </div>
       <NxCard v-if="largeFilesError" danger>{{ largeFilesError }}</NxCard>
+      <p v-if="largeFilesScanned && largeFiles.length === 0" class="ft-empty">Aucun fichier de {{ minSizeMb }} Mo ou plus.</p>
       <div v-for="f in largeFiles" :key="f.path" class="ft-row">
         <span>{{ f.path }}</span>
         <span>{{ bytesToMb(f.size_bytes) }} Mo</span>
@@ -171,5 +183,6 @@ function bytesToMb(bytes: number): string {
 .ft-form-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
 .ft-dup-group { font-size: 13px; padding: 8px 0; }
 .ft-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+.ft-empty { font-size: 13px; color: var(--nx-text-secondary); margin: 4px 0; }
 .ft-hash-result { font-family: monospace; font-size: 12px; word-break: break-all; padding-top: 8px; }
 </style>
