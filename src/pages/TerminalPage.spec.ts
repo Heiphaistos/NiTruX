@@ -8,6 +8,8 @@ const mockTerm = {
   onData: vi.fn(),
   loadAddon: vi.fn(),
   dispose: vi.fn(),
+  reset: vi.fn(),
+  focus: vi.fn(),
   rows: 24,
   cols: 80,
 };
@@ -119,5 +121,31 @@ describe("TerminalPage", () => {
     const id = call[1].id as string;
     wrapper.unmount();
     expect(invoke).toHaveBeenCalledWith("close_terminal", { id });
+  });
+
+  it("offers a new session once the shell exits, and spawns it under a fresh id", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const wrapper = mount(TerminalPage);
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("spawn_terminal", expect.anything()));
+    const first = (invoke as ReturnType<typeof vi.fn>).mock.calls.find((c) => c[0] === "spawn_terminal")!;
+    const exitChannel = first[1].onExit as InstanceType<typeof FakeChannel>;
+    expect(wrapper.text()).not.toContain("Nouvelle session");
+
+    exitChannel.onmessage!(null as unknown as string);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.text()).toContain("Nouvelle session");
+
+    // Keystrokes into a dead shell go nowhere instead of erroring per key.
+    vi.mocked(invoke).mockClear();
+    const onDataCallback = mockTerm.onData.mock.calls[0][0] as (data: string) => void;
+    onDataCallback("x");
+    expect(invoke).not.toHaveBeenCalledWith("write_to_terminal", expect.anything());
+
+    await wrapper.findAll("button").find((b) => b.text() === "Nouvelle session")!.trigger("click");
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("spawn_terminal", expect.anything()));
+    const second = (invoke as ReturnType<typeof vi.fn>).mock.calls.find((c) => c[0] === "spawn_terminal")!;
+    expect(invoke).toHaveBeenCalledWith("close_terminal", { id: first[1].id });
+    expect(second[1].id).not.toBe(first[1].id);
+    await vi.waitFor(() => expect(wrapper.text()).not.toContain("Nouvelle session"));
   });
 });

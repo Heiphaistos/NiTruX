@@ -81,28 +81,76 @@ fn insert_session(sessions: &mut HashMap<String, TerminalSession>, id: String, s
     }
 }
 
+/// Turns a stream of raw pty reads into valid UTF-8 text without mangling
+/// characters that straddle two reads. A 4 KiB read boundary lands inside a
+/// multi-byte character regularly (accented French output, box-drawing
+/// characters from `htop`/`tree`, emoji in prompts): decoding each read on
+/// its own turned both halves into U+FFFD, so `é` came out as `��`. The
+/// incomplete tail is held back and prepended to the next read instead.
+#[derive(Default)]
+struct Utf8Stream {
+    pending: Vec<u8>,
+}
+
+impl Utf8Stream {
+    fn push(&mut self, bytes: &[u8]) -> String {
+        self.pending.extend_from_slice(bytes);
+        let mut out = String::new();
+        loop {
+            match std::str::from_utf8(&self.pending) {
+                Ok(text) => {
+                    out.push_str(text);
+                    self.pending.clear();
+                    return out;
+                }
+                Err(e) => {
+                    let valid = e.valid_up_to();
+                    out.push_str(std::str::from_utf8(&self.pending[..valid]).expect("prefix validated by from_utf8"));
+                    match e.error_len() {
+                        // Truncated character at the very end: keep it for the next read.
+                        None => {
+                            self.pending.drain(..valid);
+                            return out;
+                        }
+                        // Genuinely invalid bytes: replace them, as from_utf8_lossy would.
+                        Some(len) => {
+                            out.push(char::REPLACEMENT_CHARACTER);
+                            self.pending.drain(..valid + len);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 #[tauri::command]
 pub fn spawn_terminal(
     id: String,
     state: tauri::State<TerminalState>,
     on_data: Channel<String>,
+    on_exit: Channel<()>,
 ) -> Result<(), String> {
     let (master, writer, mut reader, child) = open_shell_pty(24, 80)?;
 
     std::thread::spawn(move || {
         let mut buf = [0u8; 4096];
+        let mut decoder = Utf8Stream::default();
         loop {
             match reader.read(&mut buf) {
                 Ok(0) => break,
                 Ok(n) => {
-                    let chunk = String::from_utf8_lossy(&buf[..n]).into_owned();
-                    if on_data.send(chunk).is_err() {
-                        break;
+                    let chunk = decoder.push(&buf[..n]);
+                    if !chunk.is_empty() && on_data.send(chunk).is_err() {
+                        return;
                     }
                 }
                 Err(_) => break,
             }
         }
+        // The shell is gone (`exit`, Ctrl-D, killed): tell the page so it can
+        // offer a new session instead of leaving a dead, silent terminal.
+        let _ = on_exit.send(());
     });
 
     insert_session(&mut state.0.lock().expect("terminal state mutex poisoned"), id, TerminalSession { master, writer, child });
@@ -184,6 +232,23 @@ mod tests {
 
         let output = rx.recv_timeout(Duration::from_secs(5)).expect("should receive output before timing out");
         assert!(output.contains("PTY_TEST_MARKER_12345"), "pty output should contain the echoed marker: {output}");
+    }
+
+    #[test]
+    fn utf8_stream_reassembles_a_character_split_across_two_reads() {
+        let bytes = "é─😀".as_bytes();
+        for split in 0..=bytes.len() {
+            let mut decoder = Utf8Stream::default();
+            let mut text = decoder.push(&bytes[..split]);
+            text.push_str(&decoder.push(&bytes[split..]));
+            assert_eq!(text, "é─😀", "split at byte {split}");
+        }
+    }
+
+    #[test]
+    fn utf8_stream_still_replaces_genuinely_invalid_bytes() {
+        let mut decoder = Utf8Stream::default();
+        assert_eq!(decoder.push(b"a\xffb"), "a\u{FFFD}b");
     }
 
     #[test]
