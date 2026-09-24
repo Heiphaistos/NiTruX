@@ -56,19 +56,46 @@ pub fn get_monitors() -> Result<Vec<String>, String> {
 
 #[tauri::command]
 pub fn get_usb_devices() -> Result<Vec<String>, String> {
-    let out = subprocess::run_with_timeout("lsusb", &[], Duration::from_secs(5))?;
-    Ok(out.lines().map(|l| l.to_string()).collect())
+    match subprocess::run_with_timeout("lsusb", &[], Duration::from_secs(5)) {
+        Ok(out) => Ok(out.lines().map(|l| l.to_string()).collect()),
+        // `lsusb` exits 1 with no message at all when the machine has no
+        // USB bus to enumerate (VMs without a USB controller, containers),
+        // which surfaced as the meaningless "lsusb a échoué (code 1) :".
+        // No bus means no USB device: an empty list, not an error. A
+        // missing `lsusb` binary still reports its package hint.
+        Err(_) if subprocess::binary_in_path("lsusb") && !std::path::Path::new("/dev/bus/usb").exists() => Ok(Vec::new()),
+        Err(e) => Err(e),
+    }
+}
+
+/// Rewrites the two "service not running" failures users actually hit into
+/// a sentence that says what to do, instead of the tools' raw output
+/// ("pa_context_connect() failed: Connection refused", "Scheduler is not
+/// running."). Any other error is passed through untouched.
+pub fn explain_service_error(program: &str, error: String) -> String {
+    let lower = error.to_lowercase();
+    match program {
+        "pactl" if lower.contains("connection refused") || lower.contains("connection failure") => {
+            "aucun serveur audio (PipeWire ou PulseAudio) n'est en cours d'exécution pour cette session".to_string()
+        }
+        "lpstat" if lower.contains("scheduler is not running") => {
+            "le service d'impression CUPS n'est pas démarré (sudo systemctl start cups)".to_string()
+        }
+        _ => error,
+    }
 }
 
 #[tauri::command]
 pub fn get_audio_sinks() -> Result<Vec<AudioSink>, String> {
-    let out = subprocess::run_with_timeout("pactl", &["list", "short", "sinks"], Duration::from_secs(5))?;
+    let out = subprocess::run_with_timeout("pactl", &["list", "short", "sinks"], Duration::from_secs(5))
+        .map_err(|e| explain_service_error("pactl", e))?;
     Ok(out.lines().filter_map(parse_pactl_sink_line).collect())
 }
 
 #[tauri::command]
 pub fn get_printers() -> Result<Vec<PrinterInfo>, String> {
-    let out = subprocess::run_with_timeout("lpstat", &["-p"], Duration::from_secs(5))?;
+    let out = subprocess::run_with_timeout("lpstat", &["-p"], Duration::from_secs(5))
+        .map_err(|e| explain_service_error("lpstat", e))?;
     Ok(out.lines().filter_map(parse_lpstat_line).collect())
 }
 
@@ -103,6 +130,24 @@ pub fn set_default_printer(name: String) -> Result<String, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn explains_a_missing_audio_server_instead_of_the_raw_pactl_error() {
+        let raw = "pactl a échoué (code 1) : Connection failure: Connection refused".to_string();
+        assert!(explain_service_error("pactl", raw).contains("aucun serveur audio"));
+    }
+
+    #[test]
+    fn explains_a_stopped_cups_scheduler() {
+        let raw = "lpstat a échoué (code 1) : lpstat: Scheduler is not running.".to_string();
+        assert!(explain_service_error("lpstat", raw).contains("CUPS n'est pas démarré"));
+    }
+
+    #[test]
+    fn leaves_other_errors_untouched() {
+        let raw = "pactl introuvable ou impossible à lancer".to_string();
+        assert_eq!(explain_service_error("pactl", raw.clone()), raw);
+    }
 
     #[test]
     fn accepts_a_real_cups_queue_name() {
