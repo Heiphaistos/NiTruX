@@ -35,6 +35,7 @@
 #   nitrux-pkexec-install-snap install-snap <package>
 #   nitrux-pkexec-write-hosts write-hosts               (base64 content on stdin)
 #   nitrux-pkexec-set-dns set-dns                       (base64 content on stdin)
+#   nitrux-pkexec-firewall-rule firewall-rule <status|enable|disable>
 #   nitrux-pkexec-firewall-rule firewall-rule <add|remove> <port/proto>
 #   nitrux-pkexec-troubleshoot troubleshoot <clean-cache|fix-broken|restart-network|vacuum-logs>
 #   nitrux-pkexec-create-snapshot create-snapshot
@@ -356,11 +357,18 @@ case "$cmd" in
   firewall-rule)
     action="${2:-}"
     portproto="${3:-}"
-    validate_port_proto "$portproto"
     case "$action" in
-      add)    exec ufw allow "$portproto" ;;
-      remove) exec ufw delete allow "$portproto" ;;
-      *)      die "unknown firewall action: $action (expected add or remove)" ;;
+      # Read-only: `ufw status` refuses to run unprivileged, so listing the
+      # rules needs the same authorization as changing them. Takes no
+      # further argument; the C locale keeps the output parseable.
+      status) exec env LC_ALL=C ufw status ;;
+      # --force skips ufw's interactive "may disrupt ssh" y/n prompt, which
+      # would otherwise hang with no terminal; the page warns instead.
+      enable)  exec ufw --force enable ;;
+      disable) exec ufw disable ;;
+      add)    validate_port_proto "$portproto"; exec ufw allow "$portproto" ;;
+      remove) validate_port_proto "$portproto"; exec ufw delete allow "$portproto" ;;
+      *)      die "unknown firewall action: $action (expected status, enable, disable, add or remove)" ;;
     esac
     ;;
   troubleshoot)
