@@ -31,7 +31,7 @@ pub fn desktop_entry_is_enabled(content: &str) -> bool {
         if line.eq_ignore_ascii_case("hidden=true") {
             return false;
         }
-        if line.to_ascii_lowercase() == "x-gnome-autostart-enabled=false" {
+        if line.eq_ignore_ascii_case("x-gnome-autostart-enabled=false") {
             return false;
         }
     }

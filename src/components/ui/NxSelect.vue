@@ -25,7 +25,24 @@ defineEmits<{ "update:modelValue": [string] }>();
   background: var(--nx-style-bg);
   color: var(--nx-text-primary);
   font-family: var(--nx-style-font-family);
-  padding: 8px 10px;
+  padding: 8px 30px 8px 10px;
   font-size: 13px;
+  /* WebKitGTK paints a native <select> with the GTK theme and ignores
+     `background`: on a dark NiTruX theme the control came out white with
+     the theme's light text on it, i.e. unreadable. Dropping the native
+     appearance lets the theme colors apply; the arrow is redrawn below. */
+  appearance: none;
+  -webkit-appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--nx-text-secondary) 50%),
+    linear-gradient(135deg, var(--nx-text-secondary) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 55%, calc(100% - 10px) 55%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+.nx-select option {
+  background: var(--nx-bg-elevated);
+  color: var(--nx-text-primary);
 }
 </style>
