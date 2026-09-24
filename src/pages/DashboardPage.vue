@@ -46,6 +46,7 @@ const diskUsage = ref<DiskUsageEntry[]>([]);
 const crashEvents = ref<CrashEvent[]>([]);
 const missingToolCount = ref(0);
 let intervalId: number | undefined;
+let unmounted = false;
 
 // Inter-session comparison (NiTriTe Windows concept): the snapshot saved
 // here is deliberately the LAST one seen, not a rolling history -- one
@@ -201,6 +202,10 @@ onMounted(async () => {
     refreshCrashEvents(),
     refreshMissingTools(),
   ]);
+  // Navigating away while the first load was still in flight runs
+  // onUnmounted before this point; arming the interval now would leave it
+  // polling (and firing desktop notifications) for the rest of the session.
+  if (unmounted) return;
   saveSnapshotIfReady();
   intervalId = window.setInterval(() => {
     refresh();
@@ -210,6 +215,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  unmounted = true;
   if (intervalId) window.clearInterval(intervalId);
 });
 
@@ -345,8 +351,29 @@ const QUICK_ACTIONS = [
     </NxCard>
 
     <div class="dash-grid" v-if="snapshot">
-      <NxCard v-for="(cpu, i) in snapshot.cpus" :key="i">
-        <NxStatTile :label="cpu.name || `CPU ${i}`" :value="cpu.usage_display" :status="cpuStatus(cpu.usage_percent)" />
+      <!-- One processor tile, not one per logical core: every core carries
+           the same model name, so 16-64 identical tiles buried the rest of
+           the dashboard. Per-core load stays visible as a compact bar strip. -->
+      <NxCard class="dash-cpu" :class="{ 'dash-cpu--wide': snapshot.cpus.length > 8 }">
+        <NxStatTile
+          :label="`${snapshot.cpus[0]?.name || 'Processeur'} — ${snapshot.cpus.length} cœur(s)`"
+          :value="`${averageCpuPercent(snapshot.cpus).toFixed(1)}%`"
+          :status="cpuStatus(averageCpuPercent(snapshot.cpus))"
+        />
+        <div v-if="snapshot.cpus.length > 1" class="dash-cores" aria-label="Charge par cœur">
+          <div
+            v-for="(cpu, i) in snapshot.cpus"
+            :key="i"
+            class="dash-core"
+            :title="`Cœur ${i} : ${cpu.usage_display}`"
+          >
+            <div
+              class="dash-core__fill"
+              :class="{ 'dash-core__fill--hot': cpu.usage_percent >= preferences.cpuAlertThreshold }"
+              :style="{ height: `${Math.min(100, Math.max(2, cpu.usage_percent))}%` }"
+            />
+          </div>
+        </div>
       </NxCard>
       <NxCard>
         <NxStatTile
@@ -375,6 +402,11 @@ const QUICK_ACTIONS = [
 .dash-page { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
 .dash-actions { display: flex; gap: 12px; flex-wrap: wrap; }
 .dash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+.dash-cpu--wide { grid-column: span 2; }
+.dash-cores { display: flex; align-items: flex-end; gap: 2px; height: 28px; margin-top: 8px; }
+.dash-core { flex: 1; height: 100%; background: var(--nx-bg-elevated); border-radius: 2px; display: flex; align-items: flex-end; overflow: hidden; }
+.dash-core__fill { width: 100%; background: var(--nx-accent-primary); transition: height 0.3s ease; }
+.dash-core__fill--hot { background: var(--nx-accent-danger); }
 .dash-score { display: flex; align-items: center; gap: 16px; }
 .dash-crash-banner { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .dash-score-label { font-size: 13px; color: var(--nx-text-secondary); }
