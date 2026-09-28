@@ -44,6 +44,8 @@ import RestorePointsPage from "@/pages/RestorePointsPage.vue";
 import InstallProfilesPage from "@/pages/InstallProfilesPage.vue";
 import PortableAppsPage from "@/pages/PortableAppsPage.vue";
 import HardwareDetailsPage from "@/pages/HardwareDetailsPage.vue";
+import HardwareInventoryPage from "@/pages/HardwareInventoryPage.vue";
+import SensorsPage from "@/pages/SensorsPage.vue";
 import PeripheralsPage from "@/pages/PeripheralsPage.vue";
 import ProcessesPage from "@/pages/ProcessesPage.vue";
 import InstalledSoftwarePage from "@/pages/InstalledSoftwarePage.vue";
@@ -141,6 +143,8 @@ const pages: Record<string, Component> = {
   "install-profiles": InstallProfilesPage,
   "portable-apps": PortableAppsPage,
   "hardware-details": HardwareDetailsPage,
+  "hardware-inventory": HardwareInventoryPage,
+  sensors: SensorsPage,
   peripherals: PeripheralsPage,
   processes: ProcessesPage,
   "installed-software": InstalledSoftwarePage,
