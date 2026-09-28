@@ -21,6 +21,7 @@ import TroubleshootPage from "@/pages/TroubleshootPage.vue";
 import SettingsPreferencesPage from "@/pages/SettingsPreferencesPage.vue";
 import ConfigProfilesPage from "@/pages/ConfigProfilesPage.vue";
 import QuickInstallPage from "@/pages/QuickInstallPage.vue";
+import AppStorePage from "@/pages/AppStorePage.vue";
 import UpdatesPage from "@/pages/UpdatesPage.vue";
 import ReportGeneratorPage from "@/pages/ReportGeneratorPage.vue";
 import TemperaturesPage from "@/pages/TemperaturesPage.vue";
@@ -106,6 +107,7 @@ const pages: Record<string, Component> = {
   dashboard: DashboardPage,
   diagnostic: DiagnosticPage,
   "quick-install": QuickInstallPage,
+  "app-store": AppStorePage,
   "package-manager": PackagesPage,
   disks: DisksPage,
   "file-tools": FileToolsPage,
