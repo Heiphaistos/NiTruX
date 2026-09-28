@@ -10,7 +10,7 @@ import {
   PieChart, Database, Server,
   Layers,
   Monitor, Activity, List, Users, History,
-  Terminal, SquareTerminal, Box, Lock, Bug, Store,
+  Terminal, SquareTerminal, Box, Lock, Bug, Store, Cpu as Microchip,
 } from "lucide-vue-next";
 import { navigationCategories } from "@/navigation/categories";
 
@@ -67,6 +67,7 @@ const iconMap: Record<string, Component> = {
   lock: Lock,
   bug: Bug,
   store: Store,
+  microchip: Microchip,
 };
 
 function getIcon(name: string): Component {

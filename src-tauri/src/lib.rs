@@ -22,7 +22,10 @@ mod firewall;
 mod gpu;
 mod hardware;
 mod hardware_details;
+mod hardware_inventory;
+mod privileged_inventory;
 mod hosts_blocklist;
+mod hwmon;
 mod hashcheck;
 mod largefiles;
 mod logs;
@@ -213,6 +216,12 @@ pub fn run() {
             firewall::get_firewall_status,
             firewall::get_firewall_rules_privileged,
             firewall::set_firewall_enabled,
+            hwmon::get_all_sensors,
+            hardware_inventory::get_hardware_inventory,
+            privileged_inventory::get_memory_modules,
+            privileged_inventory::get_firmware_windows_key,
+            privileged_inventory::get_smart_report,
+            privileged_inventory::run_security_audit,
             malwarescan::scan_for_malware,
             snapshots::list_snapshots,
             packages::install::install_package,
