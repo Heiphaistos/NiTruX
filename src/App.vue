@@ -45,6 +45,7 @@ import InstallProfilesPage from "@/pages/InstallProfilesPage.vue";
 import PortableAppsPage from "@/pages/PortableAppsPage.vue";
 import HardwareDetailsPage from "@/pages/HardwareDetailsPage.vue";
 import HardwareInventoryPage from "@/pages/HardwareInventoryPage.vue";
+import ScanPage from "@/pages/ScanPage.vue";
 import SensorsPage from "@/pages/SensorsPage.vue";
 import PeripheralsPage from "@/pages/PeripheralsPage.vue";
 import ProcessesPage from "@/pages/ProcessesPage.vue";
@@ -108,6 +109,7 @@ const currentPage = ref<string>("dashboard");
 const pages: Record<string, Component> = {
   dashboard: DashboardPage,
   diagnostic: DiagnosticPage,
+  "scan-pc": ScanPage,
   "quick-install": QuickInstallPage,
   "app-store": AppStorePage,
   "package-manager": PackagesPage,
