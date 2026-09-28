@@ -19,6 +19,7 @@ describe("AppStorePage", () => {
     invoke.mockReset();
     invoke.mockImplementation((cmd: string) => {
       if (cmd === "get_install_sources") return Promise.resolve(SOURCES);
+      if (cmd === "list_installed_packages") return Promise.resolve([{ name: "vlc", version: "3" }]);
       if (cmd === "search_packages") return Promise.resolve(RESULTS);
       if (cmd === "install_snap_package") return Promise.resolve("vlc 3.0.20 installé");
       if (cmd === "setup_flatpak") return Promise.resolve("Flatpak et Flathub sont prêts.");
@@ -57,5 +58,14 @@ describe("AppStorePage", () => {
     await vi.waitFor(() => expect(wrapper.findAll(".st-result")).toHaveLength(2));
     await wrapper.findAll(".st-chip").find((c) => c.text().startsWith("Snap"))!.trigger("click");
     expect(wrapper.findAll(".st-result")).toHaveLength(1);
+  });
+
+  it("marks a native result already installed instead of offering it", async () => {
+    const wrapper = mount(AppStorePage);
+    await wrapper.find("input").setValue("vlc");
+    await wrapper.findAll("button").find((b) => b.text() === "Rechercher")!.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("multimedia player"));
+    const nativeCard = wrapper.findAll(".st-result").find((c) => c.text().includes("apt"))!;
+    expect(nativeCard.text()).toContain("Déjà installé");
   });
 });
