@@ -33,6 +33,7 @@
 #   nitrux-pkexec-uninstall-package uninstall-package <manager> <package>
 #   nitrux-pkexec-upgrade-all upgrade-all
 #   nitrux-pkexec-install-snap install-snap <package>
+#   nitrux-pkexec-install-snap enable-snapd
 #   nitrux-pkexec-write-hosts write-hosts               (base64 content on stdin)
 #   nitrux-pkexec-set-dns set-dns                       (base64 content on stdin)
 #   nitrux-pkexec-firewall-rule firewall-rule <status|enable|disable>
@@ -65,7 +66,7 @@ validate_package_name() {
 
 validate_manager() {
   case "$1" in
-    apt|dnf|pacman|zypper) : ;;
+    apt|dnf|pacman|zypper|apk|xbps) : ;;
     *) die "unknown package manager: $1" ;;
   esac
 }
@@ -243,7 +244,20 @@ case "$cmd" in
       dnf)    exec dnf install -y "$package" ;;
       pacman) exec pacman -S --noconfirm "$package" ;;
       zypper) exec zypper --non-interactive install "$package" ;;
+      apk)    exec apk add "$package" ;;
+      xbps)   exec xbps-install -y "$package" ;;
     esac
+    ;;
+  enable-snapd)
+    # One-time snapd activation after installing the snapd package: the
+    # socket must run, and Fedora/openSUSE/Arch need the /snap symlink that
+    # Ubuntu ships by default for classic snaps.
+    command -v systemctl >/dev/null 2>&1 || die "snapd requires systemd"
+    systemctl enable --now snapd.socket
+    if [ ! -e /snap ] && [ -d /var/lib/snapd/snap ]; then
+      ln -s /var/lib/snapd/snap /snap
+    fi
+    exit 0
     ;;
   install-snap)
     package="${2:-}"
@@ -310,6 +324,8 @@ case "$cmd" in
       dnf)    exec dnf remove -y "$package" ;;
       pacman) exec pacman -R --noconfirm "$package" ;;
       zypper) exec zypper --non-interactive remove "$package" ;;
+      apk)    exec apk del "$package" ;;
+      xbps)   exec xbps-remove -y "$package" ;;
     esac
     ;;
   upgrade-all)
@@ -328,6 +344,13 @@ case "$cmd" in
     fi
     if command -v zypper >/dev/null 2>&1; then
       zypper --non-interactive update
+    fi
+    if command -v apk >/dev/null 2>&1; then
+      apk update
+      apk upgrade
+    fi
+    if command -v xbps-install >/dev/null 2>&1; then
+      xbps-install -Syu
     fi
     ;;
   write-hosts)

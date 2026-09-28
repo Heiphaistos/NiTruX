@@ -55,6 +55,7 @@ export const navigationCategories: NavCategory[] = [
     id: "applications",
     title: "Applications",
     pages: [
+      { id: "app-store", label: "Magasin d'applications", icon: "store" },
       { id: "quick-install", label: "Installation rapide", icon: "download" },
       { id: "package-manager", label: "Gestionnaire de paquets", icon: "package" },
       { id: "install-profiles", label: "Installation par profils", icon: "layers" },
