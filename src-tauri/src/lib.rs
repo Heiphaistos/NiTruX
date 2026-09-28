@@ -2,6 +2,12 @@ use std::sync::Mutex;
 
 use sysinfo::System;
 
+/// Held by every test that changes HOME or XDG_DATA_HOME: env vars are
+/// process-wide and cargo runs tests in parallel threads, so an unguarded
+/// pair of such tests reads each other's scratch dirs (flaky trash test).
+#[cfg(test)]
+pub(crate) static TEST_ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 mod accounts;
 mod backup;
 mod benchmark;

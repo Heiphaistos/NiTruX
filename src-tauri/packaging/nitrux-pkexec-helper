@@ -58,6 +58,7 @@ die() {
 validate_package_name() {
   case "$1" in
     '') die "empty package name" ;;
+    -*) die "package name must not start with '-': $1" ;;
     *[!a-zA-Z0-9.+:_-]*) die "package name contains disallowed characters: $1" ;;
   esac
 }
@@ -144,9 +145,14 @@ validate_quarantine_path() {
   if [ -z "$stripped" ]; then
     die "cannot quarantine the filesystem root: $1"
   fi
+  # A real newline: `'\n'` in a case pattern is the two characters
+  # backslash + n, and `$(printf '\n')` is empty (command substitution
+  # strips trailing newlines), so the newline is spelled out literally.
+  nl='
+'
   case "$1" in
     *..*) die "quarantine path must not contain '..': $1" ;;
-    *'*'*|*'?'*|*'$'*|*'`'*|*';'*|*'|'*|*'&'*|*'<'*|*'>'*|*'\n'*)
+    *'*'*|*'?'*|*'$'*|*'`'*|*';'*|*'|'*|*'&'*|*'<'*|*'>'*|*"$nl"*)
       die "quarantine path contains disallowed characters: $1" ;;
   esac
 }
@@ -238,16 +244,16 @@ case "$cmd" in
     validate_manager "$manager"
     validate_package_name "$package"
     case "$manager" in
-      apt)    exec apt-get install -y --no-install-recommends "$package" ;;
-      dnf)    exec dnf install -y "$package" ;;
-      pacman) exec pacman -S --noconfirm "$package" ;;
-      zypper) exec zypper --non-interactive install "$package" ;;
+      apt)    exec apt-get install -y --no-install-recommends -- "$package" ;;
+      dnf)    exec dnf install -y -- "$package" ;;
+      pacman) exec pacman -S --noconfirm -- "$package" ;;
+      zypper) exec zypper --non-interactive install -- "$package" ;;
     esac
     ;;
   install-snap)
     package="${2:-}"
     validate_package_name "$package"
-    exec snap install "$package"
+    exec snap install -- "$package"
     ;;
   system-tool)
     action="${2:-}"
@@ -305,10 +311,10 @@ case "$cmd" in
     validate_manager "$manager"
     validate_package_name "$package"
     case "$manager" in
-      apt)    exec apt-get remove -y "$package" ;;
-      dnf)    exec dnf remove -y "$package" ;;
-      pacman) exec pacman -R --noconfirm "$package" ;;
-      zypper) exec zypper --non-interactive remove "$package" ;;
+      apt)    exec apt-get remove -y -- "$package" ;;
+      dnf)    exec dnf remove -y -- "$package" ;;
+      pacman) exec pacman -R --noconfirm -- "$package" ;;
+      zypper) exec zypper --non-interactive remove -- "$package" ;;
     esac
     ;;
   upgrade-all)
