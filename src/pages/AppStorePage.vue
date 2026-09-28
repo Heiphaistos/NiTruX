@@ -30,9 +30,24 @@ const sourceFilter = ref<"all" | InstallSource>("all");
 type State = { status: "installing" | "ok" | "error"; message: string };
 const states = ref<Record<string, State>>({});
 const setupBusy = ref<"flatpak" | "snap" | null>(null);
+// Native packages already installed, to badge search results.
+const installedNative = ref<Set<string>>(new Set());
 const setupMessage = ref<{ ok: boolean; text: string } | null>(null);
 
 const keyOf = (r: SearchResult) => `${r.source}:${r.manager ?? ""}:${r.id}`;
+
+async function loadInstalled() {
+  try {
+    const pkgs = await invoke<{ name: string }[]>("list_installed_packages");
+    installedNative.value = new Set(pkgs.map((p) => p.name));
+  } catch {
+    installedNative.value = new Set();
+  }
+}
+
+function alreadyInstalled(r: SearchResult): boolean {
+  return r.source === "native" && installedNative.value.has(r.id);
+}
 
 async function loadSources() {
   sourcesError.value = null;
@@ -95,7 +110,7 @@ const counts = computed(() => {
   return c;
 });
 
-onMounted(loadSources);
+onMounted(() => { loadSources(); loadInstalled(); });
 </script>
 
 <template>
@@ -172,6 +187,7 @@ onMounted(loadSources);
         </div>
         <div class="st-result-action">
           <NxBadge v-if="states[keyOf(r)]?.status === 'ok'" status="success" live>Installé ✓</NxBadge>
+          <NxBadge v-else-if="alreadyInstalled(r)" status="success">Déjà installé</NxBadge>
           <NxButton v-else :disabled="states[keyOf(r)]?.status === 'installing'" @click="install(r)">
             {{ states[keyOf(r)]?.status === "installing" ? "Installation..." : "Installer" }}
           </NxButton>

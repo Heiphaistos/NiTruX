@@ -22,6 +22,12 @@ const installErrors = ref<Record<string, string>>({});
 // fallback below it is not always the one the catalog names.
 const installedVia = ref<Record<string, string>>({});
 const search = ref("");
+// Native packages already present on the machine, so the catalog can badge
+// what's installed instead of offering to install it again. Best-effort:
+// an empty set (detection failed, or a non-native-only host) simply shows
+// every app as installable, exactly as before.
+const installedNative = ref<Set<string>>(new Set());
+const hideInstalled = ref(false);
 
 // Detection kicks off on mount; `install()` awaits this same promise if a
 // click lands before it resolves, so the install flow never races the
@@ -34,7 +40,15 @@ onMounted(() => {
     nativeManager.value = result;
     return result;
   });
+  invoke<{ name: string }[]>("list_installed_packages")
+    .then((pkgs) => { installedNative.value = new Set(pkgs.map((p) => p.name)); })
+    .catch(() => { installedNative.value = new Set(); });
 });
+
+function isInstalled(entry: AppCatalogEntry): boolean {
+  return stateOf(entry) === "success"
+    || (entry.installMethod === "apt" && (installedNative.value.has(entry.packageId) || installedNative.value.has(entry.id)));
+}
 
 const categories = computed(() => ["Tous", ...new Set(appCatalog.map((e) => e.category))]);
 
@@ -43,9 +57,12 @@ const filteredCatalog = computed<AppCatalogEntry[]>(() => {
   return appCatalog.filter(
     (e) =>
       (selectedCategory.value === "Tous" || e.category === selectedCategory.value) &&
-      (!q || e.name.toLowerCase().includes(q) || e.description.toLowerCase().includes(q)),
+      (!q || e.name.toLowerCase().includes(q) || e.description.toLowerCase().includes(q)) &&
+      (!hideInstalled.value || !isInstalled(e)),
   );
 });
+
+const installedCount = computed(() => appCatalog.filter(isInstalled).length);
 
 function stateOf(entry: AppCatalogEntry): InstallState {
   return installState.value[entry.id] ?? "idle";
@@ -87,6 +104,10 @@ async function install(entry: AppCatalogEntry) {
     <div class="qi-toolbar">
       <NxInput v-model="search" placeholder="Filtrer le catalogue..." aria-label="Filtrer le catalogue" />
       <NxButton variant="ghost" @click="emit('navigate', 'app-store')">Chercher dans tous les dépôts…</NxButton>
+      <label v-if="installedCount > 0" class="qi-filter">
+        <input type="checkbox" v-model="hideInstalled" />
+        Masquer les {{ installedCount }} déjà installées
+      </label>
     </div>
 
     <div class="qi-chips">
@@ -114,6 +135,9 @@ async function install(entry: AppCatalogEntry) {
         <template v-if="stateOf(entry) === 'success'">
           <NxBadge status="success">Installé{{ installedVia[entry.id] ? ` via ${installedVia[entry.id]}` : "" }}</NxBadge>
         </template>
+        <template v-else-if="isInstalled(entry)">
+          <NxBadge status="success">Déjà installé</NxBadge>
+        </template>
         <template v-else>
           <div v-if="stateOf(entry) === 'installing'" class="qi-progress"><div class="qi-progress-bar"></div></div>
           <NxCard v-if="stateOf(entry) === 'error'" danger class="qi-error">{{ installErrors[entry.id] }}</NxCard>
@@ -128,7 +152,8 @@ async function install(entry: AppCatalogEntry) {
 
 <style scoped>
 .qi-page { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
-.qi-toolbar { display: flex; gap: 10px; align-items: center; }
+.qi-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.qi-filter { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--nx-text-secondary); }
 .qi-chips { display: flex; gap: 8px; flex-wrap: wrap; }
 .qi-chip { padding: 6px 14px; border-radius: 99px; border: var(--nx-style-border-width) solid var(--nx-style-border-color); background: var(--nx-style-bg); color: var(--nx-text-secondary); cursor: pointer; font: inherit; font-size: 12px; }
 .qi-chip.active { color: var(--nx-text-primary); font-weight: 600; border-color: var(--nx-accent-primary); }

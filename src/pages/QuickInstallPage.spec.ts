@@ -6,6 +6,7 @@ import QuickInstallPage from "./QuickInstallPage.vue";
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((cmd: string, args?: Record<string, unknown>) => {
     if (cmd === "detect_native_manager") return Promise.resolve("apt");
+    if (cmd === "list_installed_packages") return Promise.resolve([{ name: "htop", version: "3" }]);
     if (cmd === "install_package") {
       if (args?.package === "fail-me") return Promise.reject("apt: paquet introuvable");
       return Promise.resolve("Installation réussie");
@@ -64,6 +65,7 @@ describe("QuickInstallPage", () => {
     const { invoke } = await import("@tauri-apps/api/core");
     (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string, args?: Record<string, unknown>) => {
       if (cmd === "detect_native_manager") return Promise.resolve("apt");
+    if (cmd === "list_installed_packages") return Promise.resolve([{ name: "htop", version: "3" }]);
       if (cmd === "install_package" && args?.package === "gimp") return Promise.reject("apt: échec de l'installation");
       return Promise.resolve("ok");
     });
@@ -82,5 +84,16 @@ describe("QuickInstallPage", () => {
     await jeuxChip.trigger("click");
     expect(wrapper.text()).toContain("Steam");
     expect(wrapper.text()).not.toContain("Firefox");
+  });
+
+  it("badges apps already installed on the machine and can hide them", async () => {
+    const wrapper = mount(QuickInstallPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("htop"));
+    const htopCard = wrapper.findAll(".qi-card").find((c) => c.text().includes("htop"))!;
+    await vi.waitFor(() => expect(htopCard.text()).toContain("Déjà installé"));
+    const toggle = wrapper.find(".qi-filter input");
+    expect(toggle.exists()).toBe(true);
+    await toggle.setValue(true);
+    expect(wrapper.findAll(".qi-card").find((c) => c.text().includes("htop"))).toBeUndefined();
   });
 });
