@@ -22,6 +22,7 @@ export const navigationCategories: NavCategory[] = [
     id: "diagnostic-avance",
     title: "Diagnostic",
     pages: [
+      { id: "scan-pc", label: "Scan PC", icon: "scan" },
       { id: "diagnostic", label: "Composants PCI", icon: "stethoscope" },
       { id: "hardware-details", label: "Matériel détaillé", icon: "cpu" },
       { id: "hardware-inventory", label: "Matériel complet", icon: "microchip" },
