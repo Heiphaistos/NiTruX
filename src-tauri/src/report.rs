@@ -118,6 +118,9 @@ pub fn render_txt(report: &SystemReport) -> String {
     match &report.firewall {
         Some(fw) => {
             out.push_str(&format!("Actif : {}\n", if fw.active { "oui" } else { "non" }));
+            if fw.rules_need_privilege {
+                out.push_str("Règles : non lues (droits administrateur requis)\n");
+            }
             for rule in &fw.rules {
                 out.push_str(&format!("- {rule}\n"));
             }
@@ -226,6 +229,9 @@ pub fn render_markdown(report: &SystemReport) -> String {
     match &report.firewall {
         Some(fw) => {
             out.push_str(&format!("- **Actif** : {}\n", if fw.active { "oui" } else { "non" }));
+            if fw.rules_need_privilege {
+                out.push_str("- _Règles non lues (droits administrateur requis)._\n");
+            }
             for rule in &fw.rules {
                 out.push_str(&format!("- {rule}\n"));
             }
@@ -339,7 +345,11 @@ pub fn render_html(report: &SystemReport) -> String {
     body.push_str("<h2>Pare-feu</h2>");
     match &report.firewall {
         Some(fw) => {
-            body.push_str(&format!("<p>Actif : {}</p><ul>", if fw.active { "oui" } else { "non" }));
+            body.push_str(&format!("<p>Actif : {}</p>", if fw.active { "oui" } else { "non" }));
+            if fw.rules_need_privilege {
+                body.push_str("<p><em>Règles non lues (droits administrateur requis).</em></p>");
+            }
+            body.push_str("<ul>");
             for rule in &fw.rules {
                 body.push_str(&format!("<li>{}</li>", escape_html(rule)));
             }
@@ -644,7 +654,7 @@ mod tests {
             disks: Some(vec![Disk { name: "sda".to_string(), size: "500G".to_string(), partitions: vec![] }]),
             disk_usage: None,
             network: NetworkSnapshot { wifi_networks: vec![], listening_ports: vec![], dns_servers: vec!["1.1.1.1".to_string()], hosts_file: "127.0.0.1 localhost\n".to_string(), routes: vec![], arp_entries: vec![] },
-            firewall: Some(FirewallStatus { active: true, rules: vec!["22/tcp ALLOW Anywhere".to_string()] }),
+            firewall: Some(FirewallStatus { active: true, rules: vec!["22/tcp ALLOW Anywhere".to_string()], rules_need_privilege: false }),
             updates: Some(vec![PackageUpdate { name: "curl".to_string(), current_version: "7.88".to_string(), new_version: "7.89".to_string(), source: "apt".to_string() }]),
         }
     }

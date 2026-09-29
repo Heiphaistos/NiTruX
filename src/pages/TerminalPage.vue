@@ -6,11 +6,15 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import NxCard from "@/components/ui/NxCard.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
+import NxButton from "@/components/ui/NxButton.vue";
 import "@xterm/xterm/css/xterm.css";
 
 const containerEl = ref<HTMLDivElement | null>(null);
-const id = crypto.randomUUID();
+// A fresh id per shell session: after `exit`, "Nouvelle session" spawns a
+// new backend session under a new id rather than reusing the dead one.
+let id = crypto.randomUUID();
 const spawnError = ref<string | null>(null);
+const exited = ref(false);
 
 let term: Terminal | null = null;
 let fitAddon: FitAddon | null = null;
@@ -26,6 +30,45 @@ async function resizeAndNotify() {
   await invoke("resize_terminal", { id, rows: term.rows, cols: term.cols }).catch(() => {});
 }
 
+async function startSession() {
+  const onData = new Channel<string>();
+  onData.onmessage = (data: string) => {
+    term?.write(data);
+  };
+  // Without this the page could not tell a finished shell (`exit`, Ctrl-D)
+  // from an idle one: keystrokes went nowhere and nothing said why.
+  const onExit = new Channel<null>();
+  const sessionId = id;
+  onExit.onmessage = () => {
+    if (sessionId !== id) return;
+    exited.value = true;
+    term?.write("\r\n\x1b[90m[session terminée]\x1b[0m\r\n");
+  };
+  // Unlike every other page's invoke() call, spawn_terminal failing here
+  // (pty open error, $SHELL missing/invalid) previously had no try/catch
+  // and no visible error: the user would just see a permanently empty
+  // black box with no indication anything went wrong.
+  try {
+    await invoke("spawn_terminal", { id, onData, onExit });
+  } catch (e) {
+    spawnError.value = String(e);
+    return false;
+  }
+  exited.value = false;
+  spawnError.value = null;
+  return true;
+}
+
+async function restart() {
+  invoke("close_terminal", { id }).catch(() => {});
+  id = crypto.randomUUID();
+  term?.reset();
+  if (await startSession()) {
+    await resizeAndNotify();
+    term?.focus();
+  }
+}
+
 onMounted(async () => {
   term = new Terminal({ cursorBlink: true, fontSize: 13 });
   fitAddon = new FitAddon();
@@ -38,28 +81,14 @@ onMounted(async () => {
     // .catch, not try/catch: fires on every keystroke, so a dead pty (once
     // spawn_terminal has already succeeded) would otherwise spam an
     // unhandled promise rejection per character typed instead of just
-    // once. There is no separate error state to show here -- a dead pty
-    // is already surfaced the next time this page is opened, via
-    // spawn_terminal's own try/catch above.
+    // once. A finished shell is surfaced by the on_exit channel instead.
+    if (exited.value) return;
     invoke("write_to_terminal", { id, data }).catch(() => {});
   });
 
-  const onData = new Channel<string>();
-  onData.onmessage = (data: string) => {
-    term?.write(data);
-  };
-  // Unlike every other page's invoke() call, spawn_terminal failing here
-  // (pty open error, $SHELL missing/invalid) previously had no try/catch
-  // and no visible error: the user would just see a permanently empty
-  // black box with no indication anything went wrong.
-  try {
-    await invoke("spawn_terminal", { id, onData });
-  } catch (e) {
-    spawnError.value = String(e);
-    return;
-  }
-
-  await resizeAndNotify();
+  // The resize observer is wired up even if this first spawn fails, so a
+  // successful "Nouvelle session" afterwards still tracks the window size.
+  if (await startSession()) await resizeAndNotify();
   // ResizeObserver is a standard Web API present in the real Tauri webview
   // (WebKitGTK) but absent from jsdom's test environment -- guarded so
   // the component test suite doesn't need a polyfill for something that
@@ -72,7 +101,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   resizeObserver?.disconnect();
-  invoke("close_terminal", { id });
+  invoke("close_terminal", { id }).catch(() => {});
   term?.dispose();
 });
 </script>
@@ -81,11 +110,15 @@ onUnmounted(() => {
   <div class="term-page">
     <NxSectionHeader title="Terminal" description="Shell interactif, mêmes droits que votre session." />
     <NxCard v-if="spawnError" danger>{{ spawnError }}</NxCard>
+    <div v-if="exited || spawnError" class="term-actions">
+      <NxButton @click="restart">Nouvelle session</NxButton>
+    </div>
     <div v-show="!spawnError" ref="containerEl" class="term-container"></div>
   </div>
 </template>
 
 <style scoped>
 .term-page { padding: 24px; display: flex; flex-direction: column; gap: 12px; height: 100%; box-sizing: border-box; }
+.term-actions { display: flex; gap: 8px; }
 .term-container { flex: 1; min-height: 0; background: #000; border-radius: 8px; padding: 8px; }
 </style>

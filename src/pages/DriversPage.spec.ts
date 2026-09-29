@@ -24,4 +24,18 @@ describe("DriversPage", () => {
     expect(wrapper.find(".nx-card").exists()).toBe(true);
     expect(wrapper.text().toLowerCase()).toContain("gestionnaire de paquets");
   });
+
+  it("still lists PCI devices when the kernel has no loadable-module support", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockResolvedValueOnce({
+      loaded_modules: [],
+      gpu_driver: "inconnu",
+      devices: [{ slot: "00:02.0", description: "Virtio GPU", driver: "virtio-pci" }],
+      devices_error: null,
+      modules_error: "ce noyau ne gère pas les modules chargeables (pilotes intégrés au noyau)",
+    });
+    const wrapper = mount(DriversPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Virtio GPU"));
+    expect(wrapper.text()).toContain("ne gère pas les modules chargeables");
+  });
 });

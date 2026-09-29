@@ -76,6 +76,26 @@ describe("FileToolsPage", () => {
     expect(invoke).toHaveBeenCalledWith("find_large_files_cmd", { directory: "/home/dev", minSizeBytes: 100 * 1024 * 1024 });
   });
 
+  it("sends a whole byte count for a decimal size, written with a French comma", async () => {
+    // min_size_bytes is a u64 on the Rust side: 0,3 Mo = 314572.8 bytes
+    // used to reach it as a float and fail IPC deserialization.
+    const { invoke } = await import("@tauri-apps/api/core");
+    const wrapper = mount(FileToolsPage);
+    await wrapper.findAll("button").find((b) => b.text() === "Gros fichiers")!.trigger("click");
+    const inputs = wrapper.findAll(".nx-input");
+    await inputs[0].setValue("/home/dev");
+    await inputs[1].setValue("0,3");
+    await wrapper.findAll("button").find((b) => b.text() === "Rechercher")!.trigger("click");
+    expect(invoke).toHaveBeenCalledWith("find_large_files_cmd", { directory: "/home/dev", minSizeBytes: 314573 });
+  });
+
+  it("says so when a scan completes with nothing found, instead of showing nothing", async () => {
+    const wrapper = mount(FileToolsPage);
+    await wrapper.findAll(".nx-input")[0].setValue("/home/dev");
+    await wrapper.findAll("button").find((b) => b.text() === "Rechercher")!.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Aucun doublon trouvé"));
+  });
+
   it("verifies a file hash against an expected value and shows a match badge", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     const wrapper = mount(FileToolsPage);

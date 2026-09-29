@@ -7,7 +7,7 @@ import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 import NxBadge from "@/components/ui/NxBadge.vue";
 
 interface DeviceDriver { slot: string; description: string; driver: string | null }
-interface DriverSnapshot { loaded_modules: string[]; gpu_driver: string; devices: DeviceDriver[]; devices_error: string | null }
+interface DriverSnapshot { loaded_modules: string[]; gpu_driver: string; devices: DeviceDriver[]; devices_error: string | null; modules_error?: string | null }
 
 const snapshot = ref<DriverSnapshot | null>(null);
 const error = ref<string | null>(null);
@@ -67,7 +67,8 @@ onMounted(async () => {
 
       <NxCard>
         <NxSectionHeader title="Modules chargés" :description="String(snapshot.loaded_modules.length)" />
-        <div class="drv-modules">
+        <p v-if="snapshot.modules_error" class="drv-empty">{{ snapshot.modules_error }}</p>
+        <div v-else class="drv-modules">
           <NxBadge v-for="mod in snapshot.loaded_modules" :key="mod" status="info">{{ mod }}</NxBadge>
         </div>
       </NxCard>

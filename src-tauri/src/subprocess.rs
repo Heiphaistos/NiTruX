@@ -113,14 +113,48 @@ pub fn package_for_this_system(program: &str) -> Option<&'static str> {
     Some([tool.debian, tool.fedora, tool.arch][column])
 }
 
-/// Whether `program` is reachable through `PATH`. Scans `PATH` directly
+/// Administration directories that Debian (and derivatives with a stock
+/// `/etc/profile`) leave OUT of a normal user's `PATH`, although most of
+/// the tools NiTruX reads from live there and run fine unprivileged for
+/// the parts it uses: `ufw`, `smartctl`, `efibootmgr`, `iw`, `lsmod`,
+/// `nvme`... Spawning those by bare name made an installed tool look
+/// absent ("introuvable") on exactly the distribution family NiTruX is
+/// primarily tested on.
+const SBIN_DIRS: &[&str] = &["/usr/local/sbin", "/usr/sbin", "/sbin"];
+
+/// Where `program` would be found: `PATH` first, as a shell would, then
+/// the sbin directories. `None` when it is nowhere.
+fn locate_program(program: &str) -> Option<std::path::PathBuf> {
+    locate_program_in(program, std::env::var_os("PATH"))
+}
+
+fn locate_program_in(program: &str, path_var: Option<std::ffi::OsString>) -> Option<std::path::PathBuf> {
+    if program.contains('/') {
+        let path = std::path::PathBuf::from(program);
+        return path.is_file().then_some(path);
+    }
+    let from_path = path_var
+        .into_iter()
+        .flat_map(|path| std::env::split_paths(&path).collect::<Vec<_>>());
+    from_path
+        .chain(SBIN_DIRS.iter().map(std::path::PathBuf::from))
+        .map(|dir| dir.join(program))
+        .find(|candidate| candidate.is_file())
+}
+
+/// What to hand to `Command::new`: the located path when found, otherwise
+/// the bare name so the spawn fails with the usual "not found" error (and
+/// its package hint).
+fn resolve_program(program: &str) -> std::ffi::OsString {
+    locate_program(program).map(|p| p.into_os_string()).unwrap_or_else(|| program.into())
+}
+
+/// Whether `program` is installed: reachable through `PATH` or one of the
+/// sbin directories (see `SBIN_DIRS`). Scans the directories directly
 /// instead of spawning `which`, so checking twenty tools costs twenty
 /// `stat` calls rather than twenty processes.
 pub fn binary_in_path(program: &str) -> bool {
-    let Some(path) = std::env::var_os("PATH") else {
-        return false;
-    };
-    std::env::split_paths(&path).any(|dir| dir.join(program).is_file())
+    locate_program(program).is_some()
 }
 
 /// The actionable half of a "binary not found" error: which package to
@@ -159,7 +193,7 @@ fn spawn_error(program: &str, e: std::io::Error) -> String {
 ///   exited non-zero, or it did not finish within `timeout`. In the timeout
 ///   case the child process is sent `SIGKILL` before returning.
 pub fn run_with_timeout(program: &str, args: &[&str], timeout: Duration) -> Result<String, String> {
-    let mut command = Command::new(program);
+    let mut command = Command::new(resolve_program(program));
     command.args(args).stdout(Stdio::piped()).stderr(Stdio::piped());
     sanitize_child_env(&mut command);
     let child = command.spawn().map_err(|e| spawn_error(program, e))?;
@@ -216,7 +250,7 @@ pub fn run_with_timeout_env(
     envs: &[(&str, &str)],
     timeout: Duration,
 ) -> Result<String, String> {
-    let mut command = Command::new(program);
+    let mut command = Command::new(resolve_program(program));
     command.args(args).stdout(Stdio::piped()).stderr(Stdio::piped());
     sanitize_child_env(&mut command);
     for (key, value) in envs {
@@ -287,7 +321,7 @@ pub fn run_capturing_exit_code(
     args: &[&str],
     timeout: Duration,
 ) -> Result<(String, String, i32), String> {
-    let mut command = Command::new(program);
+    let mut command = Command::new(resolve_program(program));
     command.args(args).stdout(Stdio::piped()).stderr(Stdio::piped());
     sanitize_child_env(&mut command);
     let child = command.spawn().map_err(|e| spawn_error(program, e))?;
@@ -327,6 +361,20 @@ pub fn run_capturing_exit_code(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn finds_a_tool_in_sbin_even_when_path_does_not_list_it() {
+        // Debian's default user PATH has no /usr/sbin. `ldconfig` lives in
+        // /usr/sbin or /sbin on every glibc distribution.
+        let found = locate_program_in("ldconfig", Some("/usr/bin:/bin".into()));
+        assert!(found.is_some_and(|p| p.to_string_lossy().contains("sbin")), "ldconfig should be found in an sbin directory");
+        assert!(run_with_timeout("ldconfig", &["--version"], Duration::from_secs(5)).is_ok());
+    }
+
+    #[test]
+    fn a_tool_that_exists_nowhere_is_still_reported_missing() {
+        assert!(!binary_in_path("nitrux-definitely-not-a-real-tool"));
+    }
     use std::time::Instant;
 
     #[test]

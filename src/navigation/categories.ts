@@ -22,8 +22,10 @@ export const navigationCategories: NavCategory[] = [
     id: "diagnostic-avance",
     title: "Diagnostic",
     pages: [
+      { id: "scan-pc", label: "Scan PC", icon: "scan" },
       { id: "diagnostic", label: "Composants PCI", icon: "stethoscope" },
       { id: "hardware-details", label: "Matériel détaillé", icon: "cpu" },
+      { id: "hardware-inventory", label: "Matériel complet", icon: "microchip" },
       { id: "peripherals", label: "Périphériques", icon: "monitor" },
       { id: "processes", label: "Processus & services", icon: "activity" },
       { id: "installed-software", label: "Logiciels installés", icon: "list" },
@@ -47,6 +49,7 @@ export const navigationCategories: NavCategory[] = [
     pages: [
       { id: "optimizations", label: "Optimisations", icon: "zap" },
       { id: "temperatures", label: "Températures", icon: "thermometer" },
+      { id: "sensors", label: "Capteurs", icon: "gauge" },
       { id: "benchmark", label: "Benchmark", icon: "gauge" },
       { id: "perf-history", label: "Historique perf.", icon: "bar-chart-3" },
     ],
@@ -55,6 +58,7 @@ export const navigationCategories: NavCategory[] = [
     id: "applications",
     title: "Applications",
     pages: [
+      { id: "app-store", label: "Magasin d'applications", icon: "store" },
       { id: "quick-install", label: "Installation rapide", icon: "download" },
       { id: "package-manager", label: "Gestionnaire de paquets", icon: "package" },
       { id: "install-profiles", label: "Installation par profils", icon: "layers" },

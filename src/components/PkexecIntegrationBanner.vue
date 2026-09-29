@@ -55,10 +55,11 @@ async function install() {
 <template>
   <div v-if="needed && !dismissed" class="pkb-banner">
     <div class="pkb-text">
-      <strong>Fonctions privilégiées non activées.</strong>
-      Cette version portable (AppImage) ne peut pas installer automatiquement les composants nécessaires aux actions
-      nécessitant les droits administrateur (installation/désinstallation de paquets, dépannage, pare-feu, formatage
-      de disque, etc.). Cliquez ci-dessous pour les activer en une fois — une seule demande de mot de passe.
+      <strong>Fonctions privilégiées non activées</strong> (ou installées par une version précédente de NiTruX).
+      Les composants nécessaires aux actions administrateur (installation/désinstallation de paquets, dépannage,
+      pare-feu, formatage de disque, etc.) ne sont pas en place ou pas à jour — c'est le cas de la version portable
+      (AppImage), qui ne peut pas les installer toute seule. Cliquez ci-dessous pour les installer en une fois — une
+      seule demande de mot de passe.
     </div>
     <div class="pkb-actions">
       <button class="pkb-install" :disabled="installing" @click="install">

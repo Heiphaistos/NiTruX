@@ -25,6 +25,7 @@ const cpuHistory = computed(() => samples.value.map((s) => s.cpuPercent));
 const memoryHistory = computed(() => samples.value.map((s) => s.memoryPercent));
 const error = ref<string | null>(null);
 let intervalId: number | undefined;
+let unmounted = false;
 
 async function sample() {
   try {
@@ -88,11 +89,15 @@ onMounted(async () => {
   // Past samples first, so the graphs open with history rather than one
   // point, then keep sampling on top of them.
   await loadHistory();
+  // Left the page while the history was still loading: onUnmounted already
+  // ran, so an interval armed now would never be cleared.
+  if (unmounted) return;
   sample();
   intervalId = window.setInterval(sample, preferences.dashboardRefreshIntervalMs);
 });
 
 onUnmounted(() => {
+  unmounted = true;
   if (intervalId) window.clearInterval(intervalId);
 });
 </script>

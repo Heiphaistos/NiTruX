@@ -62,6 +62,11 @@ pub struct DriverSnapshot {
     /// it was previously dropped by `.unwrap_or_default()`, leaving the
     /// device table silently empty with no way to tell why.
     pub devices_error: Option<String>,
+    /// Same idea for the loaded-module list: a kernel built without
+    /// loadable-module support (common for VMs and containers) has no
+    /// `/proc/modules` at all, and that used to fail the whole page even
+    /// though `lspci -k` still names every device's driver.
+    pub modules_error: Option<String>,
 }
 
 pub fn parse_lsmod_line(line: &str) -> Option<String> {
@@ -86,25 +91,51 @@ pub fn detect_gpu_driver(modules: &[String]) -> String {
     }
 }
 
+/// Loaded kernel modules. `lsmod` is only a formatter over `/proc/modules`
+/// (same first column, minus the header), so the kernel file is read
+/// directly: a system without `kmod` in `PATH` -- minimal containers, some
+/// immutable distros, an AppImage launched from an odd environment -- used
+/// to lose the ENTIRE Drivers page ("lsmod introuvable"), PCI devices
+/// included, over a tool that adds nothing here. `lsmod` stays as the
+/// fallback for the unusual case where `/proc/modules` is unreadable.
 fn run_lsmod() -> Result<Vec<String>, String> {
+    if let Ok(modules) = std::fs::read_to_string("/proc/modules") {
+        return Ok(modules.lines().filter_map(parse_lsmod_line).collect());
+    }
+    if !std::path::Path::new("/proc/modules").exists() && std::path::Path::new("/proc/self").exists() {
+        return Err("ce noyau ne gère pas les modules chargeables (pilotes intégrés au noyau)".to_string());
+    }
     let output = subprocess::run_with_timeout("lsmod", &[], Duration::from_secs(5))?;
     Ok(output.lines().filter_map(parse_lsmod_line).collect())
 }
 
 #[tauri::command]
 pub fn get_driver_snapshot() -> Result<DriverSnapshot, String> {
-    let loaded_modules = run_lsmod()?;
+    let (loaded_modules, modules_error) = match run_lsmod() {
+        Ok(modules) => (modules, None),
+        Err(e) => (Vec::new(), Some(e)),
+    };
     let gpu_driver = detect_gpu_driver(&loaded_modules);
     let (devices, devices_error) = match run_lspci_k() {
         Ok(devices) => (devices, None),
         Err(e) => (Vec::new(), Some(e)),
     };
-    Ok(DriverSnapshot { loaded_modules, gpu_driver, devices, devices_error })
+    // Nothing at all could be read: that is a real failure, not a snapshot.
+    if let (Some(modules_error), Some(devices_error)) = (&modules_error, &devices_error) {
+        return Err(format!("{modules_error} ; {devices_error}"));
+    }
+    Ok(DriverSnapshot { loaded_modules, gpu_driver, devices, devices_error, modules_error })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parses_a_proc_modules_line_the_same_way_as_an_lsmod_line() {
+        let line = "snd_hda_intel 61440 3 - Live 0x0000000000000000";
+        assert_eq!(parse_lsmod_line(line), Some("snd_hda_intel".to_string()));
+    }
 
     #[test]
     fn detects_nvidia_driver_from_module_list() {

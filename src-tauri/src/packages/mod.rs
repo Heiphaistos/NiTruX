@@ -1,11 +1,14 @@
 use serde::Serialize;
 
+pub mod apk;
 pub mod apt;
 pub mod dnf;
 pub mod flatpak;
 pub mod install;
 pub mod pacman;
+pub mod store;
 pub mod universal;
+pub mod xbps;
 pub mod zypper;
 
 #[derive(Serialize, Clone, Debug, PartialEq)]
@@ -31,16 +34,12 @@ pub trait PackageManager {
     fn list_installed(&self) -> Result<Vec<InstalledPackage>, String>;
 }
 
-/// True if `binary` is found on PATH (via `which`), false otherwise —
-/// including if `which` itself is missing, which just means "not found".
+/// True if `binary` is installed. Checked with a directory scan (PATH plus
+/// the sbin directories), not by spawning `which`: `which` is absent from
+/// minimal Fedora, Alpine, Arch base and many containers, where every
+/// package manager then read as missing.
 pub fn binary_exists(binary: &str) -> bool {
-    std::process::Command::new("which")
-        .arg(binary)
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .status()
-        .map(|s| s.success())
-        .unwrap_or(false)
+    crate::subprocess::binary_in_path(binary)
 }
 
 /// Detects which native package managers are present on this host by binary
@@ -59,6 +58,12 @@ pub fn detect_package_managers() -> Vec<Box<dyn PackageManager>> {
     }
     if binary_exists("zypper") {
         managers.push(Box::new(zypper::Zypper));
+    }
+    if binary_exists("apk") {
+        managers.push(Box::new(apk::Apk));
+    }
+    if binary_exists("xbps-install") {
+        managers.push(Box::new(xbps::Xbps));
     }
     managers
 }
@@ -90,7 +95,7 @@ mod tests {
         // Detection depends on the actual host's installed binaries, so this
         // test only asserts internal consistency: whatever IS detected must
         // report an id from the known set, never an empty/garbage string.
-        let known_ids = ["apt", "dnf", "pacman", "zypper"];
+        let known_ids = ["apt", "dnf", "pacman", "zypper", "apk", "xbps"];
         for m in detect_package_managers() {
             assert!(known_ids.contains(&m.id()), "unexpected manager id: {}", m.id());
         }
