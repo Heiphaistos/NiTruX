@@ -141,6 +141,7 @@ mod tests {
 
     #[test]
     fn writes_reads_and_rotates_a_real_file() {
+        let _env = crate::TEST_ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         // Points HOME at a scratch directory so this exercises the real
         // path-building, appending and trimming code rather than a stub.
         let scratch = std::env::temp_dir().join(format!("nitrux-perf-test-{}", std::process::id()));
