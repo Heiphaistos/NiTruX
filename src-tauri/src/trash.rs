@@ -98,6 +98,11 @@ fn available_trash_name(files_dir: &std::path::Path, info_dir: &std::path::Path,
 /// most likely to be clicked by mistake. `rename` is used when possible
 /// (atomic, same filesystem) with a copy+remove fallback, since `$HOME` and
 /// the trash can legitimately sit on different mounts.
+fn canonical_home(home: &str) -> PathBuf {
+    let raw = PathBuf::from(home);
+    raw.canonicalize().unwrap_or(raw)
+}
+
 #[tauri::command]
 pub fn move_to_trash(path: String) -> Result<String, String> {
     let source = PathBuf::from(&path);
@@ -105,6 +110,10 @@ pub fn move_to_trash(path: String) -> Result<String, String> {
         return Err(format!("chemin absolu attendu : {path}"));
     }
     let home = std::env::var("HOME").map_err(|_| "variable HOME introuvable".to_string())?;
+    // HOME itself may go through a symlink (Silverblue/Kinoite: /home ->
+    // /var/home), while `canonical` below never does: compare like with like
+    // or every path in the home would be refused.
+    let home = canonical_home(&home);
     let canonical = source
         .canonicalize()
         .map_err(|e| format!("chemin introuvable : {path} ({e})"))?;
@@ -115,7 +124,7 @@ pub fn move_to_trash(path: String) -> Result<String, String> {
     if !canonical.starts_with(&home) {
         return Err(format!("hors du dossier personnel, refusé : {}", canonical.display()));
     }
-    if canonical == std::path::Path::new(&home) {
+    if canonical == home {
         return Err("le dossier personnel lui-même ne peut pas être mis à la corbeille".to_string());
     }
 
@@ -310,6 +319,7 @@ mod tests {
 
     #[test]
     fn moves_a_real_directory_to_the_trash_and_can_list_it_back() {
+        let _env = crate::TEST_ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         // Exercises the real filesystem path: HOME is pointed at a scratch
         // directory so this writes a genuine Trash/files + Trash/info pair.
         let scratch = std::env::temp_dir().join(format!("nitrux-trash-test-{}", std::process::id()));
@@ -342,6 +352,7 @@ mod tests {
 
     #[test]
     fn refuses_a_path_outside_the_home_directory() {
+        let _env = crate::TEST_ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         let previous_home = std::env::var("HOME").ok();
         let scratch = std::env::temp_dir().join(format!("nitrux-trash-guard-{}", std::process::id()));
         std::fs::create_dir_all(&scratch).unwrap();
@@ -362,6 +373,20 @@ mod tests {
             Some(v) => std::env::set_var("HOME", v),
             None => std::env::remove_var("HOME"),
         }
+    }
+
+    #[test]
+    fn canonical_home_resolves_a_symlinked_home_like_silverblue() {
+        let base = std::env::temp_dir().join(format!("nitrux-trash-symhome-{}", std::process::id()));
+        std::fs::remove_dir_all(&base).ok();
+        let real = base.join("var-home");
+        std::fs::create_dir_all(real.join("dev")).unwrap();
+        let link = base.join("home");
+        std::os::unix::fs::symlink(&real, &link).unwrap();
+        let home = canonical_home(&link.join("dev").to_string_lossy());
+        let expected = real.join("dev").canonicalize().unwrap();
+        std::fs::remove_dir_all(&base).ok();
+        assert_eq!(home, expected);
     }
 
     #[test]

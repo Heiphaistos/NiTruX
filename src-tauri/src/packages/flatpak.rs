@@ -35,7 +35,7 @@ pub fn install_flatpak_package(app_id: String) -> Result<String, String> {
     );
     subprocess::run_with_timeout(
         "flatpak",
-        &["install", "--user", "--noninteractive", "flathub", &app_id],
+        &["install", "--user", "--noninteractive", "--", "flathub", &app_id],
         Duration::from_secs(300),
     )
 }

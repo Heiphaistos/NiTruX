@@ -164,10 +164,14 @@ fn build_bootstrap_script() -> String {
 /// `secure_temp`'s module doc (first found in this very file): a
 /// pre-positioned symlink at the staged destination must not be followed.
 fn stage_resources_for_pkexec(resource_dir: &Path) -> Result<PathBuf, String> {
-    let staging_dir = std::env::temp_dir().join(format!("nitrux-pkexec-stage-{}", std::process::id()));
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.subsec_nanos())
+        .unwrap_or(0);
+    let staging_dir = std::env::temp_dir().join(format!("nitrux-pkexec-stage-{}-{nanos:08x}", std::process::id()));
+    create_private_dir(&staging_dir)?;
     let packaging_dir = staging_dir.join("packaging");
-    std::fs::create_dir_all(&packaging_dir)
-        .map_err(|e| format!("impossible de créer le dossier de préparation : {e}"))?;
+    create_private_dir(&packaging_dir)?;
 
     let mut names: Vec<&str> = vec!["nitrux-pkexec-helper"];
     names.extend_from_slice(POLKIT_POLICY_FILES);
@@ -177,6 +181,20 @@ fn stage_resources_for_pkexec(resource_dir: &Path) -> Result<PathBuf, String> {
         write_exclusively_owner_only(&packaging_dir.join(name), &content)?;
     }
     Ok(staging_dir)
+}
+
+/// Creates `path` as a brand-new directory owned by us, mode 0700, and
+/// fails if ANYTHING already sits there (directory, file or symlink):
+/// `mkdir` is atomic and never follows a final-component symlink, so a
+/// directory pre-created by another local user in the world-writable temp
+/// dir (whose contents they could swap before root's `cp`) is refused
+/// instead of reused -- the bug `create_dir_all` had here.
+fn create_private_dir(path: &Path) -> Result<(), String> {
+    use std::os::unix::fs::DirBuilderExt;
+    std::fs::DirBuilder::new()
+        .mode(0o700)
+        .create(path)
+        .map_err(|e| format!("impossible de créer le dossier de préparation {} : {e}", path.display()))
 }
 
 /// Installs the privileged-action integration on a system where it isn't
@@ -260,6 +278,21 @@ mod tests {
             assert!(staging_dir.join("packaging").join(policy).exists(), "staged copy of {policy} should exist");
         }
         std::fs::remove_dir_all(&staging_dir).ok();
+    }
+
+    #[test]
+    fn create_private_dir_refuses_a_preexisting_directory_and_uses_mode_0700() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = std::env::temp_dir().join(format!("nitrux-private-dir-test-{}", std::process::id()));
+        std::fs::remove_dir_all(&dir).ok();
+        std::fs::create_dir(&dir).unwrap();
+        let refused = create_private_dir(&dir).is_err();
+        std::fs::remove_dir_all(&dir).ok();
+        create_private_dir(&dir).expect("fresh path should be created");
+        let mode = std::fs::metadata(&dir).unwrap().permissions().mode() & 0o777;
+        std::fs::remove_dir_all(&dir).ok();
+        assert!(refused, "a directory that already exists must be refused, not reused");
+        assert_eq!(mode, 0o700);
     }
 
     #[test]

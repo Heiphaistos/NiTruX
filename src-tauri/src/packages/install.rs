@@ -9,6 +9,9 @@ pub fn validate_package_name(name: &str) -> Result<(), String> {
     if name.is_empty() {
         return Err("nom de paquet vide".to_string());
     }
+    if name.starts_with('-') {
+        return Err(format!("nom de paquet invalide (commence par « - ») : {name}"));
+    }
     if !name.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '+' | ':' | '_' | '-')) {
         return Err(format!("nom de paquet invalide : {name}"));
     }
@@ -106,6 +109,12 @@ mod tests {
         assert!(validate_package_name("libssl-dev").is_ok());
         assert!(validate_package_name("python3.12").is_ok());
         assert!(validate_package_name("pkg:amd64").is_ok());
+    }
+
+    #[test]
+    fn rejects_a_leading_dash_so_it_cannot_become_an_option() {
+        assert!(validate_package_name("--allow-unauthenticated").is_err());
+        assert!(validate_package_name("-y").is_err());
     }
 
     #[test]
