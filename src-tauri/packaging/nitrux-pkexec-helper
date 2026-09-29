@@ -18,7 +18,7 @@
 # nitrux-pkexec-delete-snapshot,
 # nitrux-pkexec-quarantine-file, nitrux-pkexec-format-partition,
 # nitrux-pkexec-extend-partition, nitrux-pkexec-clone-disk,
-# nitrux-pkexec-system-tools. pkexec
+# nitrux-pkexec-system-tools, nitrux-pkexec-inventory. pkexec
 # resolves which action to authorize by matching the *executable path*
 # against each action's exec.path annotation -- it cannot see argv, so a
 # single shared path across multiple actions is ambiguous to it (confirmed
@@ -33,8 +33,10 @@
 #   nitrux-pkexec-uninstall-package uninstall-package <manager> <package>
 #   nitrux-pkexec-upgrade-all upgrade-all
 #   nitrux-pkexec-install-snap install-snap <package>
+#   nitrux-pkexec-install-snap enable-snapd
 #   nitrux-pkexec-write-hosts write-hosts               (base64 content on stdin)
 #   nitrux-pkexec-set-dns set-dns                       (base64 content on stdin)
+#   nitrux-pkexec-firewall-rule firewall-rule <status|enable|disable>
 #   nitrux-pkexec-firewall-rule firewall-rule <add|remove> <port/proto>
 #   nitrux-pkexec-troubleshoot troubleshoot <clean-cache|fix-broken|restart-network|vacuum-logs>
 #   nitrux-pkexec-create-snapshot create-snapshot
@@ -43,6 +45,7 @@
 #   nitrux-pkexec-format-partition format-partition <device> <ext4|btrfs|xfs|vfat>
 #   nitrux-pkexec-extend-partition extend-partition <partition-device> <disk-device> <partnum>
 #   nitrux-pkexec-clone-disk clone-disk <disk-device> <dest-image-path>
+#   nitrux-pkexec-inventory inventory <dmi-memory|dmi-system|firmware-key|security-audit|smart /dev/X>
 #   nitrux-pkexec-system-tools system-tool <apt-autoremove|journal-vacuum-size|rebuild-ld-cache|systemd-reload|fstrim-all|rebuild-locate-db|regenerate-grub>
 set -eu
 
@@ -65,7 +68,7 @@ validate_package_name() {
 
 validate_manager() {
   case "$1" in
-    apt|dnf|pacman|zypper) : ;;
+    apt|dnf|pacman|zypper|apk|xbps) : ;;
     *) die "unknown package manager: $1" ;;
   esac
 }
@@ -248,7 +251,20 @@ case "$cmd" in
       dnf)    exec dnf install -y -- "$package" ;;
       pacman) exec pacman -S --noconfirm -- "$package" ;;
       zypper) exec zypper --non-interactive install -- "$package" ;;
+      apk)    exec apk add "$package" ;;
+      xbps)   exec xbps-install -y "$package" ;;
     esac
+    ;;
+  enable-snapd)
+    # One-time snapd activation after installing the snapd package: the
+    # socket must run, and Fedora/openSUSE/Arch need the /snap symlink that
+    # Ubuntu ships by default for classic snaps.
+    command -v systemctl >/dev/null 2>&1 || die "snapd requires systemd"
+    systemctl enable --now snapd.socket
+    if [ ! -e /snap ] && [ -d /var/lib/snapd/snap ]; then
+      ln -s /var/lib/snapd/snap /snap
+    fi
+    exit 0
     ;;
   install-snap)
     package="${2:-}"
@@ -315,6 +331,8 @@ case "$cmd" in
       dnf)    exec dnf remove -y -- "$package" ;;
       pacman) exec pacman -R --noconfirm -- "$package" ;;
       zypper) exec zypper --non-interactive remove -- "$package" ;;
+      apk)    exec apk del "$package" ;;
+      xbps)   exec xbps-remove -y "$package" ;;
     esac
     ;;
   upgrade-all)
@@ -333,6 +351,13 @@ case "$cmd" in
     fi
     if command -v zypper >/dev/null 2>&1; then
       zypper --non-interactive update
+    fi
+    if command -v apk >/dev/null 2>&1; then
+      apk update
+      apk upgrade
+    fi
+    if command -v xbps-install >/dev/null 2>&1; then
+      xbps-install -Syu
     fi
     ;;
   write-hosts)
@@ -362,11 +387,18 @@ case "$cmd" in
   firewall-rule)
     action="${2:-}"
     portproto="${3:-}"
-    validate_port_proto "$portproto"
     case "$action" in
-      add)    exec ufw allow "$portproto" ;;
-      remove) exec ufw delete allow "$portproto" ;;
-      *)      die "unknown firewall action: $action (expected add or remove)" ;;
+      # Read-only: `ufw status` refuses to run unprivileged, so listing the
+      # rules needs the same authorization as changing them. Takes no
+      # further argument; the C locale keeps the output parseable.
+      status) exec env LC_ALL=C ufw status ;;
+      # --force skips ufw's interactive "may disrupt ssh" y/n prompt, which
+      # would otherwise hang with no terminal; the page warns instead.
+      enable)  exec ufw --force enable ;;
+      disable) exec ufw disable ;;
+      add)    validate_port_proto "$portproto"; exec ufw allow "$portproto" ;;
+      remove) validate_port_proto "$portproto"; exec ufw delete allow "$portproto" ;;
+      *)      die "unknown firewall action: $action (expected status, enable, disable, add or remove)" ;;
     esac
     ;;
   troubleshoot)
@@ -469,6 +501,64 @@ case "$cmd" in
     exec 3>"$dest_path"
     chmod 600 /proc/self/fd/3
     dd if="$source_disk" of=/proc/self/fd/3 bs=4M status=progress conv=fsync
+    ;;
+  inventory)
+    # Read-only hardware and security inventory for the "Scan PC" and
+    # hardware pages: fixed commands only, nothing is written or changed.
+    what="${2:-}"
+    export LC_ALL=C
+    case "$what" in
+      dmi-memory)
+        command -v dmidecode >/dev/null 2>&1 || die "dmidecode is not installed"
+        exec dmidecode -t 16 -t 17
+        ;;
+      dmi-system)
+        command -v dmidecode >/dev/null 2>&1 || die "dmidecode is not installed"
+        exec dmidecode -t 0 -t 1 -t 2 -t 3 -t 4
+        ;;
+      smart)
+        dev="${3:-}"
+        case "$dev" in
+          /dev/sd[a-z]|/dev/sd[a-z][a-z]|/dev/nvme[0-9]|/dev/nvme[0-9]n[0-9]|/dev/hd[a-z]|/dev/vd[a-z]|/dev/mmcblk[0-9]) : ;;
+          *) die "invalid disk device: $dev" ;;
+        esac
+        command -v smartctl >/dev/null 2>&1 || die "smartctl is not installed"
+        # smartctl uses its exit status as a bit field (bit 6 = errors in
+        # the log...): the report itself is what matters, not the status.
+        smartctl -a "$dev" || true
+        exit 0
+        ;;
+      firmware-key)
+        # OEM Windows licence key embedded in the ACPI MSDM table (the key
+        # is the last 29 bytes). Empty output: no such key on this machine.
+        table=/sys/firmware/acpi/tables/MSDM
+        if [ -r "$table" ]; then tail -c 29 "$table"; echo; fi
+        exit 0
+        ;;
+      security-audit)
+        echo "### sshd"
+        if command -v sshd >/dev/null 2>&1; then
+          sshd -T 2>/dev/null | grep -Ei '^(permitrootlogin|passwordauthentication|permitemptypasswords|port|pubkeyauthentication) ' || true
+        fi
+        echo "### empty-passwords"
+        awk -F: '($2==""){print $1}' /etc/shadow 2>/dev/null || true
+        echo "### uid0"
+        awk -F: '($3==0){print $1}' /etc/passwd
+        echo "### sudo-nopasswd"
+        grep -rhE '^[^#]*NOPASSWD' /etc/sudoers /etc/sudoers.d 2>/dev/null || true
+        echo "### suid-unusual"
+        find / -xdev -perm -4000 -type f \( -path '/home/*' -o -path '/tmp/*' -o -path '/var/tmp/*' -o -path '/dev/shm/*' -o -path '/opt/*' \) 2>/dev/null | head -n 50
+        echo "### world-writable-etc"
+        find /etc -xdev -type f -perm -0002 2>/dev/null | head -n 50
+        echo "### root-crontab"
+        crontab -l -u root 2>/dev/null | grep -v '^#' || true
+        echo "### root-secrets"
+        find /root -maxdepth 4 -type f \( -name 'id_rsa' -o -name 'id_ecdsa' -o -name 'id_ed25519' -o -name '*.pem' -o -name '*.key' -o -name '.env' -o -name 'credentials' -o -name '.netrc' -o -name '.pgpass' \) 2>/dev/null | head -n 50
+        echo "### end"
+        exit 0
+        ;;
+      *) die "unknown inventory item: $what" ;;
+    esac
     ;;
   *)
     die "unknown subcommand: $cmd"

@@ -21,6 +21,7 @@ import TroubleshootPage from "@/pages/TroubleshootPage.vue";
 import SettingsPreferencesPage from "@/pages/SettingsPreferencesPage.vue";
 import ConfigProfilesPage from "@/pages/ConfigProfilesPage.vue";
 import QuickInstallPage from "@/pages/QuickInstallPage.vue";
+import AppStorePage from "@/pages/AppStorePage.vue";
 import UpdatesPage from "@/pages/UpdatesPage.vue";
 import ReportGeneratorPage from "@/pages/ReportGeneratorPage.vue";
 import TemperaturesPage from "@/pages/TemperaturesPage.vue";
@@ -43,6 +44,9 @@ import RestorePointsPage from "@/pages/RestorePointsPage.vue";
 import InstallProfilesPage from "@/pages/InstallProfilesPage.vue";
 import PortableAppsPage from "@/pages/PortableAppsPage.vue";
 import HardwareDetailsPage from "@/pages/HardwareDetailsPage.vue";
+import HardwareInventoryPage from "@/pages/HardwareInventoryPage.vue";
+import ScanPage from "@/pages/ScanPage.vue";
+import SensorsPage from "@/pages/SensorsPage.vue";
 import PeripheralsPage from "@/pages/PeripheralsPage.vue";
 import ProcessesPage from "@/pages/ProcessesPage.vue";
 import InstalledSoftwarePage from "@/pages/InstalledSoftwarePage.vue";
@@ -105,7 +109,9 @@ const currentPage = ref<string>("dashboard");
 const pages: Record<string, Component> = {
   dashboard: DashboardPage,
   diagnostic: DiagnosticPage,
+  "scan-pc": ScanPage,
   "quick-install": QuickInstallPage,
+  "app-store": AppStorePage,
   "package-manager": PackagesPage,
   disks: DisksPage,
   "file-tools": FileToolsPage,
@@ -139,6 +145,8 @@ const pages: Record<string, Component> = {
   "install-profiles": InstallProfilesPage,
   "portable-apps": PortableAppsPage,
   "hardware-details": HardwareDetailsPage,
+  "hardware-inventory": HardwareInventoryPage,
+  sensors: SensorsPage,
   peripherals: PeripheralsPage,
   processes: ProcessesPage,
   "installed-software": InstalledSoftwarePage,
@@ -187,6 +195,11 @@ const pages: Record<string, Component> = {
 *, *::before, *::after {
   box-sizing: border-box;
 }
+
+/* Native widgets (select popups, checkboxes, date pickers, scrollbars)
+   follow the active theme's mode instead of the GTK default light look. */
+:root[data-theme-mode="dark"] { color-scheme: dark; }
+:root[data-theme-mode="light"] { color-scheme: light; }
 
 body {
   margin: 0;

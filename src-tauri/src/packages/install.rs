@@ -20,7 +20,7 @@ pub fn validate_package_name(name: &str) -> Result<(), String> {
 
 pub fn validate_manager_id(manager: &str) -> Result<(), String> {
     match manager {
-        "apt" | "dnf" | "pacman" | "zypper" => Ok(()),
+        "apt" | "dnf" | "pacman" | "zypper" | "apk" | "xbps" => Ok(()),
         other => Err(format!("gestionnaire de paquets inconnu : {other}")),
     }
 }
@@ -139,6 +139,8 @@ mod tests {
         assert!(validate_manager_id("dnf").is_ok());
         assert!(validate_manager_id("pacman").is_ok());
         assert!(validate_manager_id("zypper").is_ok());
+        assert!(validate_manager_id("apk").is_ok());
+        assert!(validate_manager_id("xbps").is_ok());
     }
 
     #[test]

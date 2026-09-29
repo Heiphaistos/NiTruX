@@ -29,7 +29,7 @@ use tauri::Manager;
 /// the invoked executable's path, with no visibility into argv, so a
 /// shared path across multiple actions is ambiguous to it -- confirmed
 /// live on a real polkit stack). Kept as a single source of truth here;
-/// `tauri.conf.json`'s `deb`/`rpm` file maps list the same 15 names for
+/// `tauri.conf.json`'s `deb`/`rpm` file maps list the same 16 names for
 /// the package-manager-driven install path.
 ///
 /// `nitrux-pkexec-delete-snapshot` (added alongside RestorePointsPage's
@@ -56,6 +56,7 @@ pub const PKEXEC_BINARY_NAMES: &[&str] = &[
     "nitrux-pkexec-format-partition",
     "nitrux-pkexec-extend-partition",
     "nitrux-pkexec-clone-disk",
+    "nitrux-pkexec-inventory",
 ];
 
 /// The polkit action policy files that must be installed under
@@ -82,9 +83,46 @@ fn is_installed_at(representative_binary: &Path) -> bool {
     representative_binary.exists()
 }
 
+/// Whether the installed integration matches THIS build's bundled copy.
+/// Presence alone is not enough: an AppImage replaced by the auto-updater
+/// keeps the helper and policies its previous version wrote to `/usr`, so
+/// any privileged action added or changed since then failed ("unknown
+/// action") with nothing offering to refresh them. Any difference, or a
+/// missing policy, reads as "not installed" so the banner offers the
+/// (idempotent) install again. If the bundled copy cannot be read, fall
+/// back to presence rather than nagging on every launch.
+fn installed_matches_bundle(installed_root: &Path, resource_dir: &Path) -> bool {
+    let installed_helper = installed_root.join("usr/bin/nitrux-pkexec-troubleshoot");
+    if !is_installed_at(&installed_helper) {
+        return false;
+    }
+    let Ok(bundled_helper) = std::fs::read(resource_dir.join("packaging/nitrux-pkexec-helper")) else {
+        return true;
+    };
+    if std::fs::read(&installed_helper).ok().as_deref() != Some(bundled_helper.as_slice()) {
+        return false;
+    }
+    policy_files_match(installed_root, resource_dir)
+}
+
+fn policy_files_match(installed_root: &Path, resource_dir: &Path) -> bool {
+    POLKIT_POLICY_FILES.iter().all(|policy| {
+        let bundled = std::fs::read(resource_dir.join("packaging").join(policy));
+        let installed = std::fs::read(installed_root.join("usr/share/polkit-1/actions").join(policy));
+        match (bundled, installed) {
+            (Ok(b), Ok(i)) => b == i,
+            (Err(_), _) => true,
+            (Ok(_), Err(_)) => false,
+        }
+    })
+}
+
 #[tauri::command]
-pub fn is_pkexec_integration_installed() -> bool {
-    is_installed_at(Path::new("/usr/bin/nitrux-pkexec-troubleshoot"))
+pub fn is_pkexec_integration_installed(app: tauri::AppHandle) -> bool {
+    match app.path().resource_dir() {
+        Ok(resource_dir) => installed_matches_bundle(Path::new("/"), &resource_dir),
+        Err(_) => is_installed_at(Path::new("/usr/bin/nitrux-pkexec-troubleshoot")),
+    }
 }
 
 /// Builds the bootstrap script run under `pkexec`. `resource_dir` is
@@ -280,6 +318,48 @@ mod tests {
         std::fs::remove_dir_all(&dir).ok();
 
         assert!(installed);
+    }
+
+    /// Fake `/` and resource dir laid out like the real ones.
+    fn fake_install(tag: &str, installed_helper: &str, bundled_helper: &str) -> (PathBuf, PathBuf) {
+        let base = std::env::temp_dir().join(format!("nitrux-bundle-match-{tag}-{}", std::process::id()));
+        let root = base.join("root");
+        let res = base.join("res");
+        std::fs::create_dir_all(root.join("usr/bin")).unwrap();
+        std::fs::create_dir_all(root.join("usr/share/polkit-1/actions")).unwrap();
+        std::fs::create_dir_all(res.join("packaging")).unwrap();
+        std::fs::write(root.join("usr/bin/nitrux-pkexec-troubleshoot"), installed_helper).unwrap();
+        std::fs::write(res.join("packaging/nitrux-pkexec-helper"), bundled_helper).unwrap();
+        for policy in POLKIT_POLICY_FILES {
+            std::fs::write(root.join("usr/share/polkit-1/actions").join(policy), "<policy/>").unwrap();
+            std::fs::write(res.join("packaging").join(policy), "<policy/>").unwrap();
+        }
+        (root, res)
+    }
+
+    #[test]
+    fn an_up_to_date_integration_counts_as_installed() {
+        let (root, res) = fake_install("same", "helper v2", "helper v2");
+        let ok = installed_matches_bundle(&root, &res);
+        std::fs::remove_dir_all(root.parent().unwrap()).ok();
+        assert!(ok);
+    }
+
+    #[test]
+    fn a_helper_left_by_a_previous_version_is_offered_for_reinstall() {
+        let (root, res) = fake_install("stale", "helper v1", "helper v2");
+        let ok = installed_matches_bundle(&root, &res);
+        std::fs::remove_dir_all(root.parent().unwrap()).ok();
+        assert!(!ok);
+    }
+
+    #[test]
+    fn a_missing_policy_file_is_offered_for_reinstall() {
+        let (root, res) = fake_install("nopolicy", "helper v2", "helper v2");
+        std::fs::remove_file(root.join("usr/share/polkit-1/actions").join(POLKIT_POLICY_FILES[0])).unwrap();
+        let ok = installed_matches_bundle(&root, &res);
+        std::fs::remove_dir_all(root.parent().unwrap()).ok();
+        assert!(!ok);
     }
 
     #[test]
