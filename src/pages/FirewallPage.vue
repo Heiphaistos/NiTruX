@@ -83,12 +83,12 @@ onMounted(loadFirewall);
 
 <template>
   <div class="fw-page">
-    <NxSectionHeader title="Pare-feu" description="État et règles UFW." />
+    <NxSectionHeader title="Pare-feu" description="État et règles du pare-feu (UFW ou firewalld)." />
     <NxCard v-if="firewallError" danger>{{ firewallError }}</NxCard>
     <template v-if="firewall">
       <div class="fw-status-row">
         <NxBadge :status="firewall.active ? 'success' : 'warning'">
-          UFW {{ firewall.active ? "actif" : "inactif" }}
+          Pare-feu {{ firewall.active ? "actif" : "inactif" }}
         </NxBadge>
         <NxButton :disabled="loadingRules" @click="loadRulesPrivileged">
           {{ loadingRules ? "Lecture..." : firewall.rules_need_privilege ? "Afficher les règles (admin)" : "Actualiser" }}
@@ -100,7 +100,7 @@ onMounted(loadFirewall);
       </div>
       <NxCard v-if="!firewall.active && confirmingEnable" class="fw-confirm">
         <p>
-          Une fois activé, UFW bloque toute connexion entrante non autorisée. Si vous administrez cette machine à distance
+          Une fois activé, le pare-feu bloque toute connexion entrante non autorisée. Si vous administrez cette machine à distance
           (SSH), autorisez d'abord le port <strong>22/tcp</strong> ci-dessous, sinon la connexion sera coupée.
         </p>
         <div class="fw-form-row">

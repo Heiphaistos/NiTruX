@@ -75,6 +75,7 @@ pub const EXTERNAL_TOOLS: &[ExternalTool] = &[
     tool("dig", "dnsutils", "bind-utils", "bind", "Résolution DNS (Réseau)"),
     tool("docker", "docker.io", "moby-engine", "docker", "Conteneurs Docker (Réseau)"),
     tool("efibootmgr", "efibootmgr", "efibootmgr", "efibootmgr", "Boot Manager (entrées EFI)"),
+    tool("firewall-cmd", "firewalld", "firewalld", "firewalld", "Pare-feu (Fedora, openSUSE)"),
     tool("flatpak", "flatpak", "flatpak", "flatpak", "Applications Flatpak"),
     tool("fwupdmgr", "fwupd", "fwupd", "fwupd", "Mises à jour du firmware"),
     tool("lpstat", "cups-client", "cups-client", "cups", "Imprimantes (Périphériques)"),

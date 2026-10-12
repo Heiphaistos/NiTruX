@@ -50,7 +50,7 @@ describe("FirewallPage", () => {
       .mockResolvedValueOnce({ active: true, rules: ["443/tcp ALLOW Anywhere"], rules_need_privilege: false });
     const wrapper = mount(FirewallPage);
     await vi.waitFor(() => expect(wrapper.text()).toContain("Afficher les règles (admin)"));
-    expect(wrapper.text()).toContain("UFW actif");
+    expect(wrapper.text()).toContain("Pare-feu actif");
     expect(wrapper.find(".nx-card--danger").exists()).toBe(false);
 
     await wrapper.findAll("button").find((b) => b.text() === "Afficher les règles (admin)")!.trigger("click");
@@ -81,7 +81,7 @@ describe("FirewallPage", () => {
     expect(wrapper.text()).toContain("22/tcp");
 
     await wrapper.findAll("button").find((b) => b.text() === "Confirmer l'activation")!.trigger("click");
-    await vi.waitFor(() => expect(wrapper.text()).toContain("UFW actif"));
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Pare-feu actif"));
     expect(invoke).toHaveBeenCalledWith("set_firewall_enabled", { enabled: true });
     expect(wrapper.text()).toContain("Désactiver le pare-feu");
   });
