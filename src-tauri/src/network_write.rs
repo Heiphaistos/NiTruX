@@ -173,20 +173,27 @@ pub fn set_dns_servers(content: String) -> Result<(), String> {
 #[tauri::command]
 pub fn add_firewall_rule(port_proto: String) -> Result<String, String> {
     validate_port_proto(&port_proto)?;
+    if crate::firewall::uses_firewalld() {
+        return crate::firewall::firewalld_port(&port_proto, true);
+    }
     crate::subprocess::run_with_timeout(
         "pkexec",
         &[PKEXEC_FIREWALL_RULE, "firewall-rule", "add", &port_proto],
-        Duration::from_secs(15),
+        // Includes typing the password, like every other pkexec call.
+        Duration::from_secs(60),
     )
 }
 
 #[tauri::command]
 pub fn remove_firewall_rule(port_proto: String) -> Result<String, String> {
     validate_port_proto(&port_proto)?;
+    if crate::firewall::uses_firewalld() {
+        return crate::firewall::firewalld_port(&port_proto, false);
+    }
     crate::subprocess::run_with_timeout(
         "pkexec",
         &[PKEXEC_FIREWALL_RULE, "firewall-rule", "remove", &port_proto],
-        Duration::from_secs(15),
+        Duration::from_secs(60),
     )
 }
 
