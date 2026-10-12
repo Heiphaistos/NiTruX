@@ -118,11 +118,29 @@ fn pick_appimage_asset(assets: &[(String, String)], owner: &str, repo: &str) -> 
     }
 }
 
+/// GitHub owner and repository names: letters, digits, '-', '_', '.',
+/// not starting with '.'. Both come from the frontend and end up in a URL.
+fn validate_github_name(name: &str) -> Result<(), String> {
+    let ok = !name.is_empty()
+        && name.len() <= 100
+        && !name.starts_with('.')
+        && name.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'));
+    if ok { Ok(()) } else { Err(format!("nom de dépôt GitHub invalide : {name}")) }
+}
+
+/// A release asset must be served by GitHub over HTTPS: the file is made
+/// executable and launched afterwards.
+fn validate_asset_url(url: &str) -> Result<(), String> {
+    if url.starts_with("https://github.com/") { Ok(()) } else { Err(format!("adresse de téléchargement inattendue : {url}")) }
+}
+
 fn resolve_appimage_asset(owner: &str, repo: &str) -> Result<(String, String), String> {
+    validate_github_name(owner)?;
+    validate_github_name(repo)?;
     let api_url = format!("https://api.github.com/repos/{owner}/{repo}/releases/latest");
     let body = subprocess::run_with_timeout(
         "curl",
-        &["-sL", "--max-time", "15", "-H", "User-Agent: NiTruX", &api_url],
+        &["-sL", "--proto", "=https", "--proto-redir", "=https", "--max-time", "15", "-H", "User-Agent: NiTruX", &api_url],
         Duration::from_secs(20),
     )?;
     let json: serde_json::Value =
@@ -141,6 +159,7 @@ fn resolve_appimage_asset(owner: &str, repo: &str) -> Result<(String, String), S
 pub fn download_portable_app(owner: String, repo: String) -> Result<PortableAppFile, String> {
     let (filename, url) = resolve_appimage_asset(&owner, &repo)?;
     validate_filename(&filename)?;
+    validate_asset_url(&url)?;
 
     let dir = portable_apps_dir()?;
     std::fs::create_dir_all(&dir).map_err(|e| format!("impossible de créer {dir} : {e}"))?;
@@ -157,7 +176,7 @@ pub fn download_portable_app(owner: String, repo: String) -> Result<PortableAppF
     // an HTTP error instead.
     subprocess::run_with_timeout(
         "curl",
-        &["-sfL", "--max-time", "300", "-o", &dest_path, &url],
+        &["-sfL", "--proto", "=https", "--proto-redir", "=https", "--max-time", "300", "-o", &dest_path, &url],
         Duration::from_secs(310),
     )?;
 
@@ -204,6 +223,19 @@ pub fn remove_portable_app(filename: String) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn refuses_odd_repository_names_and_non_github_downloads() {
+        assert!(validate_github_name("AppImageCommunity").is_ok());
+        assert!(validate_github_name("pkg2appimage.x_y-z").is_ok());
+        for bad in ["", "..", ".hidden", "a/b", "a?x=1", "a b", "a#b"] {
+            assert!(validate_github_name(bad).is_err(), "{bad} should be refused");
+        }
+        assert!(validate_asset_url("https://github.com/o/r/releases/download/v1/x.AppImage").is_ok());
+        assert!(validate_asset_url("http://github.com/o/r/x.AppImage").is_err());
+        assert!(validate_asset_url("https://evil.example/x.AppImage").is_err());
+        assert!(validate_asset_url("https://github.com.evil.example/x.AppImage").is_err());
+    }
 
     #[test]
     fn rejects_empty_filename() {
