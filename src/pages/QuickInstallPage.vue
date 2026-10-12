@@ -8,7 +8,7 @@ import NxBadge from "@/components/ui/NxBadge.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 import NxInput from "@/components/ui/NxInput.vue";
 import { appCatalog, type AppCatalogEntry } from "@/data/appCatalog";
-import { installWithFallback, describeFailure, sourceLabel, type InstallCandidate } from "@/lib/appInstall";
+import { installWithFallback, describeFailure, sourceLabel, catalogCandidates } from "@/lib/appInstall";
 import { serializeAppSelection, parseAppSelection } from "@/lib/appSelection";
 
 const emit = defineEmits<{ navigate: [string] }>();
@@ -48,7 +48,8 @@ onMounted(() => {
 
 function isInstalled(entry: AppCatalogEntry): boolean {
   return stateOf(entry) === "success"
-    || (entry.installMethod === "apt" && (installedNative.value.has(entry.packageId) || installedNative.value.has(entry.id)));
+    || (entry.installMethod === "apt"
+      && [entry.packageId, entry.id, entry.arch].some((n) => n !== undefined && installedNative.value.has(n)));
 }
 
 const categories = computed(() => ["Tous", ...new Set(appCatalog.map((e) => e.category))]);
@@ -73,17 +74,7 @@ async function install(entry: AppCatalogEntry) {
   installState.value[entry.id] = "installing";
   delete installErrors.value[entry.id];
   const manager = nativeManager.value ?? (managerReady ? await managerReady : null);
-  const candidates: InstallCandidate[] = [];
-  if (entry.installMethod === "apt") {
-    if (manager) {
-      candidates.push({ source: "native", id: entry.packageId, manager });
-      // Debian-style names (firefox-esr) often exist under the plain app
-      // id on other distributions.
-      if (entry.id !== entry.packageId) candidates.push({ source: "native", id: entry.id, manager });
-    }
-  } else {
-    candidates.push({ source: entry.installMethod, id: entry.packageId });
-  }
+  const candidates = catalogCandidates(entry, manager);
   const result = await installWithFallback(candidates, { name: entry.name, entryId: entry.id });
   if (result.ok) {
     installState.value[entry.id] = "success";

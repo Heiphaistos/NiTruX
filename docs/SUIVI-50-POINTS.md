@@ -21,7 +21,7 @@ Légende : FAIT = codé et testé (tests auto) · VM = codé mais pas encore vé
 | 15 | Paquet `policykit-1` → `pkexec` | FAIT |
 | 16 | Actions admin sur Arch | FAIT, paquet installé en VM Arch : 16 actions polkit, vrais appels pkexec OK |
 | 17 | Parcours e2e sur Omarchy | FAIT : 51 pages, 0 erreur JS, scénarios terminal/PDF/benchmark/fichiers/pilotes OK (sous Xvfb). Trouvé et corrigé : imprimantes sans destination, historique pacman absent |
-| 18 | Repli catalogue sur pacman | À FAIRE (e2e) |
+| 18 | Catalogue d'apps sur pacman | FAIT : 78 noms Arch ajoutés (vérifiés dans les dépôts officiels), installation par profils corrigée (elle n'avait aucun repli), indice AUR si rien ne marche ; installations réelles vérifiées en VM Arch. 47 apps ne sont que dans l'AUR (repli Flatpak ou yay) |
 
 ## Fonctions validées (19-29)
 | # | Point | État |

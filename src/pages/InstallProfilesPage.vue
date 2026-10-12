@@ -7,6 +7,7 @@ import NxButton from "@/components/ui/NxButton.vue";
 import NxBadge from "@/components/ui/NxBadge.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 import { appCatalog, type AppCatalogEntry } from "@/data/appCatalog";
+import { installWithFallback, describeFailure, catalogCandidates } from "@/lib/appInstall";
 import { installProfiles } from "@/data/installProfiles";
 
 const nativeManager = ref<string | null>(null);
@@ -56,22 +57,17 @@ const results = ref<InstallResult[] | null>(null);
 const installSummary = ref<string | null>(null);
 
 async function installOne(entry: AppCatalogEntry): Promise<InstallResult> {
-  try {
-    if (entry.installMethod === "apt") {
-      const manager = nativeManager.value ?? (await managerReady);
-      if (!manager) throw new Error("aucun gestionnaire de paquets natif détecté");
-      const message = await invoke<string>("install_package", { manager, package: entry.packageId });
-      return { id: entry.id, name: entry.name, success: true, message };
-    }
-    if (entry.installMethod === "flatpak") {
-      const message = await invoke<string>("install_flatpak_package", { appId: entry.packageId });
-      return { id: entry.id, name: entry.name, success: true, message };
-    }
-    const message = await invoke<string>("install_snap_package", { package: entry.packageId });
-    return { id: entry.id, name: entry.name, success: true, message };
-  } catch (e) {
-    return { id: entry.id, name: entry.name, success: false, message: String(e) };
+  // Same candidates and fallback as Installation rapide: the catalog's
+  // Debian names fail on other distributions without them.
+  const manager = entry.installMethod === "apt" ? nativeManager.value ?? (await managerReady) : null;
+  const candidates = catalogCandidates(entry, manager);
+  if (candidates.length === 0) {
+    return { id: entry.id, name: entry.name, success: false, message: "aucun gestionnaire de paquets natif détecté" };
   }
+  const result = await installWithFallback(candidates, { name: entry.name, entryId: entry.id });
+  return result.ok
+    ? { id: entry.id, name: entry.name, success: true, message: result.output }
+    : { id: entry.id, name: entry.name, success: false, message: describeFailure(result.attempts) };
 }
 
 async function installSelection() {

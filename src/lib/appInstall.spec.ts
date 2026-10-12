@@ -51,4 +51,21 @@ describe("appInstall", () => {
     expect(res.attempts).toHaveLength(1);
     expect(describeFailure(res.attempts)).toMatch(/^apt \(gimp\) : .*échec/);
   });
+
+  it("tries the Arch name first on pacman, and never repeats a name", async () => {
+    const { catalogCandidates } = await import("./appInstall");
+    const entry = { id: "libreoffice", name: "LibreOffice", description: "", icon: "", category: "", installMethod: "apt" as const, packageId: "libreoffice", arch: "libreoffice-fresh" };
+    expect(catalogCandidates(entry, "pacman").map((c) => c.id)).toEqual(["libreoffice-fresh", "libreoffice"]);
+    expect(catalogCandidates(entry, "apt").map((c) => c.id)).toEqual(["libreoffice"]);
+    expect(catalogCandidates({ ...entry, installMethod: "flatpak", packageId: "org.libreoffice.LibreOffice" }, "pacman")).toEqual([
+      { source: "flatpak", id: "org.libreoffice.LibreOffice" },
+    ]);
+    expect(catalogCandidates(entry, null)).toEqual([]);
+  });
+
+  it("points to the AUR when every pacman attempt failed", async () => {
+    const { describeFailure } = await import("./appInstall");
+    const text = describeFailure([{ candidate: { source: "native", id: "pidgin", manager: "pacman" }, ok: false, message: "introuvable" }]);
+    expect(text).toContain("yay -S pidgin");
+  });
 });
