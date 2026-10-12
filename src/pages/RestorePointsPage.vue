@@ -7,7 +7,7 @@ import NxButton from "@/components/ui/NxButton.vue";
 import NxInput from "@/components/ui/NxInput.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 
-interface SnapshotInfo { id: string; date: string }
+interface SnapshotInfo { id: string; date: string; handle: string }
 
 const snapshots = ref<SnapshotInfo[]>([]);
 const snapshotsError = ref<string | null>(null);
@@ -21,7 +21,23 @@ async function loadSnapshots() {
   }
 }
 
-onMounted(loadSnapshots);
+// Snapper only lists for root: rather than a password prompt on every visit,
+// listing waits for a click there. Timeshift lists as before.
+const backend = ref<string>("timeshift");
+const listed = ref(false);
+
+onMounted(async () => {
+  backend.value = await invoke<string>("get_snapshot_backend").catch(() => "timeshift");
+  if (backend.value !== "snapper") {
+    await loadSnapshots();
+    listed.value = true;
+  }
+});
+
+async function listSnapper() {
+  await loadSnapshots();
+  listed.value = !snapshotsError.value;
+}
 
 const snapshotCreating = ref(false);
 const snapshotCreateError = ref<string | null>(null);
@@ -43,8 +59,8 @@ async function createSnapshotNow() {
 // system state -- the same irreversibility class as AntivirusPage's
 // quarantine or DisksPage's format-partition, so it gets the same
 // type-to-confirm pattern rather than a single unconfirmed click.
-// timeshift's --delete needs the snapshot's timestamp NAME (s.date), not
-// the numeric list index (s.id) shown next to it.
+// delete-snapshot takes `s.handle`: Timeshift's timestamp name or Snapper's number,
+// not the list index (s.id) shown next to it.
 const confirmingDelete = ref<string | null>(null);
 const confirmDeleteText = ref("");
 const deleting = ref<string | null>(null);
@@ -72,10 +88,11 @@ async function deleteSnapshot(date: string) {
 
 <template>
   <div class="rp-page">
-    <NxSectionHeader title="Restauration" description="Instantanés système." />
+    <NxSectionHeader title="Restauration" :description="backend === 'snapper' ? 'Instantanés Snapper. Pour revenir à l\'un d\'eux, choisissez-le dans le menu de démarrage.' : 'Instantanés système (Timeshift).'" />
 
     <NxCard>
       <NxButton :disabled="snapshotCreating" @click="createSnapshotNow">{{ snapshotCreating ? "Création..." : "Créer un instantané" }}</NxButton>
+      <NxButton v-if="backend === 'snapper' && !listed" variant="ghost" @click="listSnapper">Afficher les instantanés (mot de passe)</NxButton>
     </NxCard>
 
     <NxCard v-if="snapshotCreateError" danger>{{ snapshotCreateError }}</NxCard>
@@ -86,26 +103,26 @@ async function deleteSnapshot(date: string) {
       <div class="rp-row">
         <span>#{{ s.id }}</span>
         <span>{{ s.date }}</span>
-        <NxButton v-if="confirmingDelete !== s.date" variant="danger" :disabled="deleting !== null" @click="startConfirmDelete(s.date)">
+        <NxButton v-if="confirmingDelete !== s.handle" variant="danger" :disabled="deleting !== null" @click="startConfirmDelete(s.handle)">
           Supprimer
         </NxButton>
       </div>
-      <div v-if="confirmingDelete === s.date" class="rp-confirm-row">
+      <div v-if="confirmingDelete === s.handle" class="rp-confirm-row">
         <NxInput
           v-model="confirmDeleteText"
-          :placeholder="`Tapez « ${s.date} » pour confirmer`"
+          :placeholder="`Tapez « ${s.handle} » pour confirmer`"
           :aria-label="`Confirmation de suppression de l'instantané ${s.date}`"
         />
         <NxButton
           variant="danger"
-          :disabled="deleting !== null || confirmDeleteText !== s.date"
-          @click="deleteSnapshot(s.date)"
+          :disabled="deleting !== null || confirmDeleteText !== s.handle"
+          @click="deleteSnapshot(s.handle)"
         >
-          {{ deleting === s.date ? "Suppression..." : "Confirmer la suppression" }}
+          {{ deleting === s.handle ? "Suppression..." : "Confirmer la suppression" }}
         </NxButton>
       </div>
     </NxCard>
-    <NxCard v-if="!snapshotsError && snapshots.length === 0" class="rp-empty">Aucun instantané trouvé.</NxCard>
+    <NxCard v-if="listed && !snapshotsError && snapshots.length === 0" class="rp-empty">Aucun instantané trouvé.</NxCard>
   </div>
 </template>
 

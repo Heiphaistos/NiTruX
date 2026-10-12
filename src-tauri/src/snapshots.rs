@@ -6,6 +6,8 @@ use std::time::Duration;
 pub struct Snapshot {
     pub id: String,
     pub date: String,
+    /// What delete-snapshot takes: Timeshift's timestamp name, Snapper's number.
+    pub handle: String,
 }
 
 /// Parses one line of `timeshift --list` output, e.g.:
@@ -28,7 +30,36 @@ pub fn parse_timeshift_line(line: &str) -> Option<Snapshot> {
         .iter()
         .find(|f| f.len() == 19 && f.chars().nth(4) == Some('-'))?
         .to_string();
-    Some(Snapshot { id: id.to_string(), date })
+    Some(Snapshot { id: id.to_string(), handle: date.clone(), date })
+}
+
+/// `snapper --csvout list --columns number,date,description`. Snapshot 0
+/// is the running system, not a restore point.
+pub fn parse_snapper_csv(csv: &str) -> Vec<Snapshot> {
+    csv.lines()
+        .skip(1)
+        .filter_map(|line| {
+            let mut fields = line.splitn(3, ',');
+            let number = fields.next()?.trim();
+            let date = fields.next()?.trim();
+            let description = fields.next().unwrap_or("").trim().trim_matches('"');
+            if number == "0" || number.is_empty() || !number.chars().all(|c| c.is_ascii_digit()) {
+                return None;
+            }
+            let date = if description.is_empty() { date.to_string() } else { format!("{date} — {description}") };
+            Some(Snapshot { id: number.to_string(), date, handle: number.to_string() })
+        })
+        .collect()
+}
+
+/// Snapper when it manages / (Omarchy, openSUSE, Fedora on btrfs) -- the
+/// helper applies the same test -- otherwise Timeshift.
+#[tauri::command]
+pub fn get_snapshot_backend() -> String {
+    let snapper_root = subprocess::binary_in_path("snapper")
+        && subprocess::run_with_timeout("snapper", &["--csvout", "list-configs"], Duration::from_secs(10))
+            .is_ok_and(|out| out.lines().any(|l| l.starts_with("root,")));
+    if snapper_root { "snapper" } else { "timeshift" }.to_string()
 }
 
 /// Read-only: lists existing Btrfs/rsync snapshots via `timeshift --list`.
@@ -59,6 +90,16 @@ fn interpret_list_result(stdout: &str, code: i32) -> Result<Vec<Snapshot>, Strin
 
 #[tauri::command]
 pub fn list_snapshots() -> Result<Vec<Snapshot>, String> {
+    if get_snapshot_backend() == "snapper" {
+        // Snapper lists only for root: one password prompt, via the
+        // read-only inventory action.
+        let csv = subprocess::run_with_timeout(
+            "pkexec",
+            &["/usr/bin/nitrux-pkexec-inventory", "inventory", "snapper-list"],
+            Duration::from_secs(60),
+        )?;
+        return Ok(parse_snapper_csv(&csv));
+    }
     let (stdout, _stderr, code) = subprocess::run_capturing_exit_code("timeshift", &["--list"], Duration::from_secs(10))?;
     interpret_list_result(&stdout, code)
 }
@@ -66,6 +107,16 @@ pub fn list_snapshots() -> Result<Vec<Snapshot>, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parses_snapper_csv_and_skips_the_running_system() {
+        let csv = "number,date,description\n0,,current\n12,2026-10-01 10:00:00,omarchy 3.1\n13,2026-10-12 09:00:00,\"NiTruX manual snapshot\"\n";
+        let snaps = parse_snapper_csv(csv);
+        assert_eq!(snaps.len(), 2);
+        assert_eq!(snaps[0].handle, "12");
+        assert_eq!(snaps[0].date, "2026-10-01 10:00:00 — omarchy 3.1");
+        assert_eq!(snaps[1].date, "2026-10-12 09:00:00 — NiTruX manual snapshot");
+    }
 
     #[test]
     fn parses_timeshift_list_line() {

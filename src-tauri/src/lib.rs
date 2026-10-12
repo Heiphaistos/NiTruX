@@ -243,6 +243,7 @@ pub fn run() {
             privileged_inventory::run_security_audit,
             malwarescan::scan_for_malware,
             snapshots::list_snapshots,
+            snapshots::get_snapshot_backend,
             packages::install::install_package,
             packages::install::uninstall_package,
             packages::install::upgrade_all_packages,
