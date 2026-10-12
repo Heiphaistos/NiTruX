@@ -1,7 +1,7 @@
 # Suivi des 50 points (audit du 2026-10-12)
 
 État au 2026-10-12, branche `fix/arch-wayland-locale-and-catalog` (PR #4).
-Tests : `npm test` 560/560, `cargo test` 492/492, `vue-tsc` et `clippy -D warnings` sans erreur.
+Tests : `npm test` 569/569, `cargo test` 502/502, `vue-tsc` et `clippy -D warnings` sans erreur.
 
 Légende : FAIT = codé et testé (tests auto) · VM = codé mais pas encore vérifié sur une VM · À FAIRE = non commencé.
 
@@ -11,8 +11,8 @@ Légende : FAIT = codé et testé (tests auto) · VM = codé mais pas encore vé
 | 1 | Orphelins (autoremove) sans pacman/xbps | FAIT (helper) · VM |
 | 2 | Régénérer GRUB sur Arch / Limine / systemd-boot | FAIT (helper) · VM |
 | 3 | DNS : ne plus écraser le lien resolv.conf (resolved / NetworkManager) | FAIT (helper + lecture) · VM |
-| 4 | Pare-feu firewalld | À FAIRE |
-| 5 | Snapper (Omarchy, openSUSE, Fedora btrfs) | À FAIRE |
+| 4 | Pare-feu firewalld | FAIT (polkit de firewalld/systemd, aucune action pkexec ajoutée) |
+| 5 | Snapper (Omarchy, openSUSE, Fedora btrfs) | FAIT · VM |
 | 6 | pacman -S sur base périmée | FAIT (`--needed` + message « mise à jour complète d'abord ») |
 | 7-11 | Commandes non portables du catalogue (xrandr, iwconfig, route, netstat, lastlog, kvm-ok, lsb_release, apt/dpkg) | FAIT, exécutées pour de vrai sur Omarchy |
 | 12 | checkupdates absent : repli silencieux | FAIT (pacman-contrib proposé dans Dépendances) |
@@ -27,7 +27,7 @@ Légende : FAIT = codé et testé (tests auto) · VM = codé mais pas encore vé
 | # | Point | État |
 |---|---|---|
 | 19 | Profils d'alimentation (powerprofilesctl) | FAIT |
-| 20 | Assistant IA local (Ollama) | À FAIRE |
+| 20 | Assistant IA local (Ollama) | FAIT (testé avec un faux serveur Ollama) |
 | 21 | Récupération PhotoRec / TestDisk (terminal intégré) | FAIT |
 | 22 | Image disque (restauration ; la création `clone-disk` existe déjà) | À FAIRE · VM |
 | 23 | Export / import de la liste d'apps | FAIT |
@@ -36,13 +36,13 @@ Légende : FAIT = codé et testé (tests auto) · VM = codé mais pas encore vé
 | 26 | Partitionnement (créer, supprimer, réduire) | À FAIRE · VM |
 | 27 | Clé USB bootable depuis un ISO | À FAIRE · VM |
 | 28 | Restauration Timeshift fichier par fichier | À FAIRE · VM |
-| 29 | Benchmark compression / chiffrement | À FAIRE |
+| 29 | Benchmark compression / chiffrement | FAIT (SHA-256 + gzip, aucune dépendance) |
 
 ## Portabilité (30-35)
 | # | Point | État |
 |---|---|---|
-| 30 | firewalld | À FAIRE (= 4) |
-| 31 | Snapper | À FAIRE (= 5) |
+| 30 | firewalld | FAIT (= 4) |
+| 31 | Snapper | FAIT (= 5) · VM |
 | 32 | Mises à jour AUR (yay/paru) | FAIT |
 | 33 | Firmware (fwupd) | FAIT (testé sur fixture, fwupd absent de la machine de dev) |
 | 34 | Alerte « redémarrage nécessaire » | FAIT |
@@ -68,14 +68,22 @@ Légende : FAIT = codé et testé (tests auto) · VM = codé mais pas encore vé
 | 46 | Erreurs traduites | FAIT (= 13) |
 | 47 | Proposer pacman-contrib | FAIT (= 12) |
 | 48 | Moniteurs : modèle (EDID), fréquence, échelle, fréquence max inutilisée | FAIT |
-| 49 | Historique des actions root | À FAIRE |
-| 50 | Comparer deux rapports | À FAIRE |
+| 49 | Historique des actions root | FAIT (Rapports > Actions administrateur) |
+| 50 | Comparer deux rapports | FAIT |
 
 ## Version Arch / Omarchy
 - `packaging/arch/PKGBUILD` (`nitrux-bin`) : reprend le .deb, marque la copie « gérée par pacman » (`/usr/lib/nitrux/managed-by`). Construit et vérifié avec `makepkg` sur Omarchy.
 - Updater Tauri désactivé pour cette copie (il ferait `dpkg -i`) : mise à jour via pacman / `omarchy-update`.
 - Omarchy : « Tout mettre à jour » lance `omarchy-update` dans le terminal intégré (snapshot Snapper + migrations).
 - Construit automatiquement par `release.yml` à chaque tag `vX.Y.Z`.
+
+## Corrigé en route
+- Ajout/retrait de règle ufw : délai de 15 s qui incluait la saisie du mot de passe → 60 s.
+
+## Volontairement en attente de la VM
+Les points 22, 24, 25, 26, 27 et 28 écrivent sur des disques ou sur l'amorçage. Ils ne seront codés
+qu'avec la VM QEMU disponible : un code non vérifié ici pourrait partir en release dès que la PR est mergée.
+Le point 43 (dépôt apt/dnf signé) demande une décision : où l'héberger (VPS ou GitHub Pages) et une clé GPG dédiée.
 
 ## Bloquants côté humain
 1. `gh auth refresh -h github.com -s workflow` : sans ce droit, GitHub refuse de pousser `.github/workflows/`.
