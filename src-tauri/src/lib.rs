@@ -30,6 +30,7 @@ mod gpu;
 mod hardware;
 mod hardware_details;
 mod install_info;
+mod ollama;
 mod power_profiles;
 mod reboot_required;
 mod hardware_inventory;
@@ -175,6 +176,8 @@ pub fn run() {
             install_info::get_install_info,
             admin_history::get_admin_history,
             reboot_required::get_reboot_required,
+            ollama::ollama_status,
+            ollama::ollama_chat,
             power_profiles::get_power_profiles,
             power_profiles::set_power_profile,
             accounts::get_user_accounts,
