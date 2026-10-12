@@ -89,23 +89,31 @@ fn read_one_certificate(path: &str, filename: &str) -> Option<CertEntry> {
 /// different filenames.
 #[tauri::command]
 pub fn get_certificates() -> Vec<CertEntry> {
-    let entries = match std::fs::read_dir("/etc/ssl/certs") {
-        Ok(entries) => entries,
-        Err(_) => return vec![],
-    };
-    let mut certs: Vec<CertEntry> = entries
-        .flatten()
-        .filter_map(|entry| {
-            let filename = entry.file_name().to_string_lossy().into_owned();
-            if !filename.ends_with(".pem") {
-                return None;
-            }
-            let path = entry.path().to_string_lossy().into_owned();
-            read_one_certificate(&path, &filename)
-        })
+    // Fedora/RHEL keep only bundle files in /etc/ssl/certs; their one-file-
+    // per-certificate directory is under /etc/pki (the page was empty there,
+    // caught by the Fedora CI job).
+    let pem_files = ["/etc/ssl/certs", "/etc/pki/ca-trust/extracted/pem/directory-hash"]
+        .iter()
+        .map(|dir| pem_entries(dir))
+        .find(|files| !files.is_empty())
+        .unwrap_or_default();
+    let mut certs: Vec<CertEntry> = pem_files
+        .iter()
+        .filter_map(|(path, filename)| read_one_certificate(path, filename))
         .collect();
     certs.sort_by(|a, b| a.subject.cmp(&b.subject));
     certs
+}
+
+fn pem_entries(dir: &str) -> Vec<(String, String)> {
+    let Ok(entries) = std::fs::read_dir(dir) else { return Vec::new() };
+    entries
+        .flatten()
+        .filter_map(|entry| {
+            let filename = entry.file_name().to_string_lossy().into_owned();
+            filename.ends_with(".pem").then(|| (entry.path().to_string_lossy().into_owned(), filename))
+        })
+        .collect()
 }
 
 #[cfg(test)]
