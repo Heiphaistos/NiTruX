@@ -16,6 +16,8 @@ const containerEl = ref<HTMLDivElement | null>(null);
 let id = crypto.randomUUID();
 const spawnError = ref<string | null>(null);
 const exited = ref(false);
+// Root shell through pkexec: the password is asked on every new session.
+const admin = ref(false);
 
 let term: Terminal | null = null;
 let fitAddon: FitAddon | null = null;
@@ -50,7 +52,7 @@ async function startSession() {
   // and no visible error: the user would just see a permanently empty
   // black box with no indication anything went wrong.
   try {
-    await invoke("spawn_terminal", { id, onData, onExit });
+    await invoke("spawn_terminal", { id, onData, onExit, admin: admin.value });
   } catch (e) {
     spawnError.value = String(e);
     return false;
@@ -58,6 +60,11 @@ async function startSession() {
   exited.value = false;
   spawnError.value = null;
   return true;
+}
+
+async function switchSession(asAdmin: boolean) {
+  admin.value = asAdmin;
+  await restart();
 }
 
 async function restart() {
@@ -113,10 +120,13 @@ onUnmounted(() => {
 
 <template>
   <div class="term-page">
-    <NxSectionHeader title="Terminal" description="Shell interactif, mêmes droits que votre session." />
+    <NxSectionHeader title="Terminal" description="Shell interactif avec les droits de votre session, ou en administrateur (mot de passe demandé)." />
     <NxCard v-if="spawnError" danger>{{ spawnError }}</NxCard>
-    <div v-if="exited || spawnError" class="term-actions">
-      <NxButton @click="restart">Nouvelle session</NxButton>
+    <div class="term-actions">
+      <NxButton v-if="exited || spawnError" @click="restart">Nouvelle session</NxButton>
+      <NxButton v-if="!admin" variant="danger" @click="switchSession(true)">Session administrateur (root)</NxButton>
+      <NxButton v-else variant="ghost" @click="switchSession(false)">Revenir à une session normale</NxButton>
+      <span v-if="admin" class="term-admin">Session root : chaque commande a tous les droits sur le système.</span>
     </div>
     <div v-show="!spawnError" ref="containerEl" class="term-container"></div>
   </div>
@@ -124,6 +134,7 @@ onUnmounted(() => {
 
 <style scoped>
 .term-page { padding: 24px; display: flex; flex-direction: column; gap: 12px; height: 100%; box-sizing: border-box; }
-.term-actions { display: flex; gap: 8px; }
+.term-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.term-admin { color: var(--nx-accent-danger); font-size: 13px; font-weight: 600; }
 .term-container { flex: 1; min-height: 0; background: #000; border-radius: 8px; padding: 8px; }
 </style>

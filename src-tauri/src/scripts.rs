@@ -15,6 +15,23 @@ pub fn run_script(content: String) -> Result<String, String> {
     subprocess::run_with_timeout_env("sh", &["-c", &content], &[("LC_ALL", &lc_all)], Duration::from_secs(60))
 }
 
+/// Same, as root: `pkexec /bin/sh -c <script>`. polkit's own exec action
+/// asks for the admin password every time and shows the command it is
+/// about to run; nothing is cached. 5 minutes, password included.
+#[tauri::command]
+pub fn run_script_as_admin(content: String) -> Result<String, String> {
+    if content.trim().is_empty() {
+        return Err("script vide".to_string());
+    }
+    let lc_all = std::env::var("LC_ALL").unwrap_or_default();
+    // run_with_timeout (not _env) so the action lands in the admin history.
+    subprocess::run_with_timeout(
+        "pkexec",
+        &["/usr/bin/env", &format!("LC_ALL={lc_all}"), "/bin/sh", "-c", &content],
+        Duration::from_secs(300),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -30,6 +47,11 @@ mod tests {
         let expected = std::env::var("LC_ALL").unwrap_or_default();
         let result = run_script("echo \"$LC_ALL\"".to_string()).expect("should succeed");
         assert_eq!(result.trim(), expected);
+    }
+
+    #[test]
+    fn an_empty_admin_script_never_reaches_pkexec() {
+        assert!(run_script_as_admin("   ".to_string()).is_err());
     }
 
     #[test]

@@ -55,11 +55,11 @@ function useLibraryScript(script: LibraryScript) {
   saveError.value = null;
 }
 
-async function runScript(name: string, content: string) {
+async function runScript(name: string, content: string, asAdmin = false) {
   running.value = { ...running.value, [name]: true };
   delete errors.value[name];
   try {
-    outputs.value[name] = await invoke<string>("run_script", { content });
+    outputs.value[name] = await invoke<string>(asAdmin ? "run_script_as_admin" : "run_script", { content });
   } catch (e) {
     errors.value[name] = String(e);
   } finally {
@@ -71,7 +71,7 @@ async function runScript(name: string, content: string) {
 
 <template>
   <div class="scr-page">
-    <NxSectionHeader title="Scripts & Snippets" description="Enregistre et exécute des scripts shell avec vos propres privilèges — aucune élévation." />
+    <NxSectionHeader title="Scripts & Snippets" description="Enregistre et exécute des scripts shell avec vos droits, ou en administrateur (mot de passe demandé à chaque fois)." />
 
     <NxCard class="scr-new">
       <NxInput v-model="newName" placeholder="Nom du script..." aria-label="Nom du script" />
@@ -106,6 +106,7 @@ async function runScript(name: string, content: string) {
           <NxButton :disabled="running[s.name] === true" @click="runScript(s.name, s.content)">
             {{ running[s.name] === true ? "En cours..." : "Exécuter" }}
           </NxButton>
+          <NxButton variant="ghost" :disabled="running[s.name] === true" @click="runScript(s.name, s.content, true)">En administrateur</NxButton>
           <NxButton variant="danger" @click="store.removeScript(s.name)">Supprimer</NxButton>
         </div>
       </div>

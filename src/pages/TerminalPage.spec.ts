@@ -63,6 +63,15 @@ describe("TerminalPage", () => {
     expect(pendingTerminalCommand.value).toBeNull();
   });
 
+  it("opens a root session through spawn_terminal's admin flag on request", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const wrapper = mount(TerminalPage);
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("spawn_terminal", expect.objectContaining({ admin: false })));
+    await wrapper.findAll("button").find((b) => b.text().startsWith("Session administrateur"))!.trigger("click");
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("spawn_terminal", expect.objectContaining({ admin: true })));
+    expect(wrapper.text()).toContain("Session root");
+  });
+
   it("relays user keystrokes to write_to_terminal", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     mount(TerminalPage);

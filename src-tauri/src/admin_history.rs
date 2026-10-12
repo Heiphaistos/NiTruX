@@ -21,7 +21,12 @@ pub struct AdminAction {
 fn describe(args: &[&str]) -> String {
     // args[0] is the helper path (/usr/bin/nitrux-pkexec-...): the
     // subcommand that follows already says what it is.
-    args.iter().skip(1).copied().collect::<Vec<_>>().join(" ")
+    let text = args.iter().skip(1).copied().collect::<Vec<_>>().join(" ");
+    // A script run as root can be long: its start says what it was.
+    match text.char_indices().nth(200) {
+        Some((cut, _)) => format!("{}…", &text[..cut]),
+        None => text,
+    }
 }
 
 /// Best effort: a log that cannot be written must never fail the action.

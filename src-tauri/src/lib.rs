@@ -287,6 +287,7 @@ pub fn run() {
             boot_manager::grub_reboot_once,
             boot_manager::set_efi_boot_order,
             scripts::run_script,
+            scripts::run_script_as_admin,
             trash::list_trash,
             trash::restore_trash_item,
             trash::delete_trash_item_permanently,

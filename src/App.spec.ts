@@ -187,7 +187,7 @@ describe("App", () => {
     const buttons = wrapper.findAll("button");
     const button = buttons.find((b) => b.text() === "Scripts & Snippets")!;
     await button.trigger("click");
-    expect(wrapper.text()).toContain("aucune élévation");
+    expect(wrapper.text()).toContain("Enregistre et exécute des scripts shell");
   });
 
   it("shows the real InstallProfilesPage for the install-profiles id", async () => {
