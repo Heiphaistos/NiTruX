@@ -242,7 +242,10 @@ validate_image_dest_path() {
   esac
   case "$1" in
     *..*) die "destination path must not contain '..': $1" ;;
-    *'*'*|*'?'*|*'$'*|*'`'*|*';'*|*'|'*|*'&'*|*'<'*|*'>'*|*'\n'*)
+    # A real newline, like validate_quarantine_path: '\n' in a case
+    # pattern is the two characters backslash and n, not a newline.
+    *'*'*|*'?'*|*'$'*|*'`'*|*';'*|*'|'*|*'&'*|*'<'*|*'>'*|*"
+"*)
       die "destination path contains disallowed characters: $1" ;;
   esac
 }
