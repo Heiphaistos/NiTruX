@@ -104,6 +104,12 @@ fn validate_port_proto(value: &str) -> Result<(), String> {
 /// on stdin, as the helper's `write-hosts`/`set-dns` subcommands expect.
 /// The child is killed once `timeout` expires, like `subprocess::run_with_timeout`.
 fn run_pkexec_with_stdin(helper_path: &str, subcommand: &str, content: &str, timeout: Duration) -> Result<String, String> {
+    let result = run_pkexec_with_stdin_unlogged(helper_path, subcommand, content, timeout);
+    crate::admin_history::record(&[helper_path, subcommand], result.as_ref().map(|_| ()).map_err(String::as_str));
+    result
+}
+
+fn run_pkexec_with_stdin_unlogged(helper_path: &str, subcommand: &str, content: &str, timeout: Duration) -> Result<String, String> {
     let encoded = STANDARD.encode(content.as_bytes());
 
     let mut child = Command::new("pkexec")

@@ -11,6 +11,8 @@ vi.mock("@tauri-apps/api/core", () => ({
     disk_read_mbps: 480.2,
     disk_error: null,
     memory_bandwidth_gbps: 12.4,
+    hash_mbps: 900,
+    compression_mbps: 120,
     cpu_frequency_mhz: 3600,
     disk_health: [
       { device: "/dev/sda", health: "PASSED" },
@@ -68,6 +70,8 @@ describe("BenchmarkPage", () => {
       disk_read_mbps: 1,
       disk_error: null,
       memory_bandwidth_gbps: 1,
+      hash_mbps: 900,
+      compression_mbps: 120,
       cpu_frequency_mhz: 0,
       disk_health: [],
     });
@@ -93,6 +97,8 @@ describe("BenchmarkPage", () => {
       disk_read_mbps: 0,
       disk_error: "disque plein",
       memory_bandwidth_gbps: 12.4,
+      hash_mbps: 900,
+      compression_mbps: 120,
       cpu_frequency_mhz: 3600,
       disk_health: [],
     });
@@ -102,7 +108,7 @@ describe("BenchmarkPage", () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain("disque plein"));
     expect(wrapper.text()).toContain("500");
     expect(wrapper.text()).toContain("12.4");
-    expect(wrapper.text()).not.toContain("Mo/s");
+    expect(wrapper.text()).not.toContain("Écriture disque");
   });
 
   it("shows a caveat about the disk measurement possibly reflecting the OS cache rather than real disk throughput", async () => {

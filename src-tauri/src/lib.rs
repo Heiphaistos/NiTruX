@@ -9,6 +9,7 @@ use sysinfo::System;
 pub(crate) static TEST_ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
 mod accounts;
+mod admin_history;
 mod backup;
 mod benchmark;
 mod bluetooth;
@@ -172,6 +173,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             system::get_system_snapshot,
             install_info::get_install_info,
+            admin_history::get_admin_history,
             reboot_required::get_reboot_required,
             power_profiles::get_power_profiles,
             power_profiles::set_power_profile,
@@ -202,6 +204,7 @@ pub fn run() {
             report::save_text_report,
             report::save_pdf_report,
             report::delete_report,
+            report::read_report,
             certificates::get_certificates,
             benchmark::run_benchmark,
             disks::list_disks,
