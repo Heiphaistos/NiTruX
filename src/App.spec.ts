@@ -13,6 +13,7 @@ import App from "./App.vue";
 // commands registered in src-tauri/src/lib.rs's generate_handler! macro.
 const ARRAY_RETURNING_COMMANDS = new Set([
   "check_required_tools",
+  "get_admin_history",
   "find_duplicate_files",
   "find_large_files_cmd",
   "get_audio_sinks",

@@ -207,6 +207,14 @@ fn spawn_error(program: &str, e: std::io::Error) -> String {
 ///   exited non-zero, or it did not finish within `timeout`. In the timeout
 ///   case the child process is sent `SIGKILL` before returning.
 pub fn run_with_timeout(program: &str, args: &[&str], timeout: Duration) -> Result<String, String> {
+    let result = run_with_timeout_unlogged(program, args, timeout);
+    if program == "pkexec" {
+        crate::admin_history::record(args, result.as_ref().map(|_| ()).map_err(String::as_str));
+    }
+    result
+}
+
+fn run_with_timeout_unlogged(program: &str, args: &[&str], timeout: Duration) -> Result<String, String> {
     let mut command = Command::new(resolve_program(program));
     command.args(args).stdout(Stdio::piped()).stderr(Stdio::piped());
     sanitize_child_env(&mut command);
@@ -368,6 +376,23 @@ pub fn run_with_timeout_env(
 /// - `Err(_)` — the binary could not be spawned (e.g. not installed), or it
 ///   did not finish within `timeout` (the child is sent `SIGKILL` first).
 pub fn run_capturing_exit_code(
+    program: &str,
+    args: &[&str],
+    timeout: Duration,
+) -> Result<(String, String, i32), String> {
+    let result = run_capturing_exit_code_unlogged(program, args, timeout);
+    if program == "pkexec" {
+        let outcome = match &result {
+            Ok((_, _, 0)) => Ok(()),
+            Ok((_, stderr, code)) => Err(format!("code {code} : {}", stderr.trim())),
+            Err(e) => Err(e.clone()),
+        };
+        crate::admin_history::record(args, outcome.as_ref().map(|_| ()).map_err(String::as_str));
+    }
+    result
+}
+
+fn run_capturing_exit_code_unlogged(
     program: &str,
     args: &[&str],
     timeout: Duration,

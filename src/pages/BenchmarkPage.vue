@@ -18,6 +18,8 @@ interface BenchmarkResult {
   memory_bandwidth_gbps: number;
   cpu_frequency_mhz: number;
   disk_health: DiskHealthEntry[];
+  hash_mbps: number;
+  compression_mbps: number | null;
 }
 
 function healthStatus(health: string | null): "success" | "danger" | "warning" {
@@ -65,6 +67,8 @@ async function run() {
       <NxCard v-if="!result.disk_error"><NxStatTile label="Écriture disque" :value="`${result.disk_write_mbps.toFixed(1)} Mo/s`" /></NxCard>
       <NxCard v-if="!result.disk_error"><NxStatTile label="Lecture disque" :value="`${result.disk_read_mbps.toFixed(1)} Mo/s`" /></NxCard>
       <NxCard><NxStatTile label="Bande passante mémoire" :value="`${result.memory_bandwidth_gbps.toFixed(1)} Go/s`" /></NxCard>
+      <NxCard><NxStatTile label="Chiffrement SHA-256" :value="`${result.hash_mbps.toFixed(0)} Mo/s`" /></NxCard>
+      <NxCard><NxStatTile label="Compression gzip" :value="result.compression_mbps === null ? 'indisponible' : `${result.compression_mbps.toFixed(0)} Mo/s`" /></NxCard>
     </div>
 
     <NxCard v-if="result && result.disk_error" danger>

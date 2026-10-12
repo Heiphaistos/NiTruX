@@ -109,6 +109,7 @@ export const navigationCategories: NavCategory[] = [
     pages: [
       { id: "report-generator", label: "Générateur de rapport", icon: "file-text" },
       { id: "logs", label: "Journaux", icon: "scroll-text" },
+      { id: "admin-history", label: "Actions administrateur", icon: "shield-alert" },
     ],
   },
   {

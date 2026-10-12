@@ -3,7 +3,7 @@
 import { type Component } from "vue";
 import {
   LayoutDashboard, Stethoscope, Download, Package, HardDrive, Files,
-  RefreshCw, Cpu, Wrench, Wifi, Shield, FileText, ScrollText, Settings,
+  RefreshCw, Cpu, Wrench, Wifi, Shield, FileText, ScrollText, ShieldAlert, Settings,
   Palette, Zap, Thermometer, Gauge, BarChart3, Circle,
   Trash2, Sparkles, Save, ShieldCheck, PackageSearch,
   Globe, Radio, Bluetooth, FileCode,
@@ -37,6 +37,7 @@ const iconMap: Record<string, Component> = {
   shield: Shield,
   "file-text": FileText,
   "scroll-text": ScrollText,
+  "shield-alert": ShieldAlert,
   settings: Settings,
   palette: Palette,
   zap: Zap,
