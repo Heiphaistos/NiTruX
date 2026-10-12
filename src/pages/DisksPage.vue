@@ -8,6 +8,7 @@ import NxInput from "@/components/ui/NxInput.vue";
 import NxSelect from "@/components/ui/NxSelect.vue";
 import NxBadge from "@/components/ui/NxBadge.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
+import PartitionTableCard from "@/components/PartitionTableCard.vue";
 
 interface Partition { name: string; size: string; mountpoint: string | null }
 interface Disk { name: string; size: string; partitions: Partition[] }
@@ -195,6 +196,8 @@ function smartBadgeStatus(health: string | null): "success" | "warning" | "dange
       <NxCard v-if="formatError" danger>{{ formatError }}</NxCard>
       <NxBadge v-if="formatResult" status="success" live>{{ formatResult }}</NxBadge>
     </NxCard>
+
+    <PartitionTableCard @changed="loadDisks" />
 
     <NxCard>
       <NxSectionHeader title="Étendre une partition" />

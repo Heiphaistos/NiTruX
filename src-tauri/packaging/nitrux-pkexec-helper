@@ -18,7 +18,7 @@
 # nitrux-pkexec-delete-snapshot,
 # nitrux-pkexec-quarantine-file, nitrux-pkexec-format-partition,
 # nitrux-pkexec-extend-partition, nitrux-pkexec-clone-disk,
-# nitrux-pkexec-disk-image,
+# nitrux-pkexec-disk-image, nitrux-pkexec-partition-table,
 # nitrux-pkexec-system-tools, nitrux-pkexec-inventory. pkexec
 # resolves which action to authorize by matching the *executable path*
 # against each action's exec.path annotation -- it cannot see argv, so a
@@ -48,6 +48,9 @@
 #   nitrux-pkexec-clone-disk clone-disk <disk-device> <dest-image-path>
 #   nitrux-pkexec-disk-image write-iso <image-path> <usb-disk-device>
 #   nitrux-pkexec-disk-image restore-image <image-path> <disk-device>
+#   nitrux-pkexec-partition-table partition-create <disk-device> <size-MiB|0>
+#   nitrux-pkexec-partition-table partition-delete <partition-device>
+#   nitrux-pkexec-partition-table partition-shrink <partition-device> <new-size-MiB>
 #   nitrux-pkexec-inventory inventory <dmi-memory|dmi-system|firmware-key|security-audit|snapper-list|grub-entries|smart /dev/X>
 #   nitrux-pkexec-system-tools system-tool <apt-autoremove|journal-vacuum-size|rebuild-ld-cache|systemd-reload|fstrim-all|rebuild-locate-db|regenerate-grub>
 #   nitrux-pkexec-system-tools system-tool <grub-timeout SECONDS|grub-default N|saved|grub-reboot N|efi-bootorder XXXX,YYYY>
@@ -301,6 +304,23 @@ set_grub_default_key() {
     "$target" > "$target.nitrux-tmp"
   chmod 644 "$target.nitrux-tmp"
   mv "$target.nitrux-tmp" "$target"
+}
+
+# Disk and number of a partition (/dev/vdb2 -> /dev/vdb 2), from the kernel.
+partition_parent() { echo "/dev/$(lsblk -no PKNAME "$1" | head -n1)"; }
+partition_number() { cat "/sys/class/block/$(basename "$1")/partition"; }
+
+# Refuses a partition that is mounted, used as swap, or carries the running
+# system (also through LUKS/LVM, which lsblk -s walks).
+validate_partition_free() {
+  validate_partition_not_in_use "$1"
+  if lsblk -nrpo MOUNTPOINT "$1" 2>/dev/null | grep -q .; then
+    die "$1 (or a volume on it) is mounted or used as swap, unmount it first"
+  fi
+  root_src=$(findmnt -nvo SOURCE / 2>/dev/null || echo "")
+  if [ -n "$root_src" ] && lsblk -nrso NAME "$root_src" 2>/dev/null | grep -qx "$(basename "$1")"; then
+    die "refusing to touch the partition of the running system: $1"
+  fi
 }
 
 cmd="${1:-}"
@@ -665,6 +685,79 @@ case "$cmd" in
     validate_disk_device "$disk"
     validate_disk_not_in_use "$disk"
     write_image_to_disk "$image" "$disk"
+    ;;
+  partition-create)
+    disk="${2:-}"
+    size="${3:-}"
+    validate_disk_device "$disk"
+    case "$size" in ''|*[!0-9]*) die "size must be a number of MiB (0 = all the free space): $size" ;; esac
+    command -v parted >/dev/null 2>&1 || die "parted is not installed"
+    # parted reports a filesystem written on the whole disk as a "loop"
+    # label: that disk holds data, it is not free space (seen on a VM).
+    label=$(parted -m -s "$disk" print 2>/dev/null | sed -n 2p | cut -d: -f6)
+    if [ -z "$label" ] || [ "$label" = "unknown" ]; then
+      # No partition table. Only a truly blank disk gets one: a disk with a
+      # filesystem or RAID signature written straight on it is not "empty".
+      [ -z "$(blkid -p -o value -s TYPE "$disk" 2>/dev/null)" ] || die "$disk has no partition table but holds data ($(blkid -p -o value -s TYPE "$disk")); refusing"
+      parted -s "$disk" mklabel gpt
+    elif [ "$label" = "loop" ]; then
+      die "$disk holds a filesystem directly, without a partition table ($(blkid -p -o value -s TYPE "$disk")); refusing"
+    fi
+    # Largest free region, rounded inward to whole MiB (parted prints
+    # fractions like 0.02MiB, which mkpart rejects; whole MiB also aligns).
+    region=$(parted -m -s "$disk" unit MiB print free | awk -F: '/free;$/ {
+        gsub("MiB","",$2); gsub("MiB","",$3)
+        s=int($2); if (s < $2) s++; if (s < 1) s=1
+        # An end on an exact MiB is the end of the disk, where GPT keeps
+        # its backup header: stop one MiB short of it.
+        e=int($3); if (e == $3) e--
+        if (e-s > best) {best=e-s; r=s" "e}
+      } END {print r}')
+    [ -n "$region" ] || die "no free space on $disk"
+    start=$(echo "$region" | cut -d' ' -f1)
+    end=$(echo "$region" | cut -d' ' -f2)
+    if [ "$size" -gt 0 ]; then
+      wanted=$(awk -v s="$start" -v n="$size" 'BEGIN {print s+n}')
+      awk -v w="$wanted" -v e="$end" 'BEGIN {exit !(w <= e)}' || die "only $(awk -v s="$start" -v e="$end" 'BEGIN {printf "%d", e-s}') MiB free on $disk"
+      end="$wanted"
+    fi
+    parted -s -a optimal "$disk" mkpart primary "${start}MiB" "${end}MiB"
+    partprobe "$disk" 2>/dev/null || true
+    udevadm settle 2>/dev/null || true
+    lsblk -no PATH,SIZE "$disk"
+    ;;
+  partition-delete)
+    device="${2:-}"
+    validate_partition_device "$device"
+    validate_partition_free "$device"
+    disk=$(partition_parent "$device")
+    number=$(partition_number "$device")
+    parted -s "$disk" rm "$number"
+    partprobe "$disk" 2>/dev/null || true
+    echo "deleted: $device"
+    ;;
+  partition-shrink)
+    device="${2:-}"
+    size="${3:-}"
+    validate_partition_device "$device"
+    case "$size" in ''|*[!0-9]*|0) die "new size must be a positive number of MiB: $size" ;; esac
+    validate_partition_free "$device"
+    # ext4 only: the one common filesystem that shrinks offline and whose
+    # tools refuse to cut into data (resize2fs fails rather than truncate).
+    [ "$(blkid -o value -s TYPE "$device")" = "ext4" ] || die "only an ext4 partition can be shrunk here"
+    command -v sfdisk >/dev/null 2>&1 || die "sfdisk is not installed"
+    disk=$(partition_parent "$device")
+    number=$(partition_number "$device")
+    e2fsck -f -y "$device"
+    resize2fs "$device" "${size}M"
+    # Same start, new size: sfdisk keeps every field left empty.
+    echo ",${size}MiB" | sfdisk --no-reread -q -N "$number" "$disk"
+    partprobe "$disk" 2>/dev/null || true
+    udevadm settle 2>/dev/null || true
+    # Grow the filesystem back to fill the partition exactly (alignment).
+    resize2fs "$device"
+    e2fsck -f -n "$device"
+    echo "shrunk: $device to ${size} MiB"
     ;;
   inventory)
     # Read-only hardware and security inventory for the "Scan PC" and

@@ -21,6 +21,7 @@ use std::time::Duration;
 const PKEXEC_FORMAT_PARTITION: &str = "/usr/bin/nitrux-pkexec-format-partition";
 const PKEXEC_EXTEND_PARTITION: &str = "/usr/bin/nitrux-pkexec-extend-partition";
 const PKEXEC_CLONE_DISK: &str = "/usr/bin/nitrux-pkexec-clone-disk";
+const PKEXEC_PARTITION_TABLE: &str = "/usr/bin/nitrux-pkexec-partition-table";
 
 /// Mirrors the helper script's own device-shape check. A partition device
 /// must end in a number distinguishing it from its parent whole-disk
@@ -267,9 +268,56 @@ pub fn clone_disk(source_disk: String, dest_path: String) -> Result<String, Stri
     )
 }
 
+/// Creates a partition in the disk's largest free region (`size_mib` 0 =
+/// all of it). A blank disk first gets a GPT table; a disk holding data
+/// without a table is refused by the helper.
+#[tauri::command]
+pub fn create_partition(disk: String, size_mib: u64) -> Result<String, String> {
+    validate_disk_device(&disk)?;
+    subprocess::run_with_timeout(
+        "pkexec",
+        &[PKEXEC_PARTITION_TABLE, "partition-create", &disk, &size_mib.to_string()],
+        Duration::from_secs(300),
+    )
+}
+
+#[tauri::command]
+pub fn delete_partition(device: String) -> Result<String, String> {
+    validate_partition_device(&device)?;
+    subprocess::run_with_timeout(
+        "pkexec",
+        &[PKEXEC_PARTITION_TABLE, "partition-delete", &device],
+        Duration::from_secs(300),
+    )
+}
+
+/// Shrinks an unmounted ext4 partition (filesystem first, then the
+/// partition); resize2fs refuses rather than cut into data.
+#[tauri::command]
+pub fn shrink_partition(device: String, size_mib: u64) -> Result<String, String> {
+    validate_partition_device(&device)?;
+    if size_mib == 0 {
+        return Err("la nouvelle taille doit être supérieure à 0".to_string());
+    }
+    subprocess::run_with_timeout(
+        "pkexec",
+        &[PKEXEC_PARTITION_TABLE, "partition-shrink", &device, &size_mib.to_string()],
+        // A full fsck and two resizes on a large partition.
+        Duration::from_secs(3600),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn partition_table_commands_refuse_bad_targets_before_any_prompt() {
+        assert!(create_partition("/dev/sda1".into(), 100).is_err());
+        assert!(delete_partition("/dev/sda".into()).is_err());
+        assert!(shrink_partition("/dev/sda1".into(), 0).is_err());
+        assert!(shrink_partition("/dev/sda".into(), 100).is_err());
+    }
 
     #[test]
     fn accepts_well_formed_partition_devices() {
