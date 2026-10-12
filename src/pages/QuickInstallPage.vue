@@ -9,6 +9,7 @@ import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 import NxInput from "@/components/ui/NxInput.vue";
 import { appCatalog, type AppCatalogEntry } from "@/data/appCatalog";
 import { installWithFallback, describeFailure, sourceLabel, type InstallCandidate } from "@/lib/appInstall";
+import { serializeAppSelection, parseAppSelection } from "@/lib/appSelection";
 
 const emit = defineEmits<{ navigate: [string] }>();
 
@@ -92,6 +93,34 @@ async function install(entry: AppCatalogEntry) {
     installErrors.value[entry.id] = describeFailure(result.attempts);
   }
 }
+
+function exportSelection() {
+  const ids = appCatalog.filter(isInstalled).map((e) => e.id);
+  const url = URL.createObjectURL(new Blob([serializeAppSelection(ids)], { type: "application/json" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "mes-applications.nitrux.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+const fileInput = ref<HTMLInputElement | null>(null);
+const importMessage = ref<string | null>(null);
+
+async function importSelection(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  (event.target as HTMLInputElement).value = "";
+  if (!file) return;
+  const parsed = parseAppSelection(await file.text());
+  if (!parsed.ok) {
+    importMessage.value = parsed.error;
+    return;
+  }
+  const todo = appCatalog.filter((e) => parsed.ids.includes(e.id) && !isInstalled(e));
+  importMessage.value = `${todo.length} application(s) à installer${parsed.unknown ? `, ${parsed.unknown} entrée(s) ignorée(s)` : ""}.`;
+  // One at a time: package managers hold a lock, parallel installs fail.
+  for (const entry of todo) await install(entry);
+}
 </script>
 
 <template>
@@ -104,11 +133,16 @@ async function install(entry: AppCatalogEntry) {
     <div class="qi-toolbar">
       <NxInput v-model="search" placeholder="Filtrer le catalogue..." aria-label="Filtrer le catalogue" />
       <NxButton variant="ghost" @click="emit('navigate', 'app-store')">Chercher dans tous les dépôts…</NxButton>
+      <NxButton variant="ghost" :disabled="installedCount === 0" @click="exportSelection">Exporter ma liste</NxButton>
+      <NxButton variant="ghost" @click="fileInput?.click()">Importer une liste</NxButton>
+      <input ref="fileInput" type="file" accept=".json,application/json" hidden @change="importSelection" />
       <label v-if="installedCount > 0" class="qi-filter">
         <input type="checkbox" v-model="hideInstalled" />
         Masquer les {{ installedCount }} déjà installées
       </label>
     </div>
+
+    <NxCard v-if="importMessage">{{ importMessage }}</NxCard>
 
     <div class="qi-chips">
       <button
@@ -158,7 +192,7 @@ async function install(entry: AppCatalogEntry) {
 .qi-chip { padding: 6px 14px; border-radius: 99px; border: var(--nx-style-border-width) solid var(--nx-style-border-color); background: var(--nx-style-bg); color: var(--nx-text-secondary); cursor: pointer; font: inherit; font-size: 12px; }
 .qi-chip.active { color: var(--nx-text-primary); font-weight: 600; border-color: var(--nx-accent-primary); }
 .qi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
-.qi-card { display: flex; flex-direction: column; gap: 10px; }
+.qi-card { display: flex; flex-direction: column; gap: 10px; content-visibility: auto; contain-intrinsic-size: auto 150px; }
 .qi-card-header { display: flex; gap: 10px; align-items: flex-start; }
 .qi-icon { font-size: 28px; line-height: 1; }
 .qi-name { font-weight: 600; color: var(--nx-text-primary); }

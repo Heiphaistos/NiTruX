@@ -6,6 +6,9 @@ import NxCard from "@/components/ui/NxCard.vue";
 import NxButton from "@/components/ui/NxButton.vue";
 import NxInput from "@/components/ui/NxInput.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
+import RecoveryToolsCard from "@/components/RecoveryToolsCard.vue";
+
+const emit = defineEmits<{ navigate: [string] }>();
 
 interface TrashedItem { trashed_name: string; original_path: string; deletion_date: string }
 
@@ -74,6 +77,8 @@ async function deletePermanently(trashedName: string) {
     <NxSectionHeader title="Récupération de données" description="Corbeille — restaurez un fichier récemment supprimé ou effacez-le définitivement." />
 
     <NxCard v-if="error" danger>{{ error }}</NxCard>
+
+    <RecoveryToolsCard @navigate="emit('navigate', $event)" />
 
     <div v-if="items && items.length === 0" class="dr-empty">Corbeille vide.</div>
 

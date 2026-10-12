@@ -109,7 +109,7 @@ async function runTool(tool: SystemTool) {
 .st-chip.active { color: var(--nx-text-primary); font-weight: 600; border-color: var(--nx-accent-primary); }
 .st-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
 .st-empty { color: var(--nx-text-secondary); font-size: 13px; }
-.st-card { display: flex; flex-direction: column; gap: 8px; }
+.st-card { display: flex; flex-direction: column; gap: 8px; content-visibility: auto; contain-intrinsic-size: auto 120px; }
 .st-card-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .st-desc { font-size: 12px; color: var(--nx-text-secondary); margin: 0; }
 .st-output { font-size: 11px; background: var(--nx-bg-base); padding: 8px; border-radius: 6px; max-height: 160px; overflow: auto; white-space: pre-wrap; word-break: break-word; }
