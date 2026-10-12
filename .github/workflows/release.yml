@@ -7,6 +7,10 @@
 #      (python3 outils/publier.py depuis la machine qui a la clé SSH)
 # Secrets requis : TAURI_SIGNING_PRIVATE_KEY (contenu de nitrux-updater.key)
 # et TAURI_SIGNING_PRIVATE_KEY_PASSWORD (vide si la clé n'en a pas).
+# Facultatif : NITRUX_GPG_PRIVATE_KEY (clé GPG des dépôts, armure ASCII, sans
+# phrase de passe) -- les dépôts apt/rpm/pacman sont alors construits et
+# joints en artefact « depot », à envoyer sur le VPS :
+#   rsync -a --delete depot/ root@VPS_HOST:/var/www/nitrux-depot/
 name: Release
 
 on:
@@ -65,10 +69,24 @@ jobs:
           chown -R builder /home/builder
           su builder -c "cd /home/builder && makepkg -f --nodeps"
           mkdir -p out && cp /home/builder/*.pkg.tar.zst out/
+          # Always present, so the artifact keeps out/ and depot-arch/ as
+          # top-level folders whether or not the repository is built.
+          mkdir -p depot-arch && touch depot-arch/.keep
+      - name: Dépôt pacman
+        env:
+          GPG_KEY: ${{ secrets.NITRUX_GPG_PRIVATE_KEY }}
+        if: env.GPG_KEY != ''
+        run: |
+          pacman -Sy --noconfirm --needed gnupg
+          echo "$GPG_KEY" | gpg --batch --import
+          export NITRUX_GPG_KEY="$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr/{print $10; exit}')"
+          NITRUX_DEPOT_OUT=depot-arch bash outils/depot.sh out
       - uses: actions/upload-artifact@v4
         with:
           name: arch
-          path: out/*.pkg.tar.zst
+          path: |
+            out/*.pkg.tar.zst
+            depot-arch/
 
   release:
     needs: [build, arch]
@@ -98,10 +116,25 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      - name: Dépôts apt et rpm
+        env:
+          GPG_KEY: ${{ secrets.NITRUX_GPG_PRIVATE_KEY }}
+        if: env.GPG_KEY != ''
+        run: |
+          sudo apt-get update && sudo apt-get install -y apt-utils createrepo-c
+          echo "$GPG_KEY" | gpg --batch --import
+          export NITRUX_GPG_KEY="$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr/{print $10; exit}')"
+          NITRUX_DEPOT_OUT=depot bash outils/depot.sh dist
+          [ -d arch/depot-arch/arch ] && cp -r arch/depot-arch/arch depot/
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('depot/nitrux.asc') != ''
+        with:
+          name: depot
+          path: depot/
       - name: Release GitHub en brouillon
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" --draft --title "NiTruX ${GITHUB_REF_NAME#v}" \
             --notes "$(python3 -c 'import json;print(json.load(open("release/_canal/latest.json"))["notes"])')" \
-            dist/deb/*.deb dist/rpm/*.rpm dist/appimage/*.AppImage arch/*.pkg.tar.zst release/_canal/latest.json release/_canal/*.sig
+            dist/deb/*.deb dist/rpm/*.rpm dist/appimage/*.AppImage arch/out/*.pkg.tar.zst release/_canal/latest.json release/_canal/*.sig
