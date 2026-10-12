@@ -44,14 +44,37 @@ pub fn parse_lpstat_line(line: &str) -> Option<PrinterInfo> {
 // `Result` is what makes the absence visible at all; the shared package
 // hint in `subprocess` then names the package to install.
 
+/// Connected outputs from the kernel's DRM connectors ("DP-3 — 1920x1080").
+/// `xrandr` only sees XWayland's virtual outputs on a Wayland session (the
+/// default on GNOME, KDE and Hyprland), and needs an extra package; the
+/// kernel's view works on X11 and Wayland alike, with nothing to install.
+fn monitors_from_drm(root: &std::path::Path) -> Result<Vec<String>, String> {
+    let entries = std::fs::read_dir(root).map_err(|e| format!("lecture de {} impossible : {e}", root.display()))?;
+    let mut monitors: Vec<String> = entries
+        .flatten()
+        .filter_map(|entry| {
+            let dir = entry.path();
+            let file = entry.file_name().to_string_lossy().into_owned();
+            // Connectors are "card1-DP-3"; "card1" itself and "renderD128" are not.
+            let (_, connector) = file.split_once('-')?;
+            let status = std::fs::read_to_string(dir.join("status")).ok()?;
+            if status.trim() != "connected" {
+                return None;
+            }
+            let modes = std::fs::read_to_string(dir.join("modes")).unwrap_or_default();
+            Some(match modes.lines().next() {
+                Some(mode) => format!("{connector} — {mode}"),
+                None => connector.to_string(),
+            })
+        })
+        .collect();
+    monitors.sort();
+    Ok(monitors)
+}
+
 #[tauri::command]
 pub fn get_monitors() -> Result<Vec<String>, String> {
-    let out = subprocess::run_with_timeout("xrandr", &["--query"], Duration::from_secs(5))?;
-    Ok(out
-        .lines()
-        .filter(|l| l.contains(" connected"))
-        .map(|l| l.split_whitespace().next().unwrap_or("").to_string())
-        .collect())
+    monitors_from_drm(std::path::Path::new("/sys/class/drm"))
 }
 
 #[tauri::command]
@@ -130,6 +153,24 @@ pub fn set_default_printer(name: String) -> Result<String, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn lists_only_connected_drm_connectors_with_their_preferred_mode() {
+        let root = std::env::temp_dir().join(format!("nitrux-drm-{}", std::process::id()));
+        for (name, status, modes) in [
+            ("card1-DP-3", "connected", "1920x1080\n1280x720\n"),
+            ("card1-HDMI-A-1", "disconnected", ""),
+            ("card1-eDP-1", "connected", ""),
+        ] {
+            std::fs::create_dir_all(root.join(name)).unwrap();
+            std::fs::write(root.join(name).join("status"), format!("{status}\n")).unwrap();
+            std::fs::write(root.join(name).join("modes"), modes).unwrap();
+        }
+        std::fs::create_dir_all(root.join("card1")).unwrap();
+        let monitors = monitors_from_drm(&root).unwrap();
+        std::fs::remove_dir_all(&root).unwrap();
+        assert_eq!(monitors, vec!["DP-3 — 1920x1080".to_string(), "eDP-1".to_string()]);
+    }
 
     #[test]
     fn explains_a_missing_audio_server_instead_of_the_raw_pactl_error() {

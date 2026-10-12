@@ -9,7 +9,10 @@ use std::time::Duration;
 /// script can't hang the app indefinitely.
 #[tauri::command]
 pub fn run_script(content: String) -> Result<String, String> {
-    subprocess::run_with_timeout("sh", &["-c", &content], Duration::from_secs(60))
+    // The output is shown as-is, so keep the user's language rather than the
+    // C locale the parsers need; an empty LC_ALL counts as unset.
+    let lc_all = std::env::var("LC_ALL").unwrap_or_default();
+    subprocess::run_with_timeout_env("sh", &["-c", &content], &[("LC_ALL", &lc_all)], Duration::from_secs(60))
 }
 
 #[cfg(test)]
@@ -20,6 +23,13 @@ mod tests {
     fn runs_a_simple_script_and_captures_stdout() {
         let result = run_script("echo hello".to_string()).expect("should succeed");
         assert_eq!(result.trim(), "hello");
+    }
+
+    #[test]
+    fn keeps_the_users_own_locale_for_displayed_output() {
+        let expected = std::env::var("LC_ALL").unwrap_or_default();
+        let result = run_script("echo \"$LC_ALL\"".to_string()).expect("should succeed");
+        assert_eq!(result.trim(), expected);
     }
 
     #[test]

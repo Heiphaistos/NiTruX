@@ -203,7 +203,6 @@ export const systemToolsCatalog: SystemTool[] = [
   { id: "mpstat-summary", name: "Statistiques par cœur CPU", description: "Utilisation détaillée de chaque cœur CPU.", category: "performance", command: "mpstat -P ALL 1 1" },
   { id: "iostat-summary", name: "Statistiques d'entrée/sortie disque", description: "Débit et temps d'attente par périphérique de stockage.", category: "performance", command: "iostat -x 1 1" },
   { id: "free-si", name: "Mémoire (unités décimales)", description: "Utilisation de la mémoire en unités décimales (Go/Mo).", category: "performance", command: "LC_ALL=C free --si" },
-  { id: "cpu-count-online", name: "Cœurs CPU en ligne", description: "Nombre de cœurs actuellement actifs.", category: "performance", command: "nproc" },
   { id: "context-switches", name: "Changements de contexte", description: "Nombre total de changements de contexte depuis le démarrage.", category: "performance", command: "grep ctxt /proc/stat" },
   { id: "processes-count", name: "Nombre total de processus", description: "Compte de tous les processus actifs.", category: "performance", command: "ps aux | wc -l" },
   { id: "threads-count", name: "Nombre total de threads", description: "Compte de tous les threads actifs sur le système.", category: "performance", command: "ps -eLf | wc -l" },
@@ -216,7 +215,6 @@ export const systemToolsCatalog: SystemTool[] = [
   { id: "numastat", name: "Statistiques NUMA", description: "Statistiques d'allocation mémoire par nœud NUMA.", category: "performance", command: "numastat" },
   { id: "cpupower-frequency-info", name: "Informations de fréquence CPU", description: "Plages de fréquences et gouverneur actif.", category: "performance", command: "cpupower frequency-info" },
   { id: "turbostat-snapshot", name: "États d'énergie CPU (turbostat)", description: "Instantané des états C et fréquences CPU.", category: "performance", command: "turbostat --num_iterations 1" },
-  { id: "watch-load-once", name: "Charge système (extrait /proc)", description: "Charge moyenne brute lue directement du noyau.", category: "performance", command: "cat /proc/loadavg" },
   { id: "vmstat-disk", name: "Statistiques disque (vmstat)", description: "Activité disque résumée sur 2 secondes.", category: "performance", command: "LC_ALL=C vmstat -d 1 2" },
 
   // Nettoyage (utilisateur, non-privilégié — approfondissement)
@@ -565,7 +563,6 @@ export const systemToolsCatalog: SystemTool[] = [
   { id: "cpuinfo-stepping", name: "Révision (stepping) du CPU", description: "Numéro de révision matérielle du processeur.", category: "diagnostics", command: "grep stepping /proc/cpuinfo | head -1" },
   { id: "cat-proc-modules", name: "Détails bruts des modules noyau", description: "Contenu brut de /proc/modules.", category: "diagnostics", command: "cat /proc/modules | head -20" },
   { id: "systemctl-show-sysinit-target", name: "Dépendances de sysinit.target", description: "Unités requises avant l'initialisation système.", category: "diagnostics", command: "systemctl list-dependencies sysinit.target" },
-  { id: "localectl-status-full", name: "Configuration régionale complète", description: "Détail complet de la configuration clavier et langue.", category: "diagnostics", command: "localectl status" },
 
   // Réseau (approfondissement 5)
   { id: "ip-addr-scope-global", name: "Adresses IP globales uniquement", description: "Adresses IP routables, hors loopback et link-local.", category: "reseau", command: "ip -o addr show scope global" },
