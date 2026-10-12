@@ -53,13 +53,13 @@ Légende : FAIT = codé et testé (tests auto) · VM = codé mais pas encore vé
 |---|---|---|
 | 36 | CI tests à chaque push | FAIT (`.github/workflows/ci.yml`, jamais exécuté) |
 | 37 | Release signée par la CI | FAIT (`release.yml`, secrets `TAURI_SIGNING_PRIVATE_KEY` à créer) |
-| 38 | e2e en CI | À FAIRE |
+| 38 | e2e en CI | FAIT : job `e2e` de ci.yml (Xvfb, toutes les pages + scénarios non privilégiés, captures en artefact) |
 | 39 | Tests Debian / Fedora / Arch en conteneurs | FAIT dans ci.yml (jamais exécuté) |
 | 40 | Clippy à 0 warning | FAIT |
 | 41 | Bump de version automatique | FAIT (`outils/version.py X.Y.Z`) |
 | 42 | Notes de version dans latest.json | FAIT (titres des commits par défaut) |
 | 43 | Dépôts apt, rpm et pacman signés (VPS) | FAIT : `outils/depot.sh` + CI, dépôt pacman vérifié en local ; apt/rpm à vérifier au 1er run de release ; mise en place VPS à faire par le pote (`docs/depot-vps.md`) |
-| 44 | Sauvegarde de la clé de signature hors machine | À FAIRE (action humaine : copier `nitrux-updater.key` dans un coffre) |
+| 44 | Sauvegarde des clés de signature hors machine | PROCÉDURE ÉCRITE (`docs/cles-de-signature.md`) ; la copie elle-même est à faire par la personne qui détient la clé |
 
 ## Interface (45-50)
 | # | Point | État |
