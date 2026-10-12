@@ -28,6 +28,9 @@ mod firewall;
 mod gpu;
 mod hardware;
 mod hardware_details;
+mod install_info;
+mod power_profiles;
+mod reboot_required;
 mod hardware_inventory;
 mod privileged_inventory;
 mod hosts_blocklist;
@@ -168,6 +171,10 @@ pub fn run() {
         .manage(terminal::TerminalState::default())
         .invoke_handler(tauri::generate_handler![
             system::get_system_snapshot,
+            install_info::get_install_info,
+            reboot_required::get_reboot_required,
+            power_profiles::get_power_profiles,
+            power_profiles::set_power_profile,
             accounts::get_user_accounts,
             sensors::get_sensor_snapshot,
             gpu::get_gpu_snapshot,

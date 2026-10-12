@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import TerminalPage from "./TerminalPage.vue";
+import { pendingTerminalCommand } from "@/lib/terminalCommand";
 
 const mockTerm = {
   open: vi.fn(),
@@ -50,6 +51,16 @@ describe("TerminalPage", () => {
       "spawn_terminal",
       expect.objectContaining({ id: expect.any(String), onData: expect.any(FakeChannel) }),
     );
+  });
+
+  it("types a command another page queued, once, after the shell starts", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    pendingTerminalCommand.value = "omarchy-update";
+    mount(TerminalPage);
+    await vi.waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith("write_to_terminal", { id: expect.any(String), data: "omarchy-update\r" }),
+    );
+    expect(pendingTerminalCommand.value).toBeNull();
   });
 
   it("relays user keystrokes to write_to_terminal", async () => {

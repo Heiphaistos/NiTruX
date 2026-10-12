@@ -85,12 +85,69 @@ pub fn list_universal_updates() -> Vec<PackageUpdate> {
         }
     }
 
+    // AUR packages are invisible to pacman's own update check. yay/paru
+    // list them without root ("name old -> new", like pacman -Qu); exit 1
+    // just means none.
+    if let Some(helper) = ["yay", "paru"].into_iter().find(|h| binary_exists(h)) {
+        if let Ok((stdout, _, 0 | 1)) = subprocess::run_capturing_exit_code(helper, &["-Qua"], Duration::from_secs(90)) {
+            updates.extend(stdout.lines().filter_map(super::pacman::parse_pacman_line).map(|mut u| {
+                u.source = "aur".to_string();
+                u
+            }));
+        }
+    }
+
+    // Firmware (BIOS, SSD, dock...) through fwupd; exit 2 means none.
+    if binary_exists("fwupdmgr") {
+        if let Ok((stdout, _, 0)) =
+            subprocess::run_capturing_exit_code("fwupdmgr", &["get-updates", "--json", "--no-unreported-check"], Duration::from_secs(60))
+        {
+            updates.extend(parse_fwupd_updates(&stdout));
+        }
+    }
+
     updates
+}
+
+/// `fwupdmgr get-updates --json`: one entry per device, its pending
+/// releases newest first.
+pub fn parse_fwupd_updates(json: &str) -> Vec<PackageUpdate> {
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(json) else {
+        return Vec::new();
+    };
+    let devices = value.get("Devices").and_then(|d| d.as_array()).cloned().unwrap_or_default();
+    devices
+        .iter()
+        .filter_map(|device| {
+            let release = device.get("Releases")?.as_array()?.first()?;
+            Some(PackageUpdate {
+                name: device.get("Name")?.as_str()?.to_string(),
+                current_version: device.get("Version").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                new_version: release.get("Version")?.as_str()?.to_string(),
+                source: "firmware".to_string(),
+            })
+        })
+        .collect()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parses_fwupd_json_and_skips_devices_without_a_release() {
+        let json = r#"{"Devices":[
+            {"Name":"System Firmware","Version":"1.10","Releases":[{"Version":"1.12"},{"Version":"1.11"}]},
+            {"Name":"SSD","Version":"3","Releases":[]}
+        ]}"#;
+        let updates = parse_fwupd_updates(json);
+        assert_eq!(updates.len(), 1);
+        assert_eq!(updates[0].name, "System Firmware");
+        assert_eq!(updates[0].current_version, "1.10");
+        assert_eq!(updates[0].new_version, "1.12");
+        assert_eq!(updates[0].source, "firmware");
+        assert!(parse_fwupd_updates("No updatable devices").is_empty());
+    }
 
     #[test]
     fn parses_flatpak_remote_ls_updates_line() {

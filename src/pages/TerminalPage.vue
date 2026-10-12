@@ -8,6 +8,7 @@ import NxCard from "@/components/ui/NxCard.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
 import NxButton from "@/components/ui/NxButton.vue";
 import "@xterm/xterm/css/xterm.css";
+import { takePendingTerminalCommand } from "@/lib/terminalCommand";
 
 const containerEl = ref<HTMLDivElement | null>(null);
 // A fresh id per shell session: after `exit`, "Nouvelle session" spawns a
@@ -88,7 +89,11 @@ onMounted(async () => {
 
   // The resize observer is wired up even if this first spawn fails, so a
   // successful "Nouvelle session" afterwards still tracks the window size.
-  if (await startSession()) await resizeAndNotify();
+  if (await startSession()) {
+    await resizeAndNotify();
+    const command = takePendingTerminalCommand();
+    if (command) invoke("write_to_terminal", { id, data: command + "\r" }).catch(() => {});
+  }
   // ResizeObserver is a standard Web API present in the real Tauri webview
   // (WebKitGTK) but absent from jsdom's test environment -- guarded so
   // the component test suite doesn't need a polyfill for something that

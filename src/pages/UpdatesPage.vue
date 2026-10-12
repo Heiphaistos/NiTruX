@@ -1,7 +1,8 @@
 <!-- src/pages/UpdatesPage.vue -->
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { invoke } from "@tauri-apps/api/core";
+import { pendingTerminalCommand } from "@/lib/terminalCommand";
 import NxCard from "@/components/ui/NxCard.vue";
 import NxButton from "@/components/ui/NxButton.vue";
 import NxBadge from "@/components/ui/NxBadge.vue";
@@ -30,7 +31,33 @@ async function refresh() {
   }
 }
 
-onMounted(refresh);
+const emit = defineEmits<{ navigate: [string] }>();
+const rebootReason = ref<string | null>(null);
+const distroId = ref("");
+
+onMounted(() => {
+  refresh();
+  invoke<string | null>("get_reboot_required").then((r) => (rebootReason.value = r)).catch(() => {});
+  invoke<{ distro_id: string }>("get_install_info").then((i) => (distroId.value = i.distro_id)).catch(() => {});
+});
+
+const hasAur = computed(() => updates.value.some((u) => u.source === "aur"));
+const hasFirmware = computed(() => updates.value.some((u) => u.source === "firmware"));
+
+// These updates must run as the user, interactively: omarchy-update takes
+// a Snapper snapshot and runs Omarchy's migrations (a bare pacman -Syu
+// skips both), yay/paru refuse to run as root, fwupdmgr asks before
+// flashing. The integrated terminal shows every prompt.
+function runInTerminal(command: string) {
+  pendingTerminalCommand.value = command;
+  emit("navigate", "terminal");
+}
+
+function upgradeAllClicked() {
+  if (distroId.value === "omarchy") return runInTerminal("omarchy-update");
+  if (hasAur.value) return runInTerminal("if command -v yay >/dev/null; then yay -Syu; else paru -Syu; fi");
+  return upgradeAll();
+}
 
 const upgrading = ref(false);
 const upgradeResult = ref<string | null>(null);
@@ -62,11 +89,14 @@ async function upgradeAll() {
       <NxSectionHeader title="Mises à jour" description="Paquets pouvant être mis à jour, tous gestionnaires détectés confondus." />
       <div class="upd-actions">
         <NxButton :disabled="loading || upgrading" @click="refresh">{{ loading ? "Vérification..." : "Vérifier" }}</NxButton>
-        <NxButton :disabled="upgrading || updates.length === 0" @click="upgradeAll">
-          {{ upgrading ? "Mise à jour..." : "Tout mettre à jour" }}
+        <NxButton :disabled="upgrading || updates.length === 0" @click="upgradeAllClicked">
+          {{ upgrading ? "Mise à jour..." : distroId === "omarchy" ? "Tout mettre à jour (omarchy-update)" : "Tout mettre à jour" }}
         </NxButton>
+        <NxButton v-if="hasFirmware" @click="runInTerminal('fwupdmgr update')">Mettre à jour le firmware</NxButton>
       </div>
     </div>
+
+    <NxCard v-if="rebootReason" class="upd-reboot">Redémarrage nécessaire : {{ rebootReason }}.</NxCard>
 
     <NxCard v-if="upgradeError" danger>{{ upgradeError }}</NxCard>
     <NxBadge v-if="upgradeResult" status="success" live>Mise à jour terminée.</NxBadge>
@@ -102,6 +132,7 @@ async function upgradeAll() {
 .upd-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
 .upd-actions { display: flex; gap: 10px; }
 .upd-empty { color: var(--nx-text-secondary); }
+.upd-reboot { border-left: 3px solid var(--nx-accent-warning); }
 .upd-table-scroll { overflow-x: auto; }
 .upd-table { width: 100%; min-width: 480px; border-collapse: collapse; font-size: 13px; }
 .upd-table th { text-align: left; color: var(--nx-text-secondary); border-bottom: 1px solid var(--nx-style-border-color); padding: 8px; }
