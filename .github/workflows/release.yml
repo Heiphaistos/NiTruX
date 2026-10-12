@@ -141,7 +141,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           shopt -s nullglob
-          canal=(release/_canal/latest.json release/_canal/*.sig)
+          # A glob for latest.json too: nullglob only drops patterns, a plain
+          # missing name would stay and make gh fail (seen on v0.25.155).
+          canal=(release/_canal/latest.jso[n] release/_canal/*.sig)
           notes="$(git log --no-merges --format='- %s' "$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || git rev-list --max-parents=0 HEAD)"..HEAD | head -n 30)"
           [ ${#canal[@]} -gt 0 ] || notes="$notes
 
