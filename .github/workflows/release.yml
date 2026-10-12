@@ -112,10 +112,15 @@ jobs:
           name: arch
           path: arch
       - name: Manifeste de mise à jour
-        run: python3 outils/publier.py --sans-televersement --bundle dist
+        # Without the signing secret the packages still ship on GitHub, but
+        # no latest.json is made: the update channel cannot be fed unsigned
+        # payloads. Whoever holds the key then runs, on the downloaded
+        # packages: python3 outils/publier.py --bundle <dossier>
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        if: env.TAURI_SIGNING_PRIVATE_KEY != ''
+        run: python3 outils/publier.py --sans-televersement --bundle dist
       - name: Dépôts apt et rpm
         env:
           GPG_KEY: ${{ secrets.NITRUX_GPG_PRIVATE_KEY }}
@@ -135,6 +140,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" --draft --title "NiTruX ${GITHUB_REF_NAME#v}" \
-            --notes "$(python3 -c 'import json;print(json.load(open("release/_canal/latest.json"))["notes"])')" \
-            dist/deb/*.deb dist/rpm/*.rpm dist/appimage/*.AppImage arch/out/*.pkg.tar.zst release/_canal/latest.json release/_canal/*.sig
+          shopt -s nullglob
+          canal=(release/_canal/latest.json release/_canal/*.sig)
+          notes="$(git log --no-merges --format='- %s' "$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || git rev-list --max-parents=0 HEAD)"..HEAD | head -n 30)"
+          [ ${#canal[@]} -gt 0 ] || notes="$notes
+
+          ⚠️ Paquets non signés pour la mise à jour automatique : signer et envoyer le canal avec outils/publier.py avant de publier."
+          gh release create "$GITHUB_REF_NAME" --draft --title "NiTruX ${GITHUB_REF_NAME#v}" --notes "$notes" \
+            dist/deb/*.deb dist/rpm/*.rpm dist/appimage/*.AppImage arch/out/*.pkg.tar.zst "${canal[@]}"
