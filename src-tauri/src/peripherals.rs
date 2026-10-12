@@ -178,8 +178,12 @@ pub fn get_audio_sinks() -> Result<Vec<AudioSink>, String> {
 
 #[tauri::command]
 pub fn get_printers() -> Result<Vec<PrinterInfo>, String> {
-    let out = subprocess::run_with_timeout("lpstat", &["-p"], Duration::from_secs(5))
-        .map_err(|e| explain_service_error("lpstat", e))?;
+    let out = match subprocess::run_with_timeout("lpstat", &["-p"], Duration::from_secs(5)) {
+        // CUPS running, no printer configured: exit 1 "No destinations
+        // added." -- an empty list, not an error (seen on Omarchy).
+        Err(e) if e.contains("No destinations added") => return Ok(Vec::new()),
+        result => result.map_err(|e| explain_service_error("lpstat", e))?,
+    };
     Ok(out.lines().filter_map(parse_lpstat_line).collect())
 }
 
