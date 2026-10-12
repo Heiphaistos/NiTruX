@@ -14,6 +14,7 @@ import App from "./App.vue";
 const ARRAY_RETURNING_COMMANDS = new Set([
   "check_required_tools",
   "get_admin_history",
+  "list_whole_disks",
   "find_duplicate_files",
   "find_large_files_cmd",
   "get_audio_sinks",

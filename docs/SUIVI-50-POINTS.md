@@ -1,7 +1,7 @@
 # Suivi des 50 points (audit du 2026-10-12)
 
 État au 2026-10-12, branche `fix/arch-wayland-locale-and-catalog` (PR #4).
-Tests : `npm test` 569/569, `cargo test` 502/502, `vue-tsc` et `clippy -D warnings` sans erreur.
+Tests : `npm test` 571/571, `cargo test` 507/507, `vue-tsc` et `clippy -D warnings` sans erreur.
 
 Légende : FAIT = codé et testé (tests auto) · VM = codé mais pas encore vérifié sur une VM · À FAIRE = non commencé.
 
@@ -29,12 +29,12 @@ Légende : FAIT = codé et testé (tests auto) · VM = codé mais pas encore vé
 | 19 | Profils d'alimentation (powerprofilesctl) | FAIT |
 | 20 | Assistant IA local (Ollama) | FAIT (testé avec un faux serveur Ollama) |
 | 21 | Récupération PhotoRec / TestDisk (terminal intégré) | FAIT |
-| 22 | Image disque (restauration ; la création `clone-disk` existe déjà) | À FAIRE · VM |
+| 22 | Image disque : restauration (`restore-image`) | FAIT, vérifié en VM Debian : écriture identique octet par octet ; disque système, disque monté et image trop grande refusés |
 | 23 | Export / import de la liste d'apps | FAIT |
-| 24 | GRUB : délai, entrée par défaut, grub-reboot | À FAIRE · VM |
-| 25 | Réparation du chargeur d'amorçage | À FAIRE · VM |
+| 24 | GRUB : délai, entrée par défaut, grub-reboot, liste des entrées | HELPER ÉCRIT, NON VÉRIFIÉ VM, pas encore d'écran ni de commande Rust |
+| 25 | Réparation du chargeur d'amorçage | HELPER ÉCRIT (`efi-bootorder` : remettre Linux en tête de l'ordre EFI ; pas de grub-install à l'aveugle), NON VÉRIFIÉ VM, pas encore d'écran |
 | 26 | Partitionnement (créer, supprimer, réduire) | À FAIRE · VM |
-| 27 | Clé USB bootable depuis un ISO | À FAIRE · VM |
+| 27 | Clé USB bootable depuis un ISO (`write-iso`, USB uniquement) | FAIT · VM partielle : refus (non-USB, système, partition, chemin, fichier absent) vérifiés ; écriture réelle sur clé USB à revérifier (noyau VM sans USB au 1er essai, corrigé) |
 | 28 | Restauration Timeshift fichier par fichier | À FAIRE · VM |
 | 29 | Benchmark compression / chiffrement | FAIT (SHA-256 + gzip, aucune dépendance) |
 
@@ -84,6 +84,12 @@ Légende : FAIT = codé et testé (tests auto) · VM = codé mais pas encore vé
 Les points 22, 24, 25, 26, 27 et 28 écrivent sur des disques ou sur l'amorçage. Ils ne seront codés
 qu'avec la VM QEMU disponible : un code non vérifié ici pourrait partir en release dès que la PR est mergée.
 Le point 43 (dépôt apt/dnf signé) demande une décision : où l'héberger (VPS ou GitHub Pages) et une clé GPG dédiée.
+
+## Reprise (VM)
+Images et clés dans le scratchpad de session (`vm/`) : Debian 13 (`deb.qcow2`, noyau standard, clé USB `usb.qcow2`,
+disque jetable `scratch.qcow2`), Arch (`archvm.qcow2`). Scripts `verif-debian.sh`, `verif-arch.sh`, `verif-image.sh`.
+Prochaines étapes : relancer `verif-image.sh` (écriture USB), écrire et lancer la vérification GRUB/EFI, puis
+commandes Rust + écran pour 24/25, puis 26 (partitionnement) et 28 (restauration Timeshift fichier par fichier).
 
 ## Bloquants côté humain
 1. `gh auth refresh -h github.com -s workflow` : sans ce droit, GitHub refuse de pousser `.github/workflows/`.

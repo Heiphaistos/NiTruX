@@ -71,6 +71,7 @@ export const navigationCategories: NavCategory[] = [
     title: "Stockage",
     pages: [
       { id: "disks", label: "Disques & partitions", icon: "hard-drive" },
+      { id: "disk-image", label: "Clé USB & image disque", icon: "usb" },
       { id: "file-tools", label: "Doublons / Gros fichiers / Hash", icon: "files" },
       { id: "disk-visualizer", label: "Visualiseur de disque", icon: "pie-chart" },
       { id: "data-recovery", label: "Récupération de données", icon: "database" },

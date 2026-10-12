@@ -13,6 +13,7 @@ import DriversPage from "@/pages/DriversPage.vue";
 import LogsPage from "@/pages/LogsPage.vue";
 import AdminHistoryPage from "@/pages/AdminHistoryPage.vue";
 import AiAssistantPage from "@/pages/AiAssistantPage.vue";
+import DiskImagePage from "@/pages/DiskImagePage.vue";
 import ThemeEditorPage from "@/pages/ThemeEditorPage.vue";
 import PackagesPage from "@/pages/PackagesPage.vue";
 import DisksPage from "@/pages/DisksPage.vue";
@@ -126,6 +127,7 @@ const pages: Record<string, Component> = {
   logs: LogsPage,
   "admin-history": AdminHistoryPage,
   "ai-assistant": AiAssistantPage,
+  "disk-image": DiskImagePage,
   "settings-preferences": SettingsPreferencesPage,
   "settings-appearance": ThemeEditorPage,
   "config-profiles": ConfigProfilesPage,

@@ -18,6 +18,7 @@
 # nitrux-pkexec-delete-snapshot,
 # nitrux-pkexec-quarantine-file, nitrux-pkexec-format-partition,
 # nitrux-pkexec-extend-partition, nitrux-pkexec-clone-disk,
+# nitrux-pkexec-disk-image,
 # nitrux-pkexec-system-tools, nitrux-pkexec-inventory. pkexec
 # resolves which action to authorize by matching the *executable path*
 # against each action's exec.path annotation -- it cannot see argv, so a
@@ -45,8 +46,11 @@
 #   nitrux-pkexec-format-partition format-partition <device> <ext4|btrfs|xfs|vfat>
 #   nitrux-pkexec-extend-partition extend-partition <partition-device> <disk-device> <partnum>
 #   nitrux-pkexec-clone-disk clone-disk <disk-device> <dest-image-path>
-#   nitrux-pkexec-inventory inventory <dmi-memory|dmi-system|firmware-key|security-audit|snapper-list|smart /dev/X>
+#   nitrux-pkexec-disk-image write-iso <image-path> <usb-disk-device>
+#   nitrux-pkexec-disk-image restore-image <image-path> <disk-device>
+#   nitrux-pkexec-inventory inventory <dmi-memory|dmi-system|firmware-key|security-audit|snapper-list|grub-entries|smart /dev/X>
 #   nitrux-pkexec-system-tools system-tool <apt-autoremove|journal-vacuum-size|rebuild-ld-cache|systemd-reload|fstrim-all|rebuild-locate-db|regenerate-grub>
+#   nitrux-pkexec-system-tools system-tool <grub-timeout SECONDS|grub-default N|saved|grub-reboot N|efi-bootorder XXXX,YYYY>
 set -eu
 
 die() {
@@ -238,6 +242,58 @@ validate_image_dest_path() {
   esac
 }
 
+# Source image for write-iso / restore-image: same shape rules as the
+# clone destination, and it must be an existing regular file.
+validate_image_source_path() {
+  validate_image_dest_path "$1"
+  [ -f "$1" ] || die "image not found or not a regular file: $1"
+}
+
+# Refuses the disk that carries the running system (directly, or under
+# LUKS/LVM: lsblk -s walks from / up to its disks), and any disk with a
+# mounted partition or active swap. Writing an image there would destroy
+# the system or a filesystem in use.
+validate_disk_not_in_use() {
+  root_src=$(findmnt -nvo SOURCE / 2>/dev/null || echo "")
+  if [ -n "$root_src" ] && lsblk -nrso NAME,TYPE "$root_src" 2>/dev/null | grep -qx "$(basename "$1") disk"; then
+    die "refusing to overwrite the disk of the running system: $1"
+  fi
+  if lsblk -nrpo MOUNTPOINT "$1" 2>/dev/null | grep -q .; then
+    die "a partition of $1 is mounted or used as swap, unmount it first"
+  fi
+}
+
+write_image_to_disk() {
+  image="$1"; disk="$2"
+  image_size=$(stat -c %s "$image")
+  disk_size=$(blockdev --getsize64 "$disk")
+  [ "$image_size" -le "$disk_size" ] || die "image ($image_size bytes) is larger than $disk ($disk_size bytes)"
+  dd if="$image" of="$disk" bs=4M conv=fsync oflag=direct status=none
+  sync
+  echo "written: $image -> $disk ($image_size bytes)"
+}
+
+# Regenerates grub.cfg with whichever generator this distribution has.
+# Echoes nothing on success; exits non-zero (with a message) otherwise.
+regenerate_grub_config() {
+  if command -v update-grub >/dev/null 2>&1; then update-grub; return; fi
+  if command -v grub2-mkconfig >/dev/null 2>&1; then grub2-mkconfig -o /boot/grub2/grub.cfg; return; fi
+  if command -v grub-mkconfig >/dev/null 2>&1 && [ -d /boot/grub ]; then grub-mkconfig -o /boot/grub/grub.cfg; return; fi
+  echo "aucun générateur de configuration GRUB trouvé" >&2
+  return 1
+}
+
+# Sets KEY=VALUE in /etc/default/grub (replacing the line, or appending
+# it), through a temporary copy so a failure never leaves a half file.
+# VALUE is validated by the caller: digits or the word "saved" only.
+set_grub_default_key() {
+  [ -f /etc/default/grub ] || die "/etc/default/grub not found: this machine does not boot with GRUB"
+  awk -v k="$1" -v v="$2" 'BEGIN{done=0} $0 ~ "^"k"=" {print k"="v; done=1; next} {print} END{if(!done) print k"="v}' \
+    /etc/default/grub > /etc/default/grub.nitrux-tmp
+  chmod 644 /etc/default/grub.nitrux-tmp
+  mv /etc/default/grub.nitrux-tmp /etc/default/grub
+}
+
 cmd="${1:-}"
 
 case "$cmd" in
@@ -317,14 +373,49 @@ case "$cmd" in
         exit 1
         ;;
       regenerate-grub)
-        if command -v update-grub >/dev/null 2>&1; then exec update-grub; fi
-        if command -v grub2-mkconfig >/dev/null 2>&1; then exec grub2-mkconfig -o /boot/grub2/grub.cfg; fi
+        if [ ! -f /etc/default/grub ] && command -v limine >/dev/null 2>&1; then echo "cette machine démarre avec Limine, pas GRUB : rien à régénérer" >&2; exit 1; fi
+        if [ ! -f /etc/default/grub ] && command -v bootctl >/dev/null 2>&1 && bootctl is-installed >/dev/null 2>&1; then echo "cette machine démarre avec systemd-boot, pas GRUB : rien à régénérer" >&2; exit 1; fi
         # Arch and derivatives ship plain grub-mkconfig, no update-grub wrapper.
-        if command -v grub-mkconfig >/dev/null 2>&1 && [ -d /boot/grub ]; then exec grub-mkconfig -o /boot/grub/grub.cfg; fi
-        if command -v limine >/dev/null 2>&1; then echo "cette machine démarre avec Limine, pas GRUB : rien à régénérer" >&2; exit 1; fi
-        if command -v bootctl >/dev/null 2>&1 && bootctl is-installed >/dev/null 2>&1; then echo "cette machine démarre avec systemd-boot, pas GRUB : rien à régénérer" >&2; exit 1; fi
-        echo "aucun générateur de configuration GRUB trouvé" >&2
-        exit 1
+        regenerate_grub_config
+        exit $?
+        ;;
+      grub-timeout)
+        value="${3:-}"
+        case "$value" in ''|*[!0-9]*) die "grub timeout must be a number of seconds: $value" ;; esac
+        [ "$value" -le 60 ] || die "grub timeout above 60 seconds refused: $value"
+        set_grub_default_key GRUB_TIMEOUT "$value"
+        regenerate_grub_config
+        exit $?
+        ;;
+      grub-default)
+        value="${3:-}"
+        case "$value" in saved) : ;; ''|*[!0-9]*) die "grub default must be an entry number or 'saved': $value" ;; esac
+        set_grub_default_key GRUB_DEFAULT "$value"
+        regenerate_grub_config
+        exit $?
+        ;;
+      grub-reboot)
+        # Boot entry N once, at the next boot only. GRUB honours it only
+        # with GRUB_DEFAULT=saved, so say so instead of silently ignoring.
+        value="${3:-}"
+        case "$value" in ''|*[!0-9]*) die "grub entry must be a number: $value" ;; esac
+        grep -q '^GRUB_DEFAULT=saved' /etc/default/grub 2>/dev/null || die "GRUB_DEFAULT must be 'saved' for a one-time boot entry: set the default entry to 'saved' first"
+        if command -v grub-reboot >/dev/null 2>&1; then exec grub-reboot "$value"; fi
+        if command -v grub2-reboot >/dev/null 2>&1; then exec grub2-reboot "$value"; fi
+        die "grub-reboot not found"
+        ;;
+      efi-bootorder)
+        # Comma-separated 4-hex-digit entries, each of which must exist:
+        # typically to put Linux back first after Windows took the lead.
+        order="${3:-}"
+        case "$order" in ''|*[!0-9A-Fa-f,]*) die "invalid EFI boot order: $order" ;; esac
+        command -v efibootmgr >/dev/null 2>&1 || die "efibootmgr is not installed"
+        existing=$(efibootmgr | sed -n 's/^Boot\([0-9A-Fa-f]\{4\}\)[* ].*/\1/p')
+        for entry in $(echo "$order" | tr ',' ' '); do
+          case "$entry" in ????) : ;; *) die "EFI entries are 4 hex digits: $entry" ;; esac
+          echo "$existing" | grep -qix "$entry" || die "no such EFI entry: $entry"
+        done
+        exec efibootmgr -o "$order"
         ;;
       *)
         die "unknown system-tool action: $action"
@@ -547,6 +638,25 @@ case "$cmd" in
     chmod 600 /proc/self/fd/3
     dd if="$source_disk" of=/proc/self/fd/3 bs=4M status=progress conv=fsync
     ;;
+  write-iso)
+    image="${2:-}"
+    disk="${3:-}"
+    validate_image_source_path "$image"
+    validate_disk_device "$disk"
+    # A bootable USB stick only: an ISO written to an internal disk by a
+    # wrong pick in a list is the mistake this check exists for.
+    [ "$(lsblk -dno TRAN "$disk" 2>/dev/null)" = "usb" ] || die "not a USB disk: $disk"
+    validate_disk_not_in_use "$disk"
+    write_image_to_disk "$image" "$disk"
+    ;;
+  restore-image)
+    image="${2:-}"
+    disk="${3:-}"
+    validate_image_source_path "$image"
+    validate_disk_device "$disk"
+    validate_disk_not_in_use "$disk"
+    write_image_to_disk "$image" "$disk"
+    ;;
   inventory)
     # Read-only hardware and security inventory for the "Scan PC" and
     # hardware pages: fixed commands only, nothing is written or changed.
@@ -572,6 +682,13 @@ case "$cmd" in
         # the log...): the report itself is what matters, not the status.
         smartctl -a "$dev" || true
         exit 0
+        ;;
+      grub-entries)
+        # Top-level menu entries, in GRUB's own numbering (0 = first).
+        for cfg in /boot/grub/grub.cfg /boot/grub2/grub.cfg; do
+          [ -r "$cfg" ] && exec awk -F"'" '/^menuentry /{print n++ "\t" $2} /^submenu /{print n++ "\t" $2 " (sous-menu)"}' "$cfg"
+        done
+        die "grub.cfg not found"
         ;;
       snapper-list)
         command -v snapper >/dev/null 2>&1 || die "snapper is not installed"
