@@ -18,6 +18,7 @@ mod cache_size;
 mod certificates;
 mod crash_analyzer;
 mod dependencies;
+mod disk_image;
 mod disk_tree;
 mod disk_write;
 mod disks;
@@ -174,6 +175,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             system::get_system_snapshot,
             install_info::get_install_info,
+            disk_image::list_whole_disks,
+            disk_image::write_iso_to_usb,
+            disk_image::restore_disk_image,
             admin_history::get_admin_history,
             reboot_required::get_reboot_required,
             ollama::ollama_status,
