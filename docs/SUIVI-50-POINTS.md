@@ -8,18 +8,18 @@ Légende : FAIT = codé et testé (tests auto) · VM = codé mais pas encore vé
 ## Cassé (1-18)
 | # | Point | État |
 |---|---|---|
-| 1 | Orphelins (autoremove) sans pacman/xbps | FAIT (helper) · VM |
-| 2 | Régénérer GRUB sur Arch / Limine / systemd-boot | FAIT (helper) · VM |
-| 3 | DNS : ne plus écraser le lien resolv.conf (resolved / NetworkManager) | FAIT (helper + lecture) · VM |
+| 1 | Orphelins (autoremove) sans pacman/xbps | FAIT, vérifié en VM Arch et Debian |
+| 2 | Régénérer GRUB sur Arch / Limine / systemd-boot | FAIT, vérifié en VM Arch (grub-mkconfig) et Debian (update-grub) |
+| 3 | DNS : ne plus écraser le lien resolv.conf (resolved / NetworkManager) | FAIT, vérifié en VM Debian (resolved) et dans l'app sur Omarchy ; branche NetworkManager seule non testée |
 | 4 | Pare-feu firewalld | FAIT (polkit de firewalld/systemd, aucune action pkexec ajoutée) |
-| 5 | Snapper (Omarchy, openSUSE, Fedora btrfs) | FAIT · VM |
+| 5 | Snapper (Omarchy, openSUSE, Fedora btrfs) | FAIT, vérifié en VM Debian (btrfs) |
 | 6 | pacman -S sur base périmée | FAIT (`--needed` + message « mise à jour complète d'abord ») |
 | 7-11 | Commandes non portables du catalogue (xrandr, iwconfig, route, netstat, lastlog, kvm-ok, lsb_release, apt/dpkg) | FAIT, exécutées pour de vrai sur Omarchy |
 | 12 | checkupdates absent : repli silencieux | FAIT (pacman-contrib proposé dans Dépendances) |
 | 13 | Erreurs d'outils en anglais | FAIT (`explain_error`) |
 | 14 | pkexec non tuable après authentification | FAIT (message honnête) |
 | 15 | Paquet `policykit-1` → `pkexec` | FAIT |
-| 16 | Actions admin sur Arch | FAIT via le paquet Arch (helpers + polkit installés par pacman) · à tester installé |
+| 16 | Actions admin sur Arch | FAIT, paquet installé en VM Arch : 16 actions polkit, vrais appels pkexec OK |
 | 17 | Parcours e2e sur Omarchy | FAIT : 51 pages, 0 erreur JS, scénarios terminal/PDF/benchmark/fichiers/pilotes OK (sous Xvfb). Trouvé et corrigé : imprimantes sans destination, historique pacman absent |
 | 18 | Repli catalogue sur pacman | À FAIRE (e2e) |
 
@@ -42,7 +42,7 @@ Légende : FAIT = codé et testé (tests auto) · VM = codé mais pas encore vé
 | # | Point | État |
 |---|---|---|
 | 30 | firewalld | FAIT (= 4) |
-| 31 | Snapper | FAIT (= 5) · VM |
+| 31 | Snapper | FAIT (= 5) |
 | 32 | Mises à jour AUR (yay/paru) | FAIT |
 | 33 | Firmware (fwupd) | FAIT (testé sur fixture, fwupd absent de la machine de dev) |
 | 34 | Alerte « redémarrage nécessaire » | FAIT |
