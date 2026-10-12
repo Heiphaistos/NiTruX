@@ -20,7 +20,7 @@ Légende : FAIT = codé et testé (tests auto) · VM = codé mais pas encore vé
 | 14 | pkexec non tuable après authentification | FAIT (message honnête) |
 | 15 | Paquet `policykit-1` → `pkexec` | FAIT |
 | 16 | Actions admin sur Arch | FAIT via le paquet Arch (helpers + polkit installés par pacman) · à tester installé |
-| 17 | Parcours e2e sous Wayland | À FAIRE (besoin de `webkitgtk-6.0` + `xorg-server-xvfb`) |
+| 17 | Parcours e2e sur Omarchy | FAIT : 51 pages, 0 erreur JS, scénarios terminal/PDF/benchmark/fichiers/pilotes OK (sous Xvfb). Trouvé et corrigé : imprimantes sans destination, historique pacman absent |
 | 18 | Repli catalogue sur pacman | À FAIRE (e2e) |
 
 ## Fonctions validées (19-29)

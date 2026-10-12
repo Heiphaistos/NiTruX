@@ -24,7 +24,7 @@ onMounted(async () => {
 
 <template>
   <div class="bm-page">
-    <NxSectionHeader title="Boot Manager" description="Configuration GRUB et entrées de démarrage EFI (lecture seule)." />
+    <NxSectionHeader title="Boot Manager" description="Chargeur d'amorçage (GRUB, Limine, systemd-boot) et entrées EFI, en lecture seule." />
 
     <NxCard v-if="error" danger>{{ error }}</NxCard>
 
