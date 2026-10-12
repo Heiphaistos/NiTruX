@@ -34,7 +34,7 @@ impl PackageManager for Pacman {
                 subprocess::run_capturing_exit_code("checkupdates", &[], Duration::from_secs(90))?;
             return match code {
                 0 | 2 => Ok(stdout.lines().filter_map(parse_pacman_line).collect()),
-                _ => Err(format!("checkupdates a échoué (code {code}) : {}", stderr.trim())),
+                _ => Err(format!("checkupdates a échoué (code {code}) : {}", crate::subprocess::explain_error(stderr.trim()))),
             };
         }
         // `pacman -Qu` exits non-zero (1) when there are NO updates

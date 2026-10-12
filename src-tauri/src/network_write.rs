@@ -133,8 +133,7 @@ fn run_pkexec_with_stdin(helper_path: &str, subcommand: &str, content: &str, tim
     let output = match rx.recv_timeout(timeout) {
         Ok(result) => result.map_err(|e| format!("erreur en lisant la sortie de pkexec : {e}"))?,
         Err(_) => {
-            let _ = Command::new("kill").arg("-9").arg(pid.to_string()).status();
-            return Err(format!("pkexec a dépassé le délai de {timeout:?} et a été arrêté"));
+            return Err(crate::subprocess::kill_after_timeout("pkexec", pid, timeout));
         }
     };
 
@@ -147,7 +146,7 @@ fn run_pkexec_with_stdin(helper_path: &str, subcommand: &str, content: &str, tim
             .map(|c| c.to_string())
             .unwrap_or_else(|| "inconnu".to_string());
         let stderr = String::from_utf8_lossy(&output.stderr);
-        Err(format!("pkexec a échoué (code {code}) : {}", stderr.trim()))
+        Err(format!("pkexec a échoué (code {code}) : {}", crate::subprocess::explain_error(stderr.trim())))
     }
 }
 

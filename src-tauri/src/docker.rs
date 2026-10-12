@@ -175,7 +175,7 @@ pub fn docker_container_logs(container_id: String) -> Result<String, String> {
         Duration::from_secs(20),
     )?;
     if code != 0 {
-        return Err(format!("docker logs a échoué (code {code}) : {}", stderr.trim()));
+        return Err(format!("docker logs a échoué (code {code}) : {}", crate::subprocess::explain_error(stderr.trim())));
     }
     Ok(format!("{stdout}{stderr}"))
 }

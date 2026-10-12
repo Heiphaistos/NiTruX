@@ -249,7 +249,7 @@ case "$cmd" in
     case "$manager" in
       apt)    exec apt-get install -y --no-install-recommends -- "$package" ;;
       dnf)    exec dnf install -y -- "$package" ;;
-      pacman) exec pacman -S --noconfirm -- "$package" ;;
+      pacman) exec pacman -S --needed --noconfirm -- "$package" ;;
       zypper) exec zypper --non-interactive install -- "$package" ;;
       apk)    exec apk add "$package" ;;
       xbps)   exec xbps-install -y "$package" ;;
@@ -291,6 +291,12 @@ case "$cmd" in
         if command -v apt-get >/dev/null 2>&1; then apt-get autoremove -y || status=$?; fi
         if command -v dnf >/dev/null 2>&1; then dnf autoremove -y || status=$?; fi
         if command -v zypper >/dev/null 2>&1; then zypper --non-interactive remove --clean-deps || status=$?; fi
+        if command -v pacman >/dev/null 2>&1; then
+          # `pacman -Rns -` with an empty list fails with "no targets".
+          orphans=$(pacman -Qdtq || true)
+          if [ -n "$orphans" ]; then echo "$orphans" | pacman -Rns --noconfirm - || status=$?; else echo "aucun paquet orphelin"; fi
+        fi
+        if command -v xbps-remove >/dev/null 2>&1; then xbps-remove -oy || status=$?; fi
         exit "$status"
         ;;
       journal-vacuum-size)
@@ -313,6 +319,10 @@ case "$cmd" in
       regenerate-grub)
         if command -v update-grub >/dev/null 2>&1; then exec update-grub; fi
         if command -v grub2-mkconfig >/dev/null 2>&1; then exec grub2-mkconfig -o /boot/grub2/grub.cfg; fi
+        # Arch and derivatives ship plain grub-mkconfig, no update-grub wrapper.
+        if command -v grub-mkconfig >/dev/null 2>&1 && [ -d /boot/grub ]; then exec grub-mkconfig -o /boot/grub/grub.cfg; fi
+        if command -v limine >/dev/null 2>&1; then echo "cette machine démarre avec Limine, pas GRUB : rien à régénérer" >&2; exit 1; fi
+        if command -v bootctl >/dev/null 2>&1 && bootctl is-installed >/dev/null 2>&1; then echo "cette machine démarre avec systemd-boot, pas GRUB : rien à régénérer" >&2; exit 1; fi
         echo "aucun générateur de configuration GRUB trouvé" >&2
         exit 1
         ;;
@@ -381,6 +391,29 @@ case "$cmd" in
     if [ "$size" -lt 5 ]; then
       rm -f /etc/resolv.conf.nitrux-tmp
       die "decoded resolv.conf content suspiciously small ($size bytes), refusing to write"
+    fi
+    # On systemd-resolved and NetworkManager systems /etc/resolv.conf is a
+    # generated symlink: replacing it broke resolved and NetworkManager
+    # rewrote it anyway. Configure the owning service there instead.
+    servers=$(awk '$1=="nameserver"{print $2}' /etc/resolv.conf.nitrux-tmp | tr '\n' ' ')
+    for ip in $servers; do
+      case "$ip" in
+        *[!0-9a-fA-F.:]*) rm -f /etc/resolv.conf.nitrux-tmp; die "invalid nameserver address: $ip" ;;
+      esac
+    done
+    [ -n "$servers" ] || { rm -f /etc/resolv.conf.nitrux-tmp; die "no nameserver line"; }
+    if systemctl is-active --quiet systemd-resolved 2>/dev/null; then
+      rm -f /etc/resolv.conf.nitrux-tmp
+      mkdir -p /etc/systemd/resolved.conf.d
+      # Domains=~. routes every query to these servers, not only the
+      # queries no link-specific server claims.
+      printf '[Resolve]\nDNS=%s\nDomains=~.\n' "$servers" > /etc/systemd/resolved.conf.d/nitrux-dns.conf
+      exec systemctl restart systemd-resolved
+    elif systemctl is-active --quiet NetworkManager 2>/dev/null && [ -L /etc/resolv.conf ]; then
+      rm -f /etc/resolv.conf.nitrux-tmp
+      mkdir -p /etc/NetworkManager/conf.d
+      printf '[global-dns-domain-*]\nservers=%s\n' "$(echo $servers | tr ' ' ',')" > /etc/NetworkManager/conf.d/nitrux-dns.conf
+      exec nmcli general reload
     fi
     mv /etc/resolv.conf.nitrux-tmp /etc/resolv.conf
     ;;
