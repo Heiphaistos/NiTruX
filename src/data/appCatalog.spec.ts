@@ -8,6 +8,11 @@ describe("appCatalog", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it("never lists the same package twice under the same install method", () => {
+    const keys = appCatalog.map((e) => `${e.installMethod}:${e.packageId}`);
+    expect(keys.filter((k, i) => keys.indexOf(k) !== i)).toEqual([]);
+  });
+
   it("every entry has non-empty required fields and a valid installMethod", () => {
     const validMethods = ["apt", "flatpak", "snap"];
     for (const entry of appCatalog) {

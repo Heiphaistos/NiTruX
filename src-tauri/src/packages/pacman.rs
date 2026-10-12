@@ -24,6 +24,19 @@ impl PackageManager for Pacman {
     }
 
     fn list_upgradable(&self) -> Result<Vec<PackageUpdate>, String> {
+        // `pacman -Qu` only compares against the local sync database, which
+        // stays stale until someone runs `pacman -Sy` as root: a vanilla
+        // Arch install showed "à jour" for weeks. `checkupdates`
+        // (pacman-contrib) syncs a throwaway copy without root and prints
+        // the same "name old -> new" lines; exit 2 means no updates.
+        if subprocess::binary_in_path("checkupdates") {
+            let (stdout, stderr, code) =
+                subprocess::run_capturing_exit_code("checkupdates", &[], Duration::from_secs(90))?;
+            return match code {
+                0 | 2 => Ok(stdout.lines().filter_map(parse_pacman_line).collect()),
+                _ => Err(format!("checkupdates a échoué (code {code}) : {}", stderr.trim())),
+            };
+        }
         // `pacman -Qu` exits non-zero (1) when there are NO updates
         // available (the inverse convention from dnf!) — treat that
         // specific case as an empty, successful list rather than an error.
@@ -38,9 +51,7 @@ impl PackageManager for Pacman {
     /// packages only pulled in as another package's dependency, same
     /// rationale as `apt.rs`'s equivalent filter. Output shape is
     /// identical to `-Q` ("name version" per line), so `parse_pacman_q_line`
-    /// is reused unchanged. No `pacman` available in this project's WSL2
-    /// dev environment (Arch-only tool) to verify live -- only the parsing
-    /// logic is tested.
+    /// is reused unchanged. Verified live on Arch (Omarchy).
     fn list_installed(&self) -> Result<Vec<super::InstalledPackage>, String> {
         let output = subprocess::run_with_timeout("pacman", &["-Qe"], Duration::from_secs(15))?;
         Ok(output.lines().filter_map(parse_pacman_q_line).collect())

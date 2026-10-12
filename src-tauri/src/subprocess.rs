@@ -22,8 +22,15 @@ use std::time::Duration;
 /// package format launched NiTruX itself; a `.deb`/`.rpm` install never had
 /// this variable set in the first place, so removing an unset variable is a
 /// no-op there.
+///
+/// `LC_ALL=C.UTF-8` for the same reason: every parser in this app matches
+/// English output ("packets transmitted", "Model name:"), and on a French
+/// desktop `ping` prints "paquets transmis" -- reproduced on Arch, where
+/// the ping page answered "aucune réponse de ping" for a reachable host.
+/// UTF-8 rather than plain `C` so file names with accents stay intact.
 fn sanitize_child_env(command: &mut Command) {
     command.env_remove("LD_LIBRARY_PATH");
+    command.env("LC_ALL", "C.UTF-8");
 }
 
 /// Which package provides each external binary NiTruX shells out to, per
@@ -78,7 +85,6 @@ pub const EXTERNAL_TOOLS: &[ExternalTool] = &[
     tool("timeshift", "timeshift", "timeshift", "timeshift", "Points de restauration"),
     tool("traceroute", "traceroute", "traceroute", "traceroute", "Traceroute (Réseau)"),
     tool("ufw", "ufw", "ufw", "ufw", "Pare-feu"),
-    tool("xrandr", "x11-xserver-utils", "xrandr", "xorg-xrandr", "Moniteurs (Périphériques)"),
 ];
 
 /// Which distribution family this system is, decided by which package
@@ -365,10 +371,18 @@ mod tests {
     #[test]
     fn finds_a_tool_in_sbin_even_when_path_does_not_list_it() {
         // Debian's default user PATH has no /usr/sbin. `ldconfig` lives in
-        // /usr/sbin or /sbin on every glibc distribution.
-        let found = locate_program_in("ldconfig", Some("/usr/bin:/bin".into()));
+        // /usr/sbin or /sbin on every glibc distribution (on merged-/usr
+        // distributions like Arch, /usr/sbin links to /usr/bin), so an empty
+        // PATH forces the sbin fallback.
+        let found = locate_program_in("ldconfig", Some("/nonexistent".into()));
         assert!(found.is_some_and(|p| p.to_string_lossy().contains("sbin")), "ldconfig should be found in an sbin directory");
         assert!(run_with_timeout("ldconfig", &["--version"], Duration::from_secs(5)).is_ok());
+    }
+
+    #[test]
+    fn pins_children_to_the_c_utf8_locale_so_parsers_see_english() {
+        let out = run_with_timeout("sh", &["-c", "echo $LC_ALL"], Duration::from_secs(5)).unwrap();
+        assert_eq!(out.trim(), "C.UTF-8");
     }
 
     #[test]
