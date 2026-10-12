@@ -55,3 +55,35 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test
         working-directory: src-tauri
+
+  # Drives the real compiled app (WebDriver), page by page, plus the
+  # non-privileged scenarios: terminal, PDF report, benchmark, file tools,
+  # drivers. run.sh starts its own Xvfb.
+  e2e:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dépendances système
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev libxdo-dev libssl-dev webkit2gtk-driver xvfb pciutils python3-selenium
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: tauri-driver
+        run: cargo install tauri-driver --locked
+      - run: npm ci
+      - name: Application (debug)
+        run: npx tauri build --debug --no-bundle
+      - name: Parcours de bout en bout
+        run: ./e2e/run.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-captures
+          path: e2e/out/
