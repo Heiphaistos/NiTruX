@@ -96,4 +96,17 @@ describe("QuickInstallPage", () => {
     await toggle.setValue(true);
     expect(wrapper.findAll(".qi-card").find((c) => c.text().includes("htop"))).toBeUndefined();
   });
+
+  it("imports a saved list and installs only what is missing, one by one", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const wrapper = mount(QuickInstallPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("htop"));
+    const input = wrapper.find('input[type="file"]');
+    const file = new File([JSON.stringify({ format: "nitrux-apps", version: 1, apps: ["htop", "gimp", "nope"] })], "l.json");
+    Object.defineProperty(input.element, "files", { value: [file] });
+    await input.trigger("change");
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("install_package", { manager: "apt", package: "gimp" }));
+    expect(wrapper.text()).toContain("1 application(s) à installer, 1 entrée(s) ignorée(s)");
+    expect(invoke).not.toHaveBeenCalledWith("install_package", { manager: "apt", package: "htop" });
+  });
 });

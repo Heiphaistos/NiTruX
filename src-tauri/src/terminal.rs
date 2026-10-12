@@ -28,14 +28,25 @@ pub struct TerminalState(pub Mutex<HashMap<String, TerminalSession>>);
 /// without needing a live Tauri app context (a `Channel` cannot be
 /// constructed outside one) -- this is the actual mechanism under test,
 /// the command wrapper below just plumbs its output into a Channel.
-fn open_shell_pty(rows: u16, cols: u16) -> Result<PtyHandles, String> {
+/// `admin`: a root shell through pkexec (the polkit agent, or pkexec itself
+/// inside this terminal when there is none, asks for the password every
+/// time). pkexec clears the environment, hence TERM and HOME given back.
+fn shell_command(admin: bool) -> CommandBuilder {
+    if admin {
+        let mut cmd = CommandBuilder::new("pkexec");
+        cmd.args(["/usr/bin/env", "TERM=xterm-256color", "HOME=/root", "/bin/bash", "-l"]);
+        return cmd;
+    }
+    CommandBuilder::new(std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string()))
+}
+
+fn open_shell_pty(rows: u16, cols: u16, admin: bool) -> Result<PtyHandles, String> {
     let pty_system = native_pty_system();
     let pair = pty_system
         .openpty(PtySize { rows, cols, pixel_width: 0, pixel_height: 0 })
         .map_err(|e| format!("impossible d'ouvrir le pseudo-terminal : {e}"))?;
 
-    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
-    let mut cmd = CommandBuilder::new(shell);
+    let mut cmd = shell_command(admin);
     // If NiTruX itself is running as an AppImage, its own AppRun-set
     // LD_LIBRARY_PATH would otherwise leak into this interactive shell --
     // and from there into every command the user types in it (curl, git,
@@ -130,8 +141,13 @@ pub fn spawn_terminal(
     state: tauri::State<TerminalState>,
     on_data: Channel<String>,
     on_exit: Channel<()>,
+    admin: Option<bool>,
 ) -> Result<(), String> {
-    let (master, writer, mut reader, child) = open_shell_pty(24, 80)?;
+    let admin = admin.unwrap_or(false);
+    let (master, writer, mut reader, child) = open_shell_pty(24, 80, admin)?;
+    if admin {
+        crate::admin_history::record(&["pkexec", "terminal administrateur (shell root)"], Ok(()));
+    }
 
     std::thread::spawn(move || {
         let mut buf = [0u8; 4096];
@@ -193,6 +209,13 @@ pub fn close_terminal(id: String, state: tauri::State<TerminalState>) -> Result<
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_admin_shell_goes_through_pkexec_with_an_absolute_program() {
+        let argv = shell_command(true).get_argv().iter().map(|a| a.to_string_lossy().into_owned()).collect::<Vec<_>>();
+        assert_eq!(argv, ["pkexec", "/usr/bin/env", "TERM=xterm-256color", "HOME=/root", "/bin/bash", "-l"]);
+        assert_ne!(shell_command(false).get_argv()[0], "pkexec");
+    }
     use std::sync::mpsc;
     use std::time::Duration;
 
@@ -206,7 +229,7 @@ mod tests {
     /// `subprocess::run_with_timeout`.
     #[test]
     fn spawns_a_real_shell_and_echoes_a_command() {
-        let (_master, mut writer, mut reader, _child) = open_shell_pty(24, 80).expect("should open pty");
+        let (_master, mut writer, mut reader, _child) = open_shell_pty(24, 80, false).expect("should open pty");
 
         let (tx, rx) = mpsc::channel();
         std::thread::spawn(move || {
@@ -287,9 +310,9 @@ mod tests {
     /// overwritten.
     #[test]
     fn insert_session_kills_the_previous_session_under_a_reused_id() {
-        let (master1, writer1, _reader1, child1) = open_shell_pty(24, 80).expect("should open first pty");
+        let (master1, writer1, _reader1, child1) = open_shell_pty(24, 80, false).expect("should open first pty");
         let first_pid = child1.process_id().expect("a freshly spawned shell should have a pid");
-        let (master2, writer2, _reader2, child2) = open_shell_pty(24, 80).expect("should open second pty");
+        let (master2, writer2, _reader2, child2) = open_shell_pty(24, 80, false).expect("should open second pty");
 
         let mut sessions: HashMap<String, TerminalSession> = HashMap::new();
         insert_session(&mut sessions, "reused-id".to_string(), TerminalSession { master: master1, writer: writer1, child: child1 });

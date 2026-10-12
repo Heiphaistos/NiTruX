@@ -18,6 +18,7 @@
 // would hand any local user a way to install arbitrary code as root. Whoever
 // does not want the prompt runs the AppImage.
 
+import { invoke } from "@tauri-apps/api/core";
 import { check } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { ask, message } from "@tauri-apps/plugin-dialog";
@@ -35,6 +36,16 @@ export async function checkForUpdate(silent = true): Promise<boolean> {
   if (import.meta.env.DEV) return false;
 
   try {
+    // The Arch/Omarchy package repackages the .deb: the updater would try
+    // `dpkg -i` there. pacman owns that copy, so it updates it.
+    const info = await invoke<{ managed_by: string | null; distro_id: string }>("get_install_info");
+    if (info.managed_by) {
+      if (!silent) {
+        const how = info.distro_id === "omarchy" ? "omarchy-update" : "sudo pacman -Syu (ou yay -Syu)";
+        await message(`NiTruX a été installé par ${info.managed_by} : il se met à jour avec le système (${how}).`, { title: "Mise à jour" });
+      }
+      return false;
+    }
     const update = await check();
     if (!update) {
       if (!silent) await message("NiTruX est à jour.", { title: "Mise à jour" });

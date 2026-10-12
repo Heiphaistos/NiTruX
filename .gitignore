@@ -62,3 +62,4 @@ release/
 src-tauri/tauri.windows.conf.json
 e2e/out/
 e2e/out-driver.log
+__pycache__/

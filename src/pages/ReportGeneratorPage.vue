@@ -6,6 +6,7 @@ import NxCard from "@/components/ui/NxCard.vue";
 import NxButton from "@/components/ui/NxButton.vue";
 import NxSelect from "@/components/ui/NxSelect.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
+import ReportCompareCard from "@/components/ReportCompareCard.vue";
 
 interface ReportFile { filename: string; size_bytes: number; created_at: string }
 
@@ -159,6 +160,8 @@ async function download() {
     </NxCard>
 
     <NxCard v-if="reportsError" danger>{{ reportsError }}</NxCard>
+
+    <ReportCompareCard :filenames="reports.map((r) => r.filename)" />
 
     <NxCard class="rg-reports">
       <NxSectionHeader :title="`Rapports générés (${reports.length})`" />

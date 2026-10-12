@@ -31,7 +31,7 @@ pub fn parse_du_output(output: &str, root: &str) -> (Vec<TreeEntry>, u64) {
         }
         children.push(TreeEntry { path: path.to_string(), size_bytes });
     }
-    children.sort_by(|a, b| b.size_bytes.cmp(&a.size_bytes));
+    children.sort_by_key(|c| std::cmp::Reverse(c.size_bytes));
     (children, total)
 }
 

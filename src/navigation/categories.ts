@@ -41,6 +41,7 @@ export const navigationCategories: NavCategory[] = [
     pages: [
       { id: "system-tools", label: "Commandes rapides", icon: "terminal" },
       { id: "terminal", label: "Terminal", icon: "square-terminal" },
+      { id: "ai-assistant", label: "Assistant IA", icon: "bot" },
     ],
   },
   {
@@ -70,6 +71,7 @@ export const navigationCategories: NavCategory[] = [
     title: "Stockage",
     pages: [
       { id: "disks", label: "Disques & partitions", icon: "hard-drive" },
+      { id: "disk-image", label: "Clé USB & image disque", icon: "usb" },
       { id: "file-tools", label: "Doublons / Gros fichiers / Hash", icon: "files" },
       { id: "disk-visualizer", label: "Visualiseur de disque", icon: "pie-chart" },
       { id: "data-recovery", label: "Récupération de données", icon: "database" },
@@ -109,6 +111,7 @@ export const navigationCategories: NavCategory[] = [
     pages: [
       { id: "report-generator", label: "Générateur de rapport", icon: "file-text" },
       { id: "logs", label: "Journaux", icon: "scroll-text" },
+      { id: "admin-history", label: "Actions administrateur", icon: "shield-alert" },
     ],
   },
   {

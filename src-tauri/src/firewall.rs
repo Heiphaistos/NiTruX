@@ -63,8 +63,51 @@ pub fn parse_ufw_output(output: &str) -> Result<FirewallStatus, String> {
     }
 }
 
+/// Fedora, openSUSE and RHEL ship firewalld, not ufw. It is used when ufw
+/// is absent, or when firewalld is the one actually running. Its own polkit
+/// policy lets the active session read the configuration and asks for the
+/// admin password to change it, so no NiTruX pkexec action is involved.
+pub fn uses_firewalld() -> bool {
+    subprocess::binary_in_path("firewall-cmd")
+        && (!subprocess::binary_in_path("ufw")
+            || subprocess::run_with_timeout("systemctl", &["is-active", "--quiet", "firewalld"], Duration::from_secs(5)).is_ok())
+}
+
+/// `firewall-cmd --list-ports` / `--list-services`: one space-separated line.
+pub fn firewalld_rules(ports: &str, services: &str) -> Vec<String> {
+    ports
+        .split_whitespace()
+        .map(|p| format!("{p} ALLOW"))
+        .chain(services.split_whitespace().map(|s| format!("service {s} ALLOW")))
+        .collect()
+}
+
+fn firewalld_status() -> Result<FirewallStatus, String> {
+    // `--state` exits 252 with "not running" when firewalld is stopped.
+    let (state, _, _) = subprocess::run_capturing_exit_code("firewall-cmd", &["--state"], Duration::from_secs(10))?;
+    if state.trim() != "running" {
+        return Ok(FirewallStatus { active: false, rules: Vec::new(), rules_need_privilege: false });
+    }
+    let ports = subprocess::run_with_timeout("firewall-cmd", &["--list-ports"], Duration::from_secs(10))?;
+    let services = subprocess::run_with_timeout("firewall-cmd", &["--list-services"], Duration::from_secs(10))?;
+    Ok(FirewallStatus { active: true, rules: firewalld_rules(&ports, &services), rules_need_privilege: false })
+}
+
+/// Opens or closes a port permanently, then reloads so it applies now.
+pub fn firewalld_port(port_proto: &str, open: bool) -> Result<String, String> {
+    let flag = format!("--{}-port={port_proto}", if open { "add" } else { "remove" });
+    let args = ["--permanent", flag.as_str()];
+    let result = subprocess::run_with_timeout("firewall-cmd", &args, Duration::from_secs(60))
+        .and_then(|_| subprocess::run_with_timeout("firewall-cmd", &["--reload"], Duration::from_secs(60)));
+    crate::admin_history::record(&["firewall-cmd", "--permanent", &flag], result.as_ref().map(|_| ()).map_err(String::as_str));
+    result
+}
+
 #[tauri::command]
 pub fn get_firewall_status() -> Result<FirewallStatus, String> {
+    if uses_firewalld() {
+        return firewalld_status();
+    }
     // `ufw` ships gettext .mo translations (confirmed live: the real
     // package's French catalog translates "Status: inactive" to "État :
     // inactif", the exact same class of locale-dependent parsing bug
@@ -103,6 +146,13 @@ const PKEXEC_FIREWALL_RULE: &str = "/usr/bin/nitrux-pkexec-firewall-rule";
 #[tauri::command]
 pub fn set_firewall_enabled(enabled: bool) -> Result<FirewallStatus, String> {
     let action = if enabled { "enable" } else { "disable" };
+    if uses_firewalld() {
+        // systemd's own polkit prompt covers starting/stopping the unit.
+        let result = subprocess::run_with_timeout("systemctl", &[action, "--now", "firewalld"], Duration::from_secs(60));
+        crate::admin_history::record(&["systemctl", action, "--now", "firewalld"], result.as_ref().map(|_| ()).map_err(String::as_str));
+        result?;
+        return firewalld_status();
+    }
     subprocess::run_with_timeout("pkexec", &[PKEXEC_FIREWALL_RULE, "firewall-rule", action], Duration::from_secs(60))?;
     get_firewall_rules_privileged()
 }
@@ -111,6 +161,9 @@ pub fn set_firewall_enabled(enabled: bool) -> Result<FirewallStatus, String> {
 /// action -- one password prompt, same authorization as adding a rule.
 #[tauri::command]
 pub fn get_firewall_rules_privileged() -> Result<FirewallStatus, String> {
+    if uses_firewalld() {
+        return firewalld_status();
+    }
     let output = subprocess::run_with_timeout(
         "pkexec",
         &[PKEXEC_FIREWALL_RULE, "firewall-rule", "status"],
@@ -122,6 +175,15 @@ pub fn get_firewall_rules_privileged() -> Result<FirewallStatus, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn lists_firewalld_ports_and_services_as_rules() {
+        assert_eq!(
+            firewalld_rules("8080/tcp 53/udp\n", "ssh dhcpv6-client\n"),
+            vec!["8080/tcp ALLOW", "53/udp ALLOW", "service ssh ALLOW", "service dhcpv6-client ALLOW"]
+        );
+        assert!(firewalld_rules("\n", "\n").is_empty());
+    }
 
     #[test]
     fn reads_the_enabled_state_from_ufw_conf() {

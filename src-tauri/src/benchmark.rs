@@ -36,6 +36,11 @@ pub struct BenchmarkResult {
     pub memory_bandwidth_gbps: f64,
     pub cpu_frequency_mhz: u64,
     pub disk_health: Vec<DiskHealthEntry>,
+    /// SHA-256 throughput over a large buffer, in MB/s (one core).
+    pub hash_mbps: f64,
+    /// `gzip -1` throughput on semi-compressible data, in MB/s; `None`
+    /// when gzip could not run.
+    pub compression_mbps: Option<f64>,
 }
 
 /// Reads the first CPU core's clock speed from the shared, long-lived
@@ -187,6 +192,49 @@ fn resolve_disk_benchmark(result: Result<(f64, f64), String>) -> (f64, f64, Opti
     }
 }
 
+/// Semi-compressible filler: repeated words with a varying counter, so
+/// gzip has real work to do (all-zero data compresses at memcpy speed).
+fn compressible_data(size: usize) -> Vec<u8> {
+    let mut data = Vec::with_capacity(size + 64);
+    let mut i: u64 = 0;
+    while data.len() < size {
+        data.extend_from_slice(format!("nitrux benchmark ligne {} valeur {:x}\n", i, i.wrapping_mul(2654435761)).as_bytes());
+        i += 1;
+    }
+    data.truncate(size);
+    data
+}
+
+pub fn benchmark_hash(size: usize) -> f64 {
+    let data = compressible_data(size);
+    let start = Instant::now();
+    std::hint::black_box(Sha256::digest(&data));
+    let secs = start.elapsed().as_secs_f64();
+    if secs <= 0.0 { 0.0 } else { size as f64 / secs / 1_048_576.0 }
+}
+
+pub fn benchmark_compression(size: usize) -> Option<f64> {
+    let data = compressible_data(size);
+    let mut child = std::process::Command::new("gzip")
+        .args(["-1", "-c"])
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .ok()?;
+    let mut stdin = child.stdin.take()?;
+    let start = Instant::now();
+    // Fed from another thread: gzip's stdout must be drained concurrently or
+    // both sides block on full pipes.
+    let feeder = std::thread::spawn(move || stdin.write_all(&data));
+    let mut compressed = Vec::new();
+    child.stdout.take()?.read_to_end(&mut compressed).ok()?;
+    feeder.join().ok()?.ok()?;
+    child.wait().ok()?.success().then_some(())?;
+    let secs = start.elapsed().as_secs_f64();
+    (secs > 0.0 && !compressed.is_empty()).then(|| size as f64 / secs / 1_048_576.0)
+}
+
 #[tauri::command]
 pub fn run_benchmark(state: tauri::State<Mutex<System>>) -> BenchmarkResult {
     let cpu_hashes_per_sec = benchmark_cpu(Duration::from_millis(800));
@@ -200,6 +248,8 @@ pub fn run_benchmark(state: tauri::State<Mutex<System>>) -> BenchmarkResult {
         read_cpu_frequency_mhz(&mut sys)
     };
     let disk_health = collect_disk_health(&disks::list_disks().unwrap_or_default());
+    let hash_mbps = benchmark_hash(64 * 1024 * 1024);
+    let compression_mbps = benchmark_compression(64 * 1024 * 1024);
 
     BenchmarkResult {
         cpu_hashes_per_sec,
@@ -211,6 +261,8 @@ pub fn run_benchmark(state: tauri::State<Mutex<System>>) -> BenchmarkResult {
         memory_bandwidth_gbps,
         cpu_frequency_mhz,
         disk_health,
+        hash_mbps,
+        compression_mbps,
     }
 }
 
@@ -230,6 +282,13 @@ mod tests {
             let single = benchmark_cpu(Duration::from_millis(80));
             assert!(total > single, "multicore {total} should exceed single-core {single}");
         }
+    }
+
+    #[test]
+    fn hash_and_compression_benchmarks_measure_real_throughput() {
+        assert!(benchmark_hash(4 * 1024 * 1024) > 0.0);
+        // gzip ships with every distribution this app targets.
+        assert!(benchmark_compression(4 * 1024 * 1024).is_some_and(|mbps| mbps > 0.0));
     }
 
     #[test]

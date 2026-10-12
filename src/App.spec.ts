@@ -13,6 +13,8 @@ import App from "./App.vue";
 // commands registered in src-tauri/src/lib.rs's generate_handler! macro.
 const ARRAY_RETURNING_COMMANDS = new Set([
   "check_required_tools",
+  "get_admin_history",
+  "list_whole_disks",
   "find_duplicate_files",
   "find_large_files_cmd",
   "get_audio_sinks",
@@ -185,7 +187,7 @@ describe("App", () => {
     const buttons = wrapper.findAll("button");
     const button = buttons.find((b) => b.text() === "Scripts & Snippets")!;
     await button.trigger("click");
-    expect(wrapper.text()).toContain("aucune élévation");
+    expect(wrapper.text()).toContain("Enregistre et exécute des scripts shell");
   });
 
   it("shows the real InstallProfilesPage for the install-profiles id", async () => {

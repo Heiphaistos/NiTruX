@@ -71,6 +71,7 @@ pub struct ToolStatus {
 pub fn check_required_tools() -> Vec<ToolStatus> {
     subprocess::EXTERNAL_TOOLS
         .iter()
+        .filter(|t| subprocess::package_for_this_system(t.binary) != Some(""))
         .map(|t| ToolStatus {
             binary: t.binary.to_string(),
             package: subprocess::package_for_this_system(t.binary).map(str::to_string),
@@ -87,7 +88,11 @@ mod tests {
     #[test]
     fn reports_every_known_tool_with_its_feature_label() {
         let tools = check_required_tools();
-        assert_eq!(tools.len(), subprocess::EXTERNAL_TOOLS.len());
+        let applicable = subprocess::EXTERNAL_TOOLS
+            .iter()
+            .filter(|t| subprocess::package_for_this_system(t.binary) != Some(""))
+            .count();
+        assert_eq!(tools.len(), applicable);
         // `sh` is guaranteed present anywhere this test can run, so at least
         // one entry must report installed -- guards against a PATH-scan that
         // silently always answers false.

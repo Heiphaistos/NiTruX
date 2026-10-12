@@ -59,4 +59,15 @@
     </defaults>
     <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/nitrux-pkexec-inventory</annotate>
   </action>
+
+  <action id="org.heiphaistos.nitrux.restore-snapshot-file">
+    <description>Restaurer un fichier depuis un instantané</description>
+    <message>NiTruX veut remettre un fichier dans l'état d'un instantané (la version actuelle est gardée à côté)</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/nitrux-pkexec-restore-snapshot-file</annotate>
+  </action>
 </policyconfig>

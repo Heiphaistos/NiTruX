@@ -7,6 +7,11 @@ describe("systemToolsCatalog", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it("never offers the same command twice", () => {
+    const commands = systemToolsCatalog.flatMap((t) => (t.command ? [t.command] : []));
+    expect(commands.filter((c, i) => commands.indexOf(c) !== i)).toEqual([]);
+  });
+
   it("sets exactly one of command/privilegedAction per entry, never both or neither", () => {
     for (const tool of systemToolsCatalog) {
       const hasCommand = tool.command !== undefined;
