@@ -44,11 +44,13 @@ pub fn parse_lpstat_line(line: &str) -> Option<PrinterInfo> {
 // `Result` is what makes the absence visible at all; the shared package
 // hint in `subprocess` then names the package to install.
 
-/// Connected outputs from the kernel's DRM connectors ("DP-3 — 1920x1080").
-/// `xrandr` only sees XWayland's virtual outputs on a Wayland session (the
-/// default on GNOME, KDE and Hyprland), and needs an extra package; the
-/// kernel's view works on X11 and Wayland alike, with nothing to install.
-fn monitors_from_drm(root: &std::path::Path) -> Result<Vec<String>, String> {
+/// Connected outputs from the kernel's DRM connectors ("DP-3 — E2212F —
+/// 1920x1080"). `xrandr` only sees XWayland's virtual outputs on a Wayland
+/// session (the default on GNOME, KDE and Hyprland), and needs an extra
+/// package; the kernel's view works on X11 and Wayland alike, with nothing
+/// to install. `live` adds what only the compositor knows (current refresh
+/// rate, scale), keyed by connector name.
+fn monitors_from_drm(root: &std::path::Path, live: &std::collections::HashMap<String, String>) -> Result<Vec<String>, String> {
     let entries = std::fs::read_dir(root).map_err(|e| format!("lecture de {} impossible : {e}", root.display()))?;
     let mut monitors: Vec<String> = entries
         .flatten()
@@ -61,20 +63,79 @@ fn monitors_from_drm(root: &std::path::Path) -> Result<Vec<String>, String> {
             if status.trim() != "connected" {
                 return None;
             }
-            let modes = std::fs::read_to_string(dir.join("modes")).unwrap_or_default();
-            Some(match modes.lines().next() {
-                Some(mode) => format!("{connector} — {mode}"),
-                None => connector.to_string(),
-            })
+            let mut parts = vec![connector.to_string()];
+            if let Some(name) = std::fs::read(dir.join("edid")).ok().and_then(|e| edid_monitor_name(&e)) {
+                parts.push(name);
+            }
+            match live.get(connector) {
+                Some(details) => parts.push(details.clone()),
+                None => {
+                    let modes = std::fs::read_to_string(dir.join("modes")).unwrap_or_default();
+                    if let Some(mode) = modes.lines().next() {
+                        parts.push(mode.to_string());
+                    }
+                }
+            }
+            Some(parts.join(" — "))
         })
         .collect();
     monitors.sort();
     Ok(monitors)
 }
 
+/// The monitor's own name from its EDID ("DELL U2419H"): descriptor blocks
+/// at bytes 54/72/90/108, the name one tagged 0xFC, text ending at 0x0A.
+fn edid_monitor_name(edid: &[u8]) -> Option<String> {
+    [54usize, 72, 90, 108].iter().find_map(|&at| {
+        let block = edid.get(at..at + 18)?;
+        if block[..3] != [0, 0, 0] || block[3] != 0xFC {
+            return None;
+        }
+        let text: String = block[5..].iter().take_while(|&&b| b != 0x0A).map(|&b| b as char).collect();
+        let text = text.trim().to_string();
+        (!text.is_empty()).then_some(text)
+    })
+}
+
+/// Hyprland's live view (`hyprctl monitors -j`): current mode, scale, and
+/// the best refresh rate the screen offers when it runs below it.
+fn hyprland_details(json: &str) -> std::collections::HashMap<String, String> {
+    let Ok(serde_json::Value::Array(monitors)) = serde_json::from_str::<serde_json::Value>(json) else {
+        return Default::default();
+    };
+    monitors
+        .iter()
+        .filter_map(|m| {
+            let name = m.get("name")?.as_str()?.to_string();
+            let (w, h) = (m.get("width")?.as_u64()?, m.get("height")?.as_u64()?);
+            let hz = m.get("refreshRate")?.as_f64()?;
+            let scale = m.get("scale").and_then(|s| s.as_f64()).unwrap_or(1.0);
+            let mut text = format!("{w}x{h} @ {hz:.0} Hz, échelle {scale}");
+            let best = m
+                .get("availableModes")
+                .and_then(|a| a.as_array())
+                .into_iter()
+                .flatten()
+                .filter_map(|mode| mode.as_str()?.strip_prefix(&format!("{w}x{h}@"))?.strip_suffix("Hz")?.parse::<f64>().ok())
+                .fold(0.0_f64, f64::max);
+            if best > hz + 1.0 {
+                text.push_str(&format!(" (l'écran accepte {best:.0} Hz dans cette résolution)"));
+            }
+            Some((name, text))
+        })
+        .collect()
+}
+
 #[tauri::command]
 pub fn get_monitors() -> Result<Vec<String>, String> {
-    monitors_from_drm(std::path::Path::new("/sys/class/drm"))
+    let live = if std::env::var_os("HYPRLAND_INSTANCE_SIGNATURE").is_some() && subprocess::binary_in_path("hyprctl") {
+        subprocess::run_with_timeout("hyprctl", &["monitors", "-j"], Duration::from_secs(5))
+            .map(|out| hyprland_details(&out))
+            .unwrap_or_default()
+    } else {
+        Default::default()
+    };
+    monitors_from_drm(std::path::Path::new("/sys/class/drm"), &live)
 }
 
 #[tauri::command]
@@ -155,6 +216,26 @@ mod tests {
     use super::*;
 
     #[test]
+    fn reads_the_monitor_name_from_its_edid() {
+        let mut edid = vec![0u8; 128];
+        edid[90..95].copy_from_slice(&[0, 0, 0, 0xFC, 0]);
+        edid[95..108].copy_from_slice(b"E2212F\n      ");
+        assert_eq!(edid_monitor_name(&edid), Some("E2212F".to_string()));
+        assert_eq!(edid_monitor_name(&[0u8; 128]), None);
+        assert_eq!(edid_monitor_name(&[]), None);
+    }
+
+    #[test]
+    fn hyprland_details_flag_a_screen_running_below_its_best_refresh_rate() {
+        // Shape captured from `hyprctl monitors -j` on Omarchy.
+        let json = r#"[{"name":"DP-3","width":1920,"height":1080,"refreshRate":60.0,"scale":1,
+            "availableModes":["1920x1080@60.00Hz","1920x1080@100.00Hz","1280x720@120.00Hz"]}]"#;
+        let d = hyprland_details(json);
+        assert_eq!(d["DP-3"], "1920x1080 @ 60 Hz, échelle 1 (l'écran accepte 100 Hz dans cette résolution)");
+        assert!(hyprland_details("not json").is_empty());
+    }
+
+    #[test]
     fn lists_only_connected_drm_connectors_with_their_preferred_mode() {
         let root = std::env::temp_dir().join(format!("nitrux-drm-{}", std::process::id()));
         for (name, status, modes) in [
@@ -167,7 +248,7 @@ mod tests {
             std::fs::write(root.join(name).join("modes"), modes).unwrap();
         }
         std::fs::create_dir_all(root.join("card1")).unwrap();
-        let monitors = monitors_from_drm(&root).unwrap();
+        let monitors = monitors_from_drm(&root, &Default::default()).unwrap();
         std::fs::remove_dir_all(&root).unwrap();
         assert_eq!(monitors, vec!["DP-3 — 1920x1080".to_string(), "eDP-1".to_string()]);
     }
