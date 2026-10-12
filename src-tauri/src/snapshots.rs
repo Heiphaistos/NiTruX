@@ -104,12 +104,14 @@ pub fn list_snapshots() -> Result<Vec<Snapshot>, String> {
     interpret_list_result(&stdout, code)
 }
 
-/// Puts one file back to its state in Snapper snapshot `number`; the
-/// helper keeps the current version as `<file>.avant-restauration`.
+/// Puts one file back to its state in a snapshot (`number`: Snapper's
+/// number or Timeshift's name); the helper keeps the current version as
+/// `<file>.avant-restauration`.
 #[tauri::command]
 pub fn restore_snapshot_file(number: String, path: String) -> Result<String, String> {
-    if number.is_empty() || number == "0" || !number.chars().all(|c| c.is_ascii_digit()) {
-        return Err(format!("numéro d'instantané invalide : {number}"));
+    // Snapper numbers (digits) or Timeshift names (2026-10-12_10-00-00).
+    if number.is_empty() || number == "0" || !number.chars().all(|c| c.is_ascii_digit() || c == '-' || c == '_') {
+        return Err(format!("instantané invalide : {number}"));
     }
     if !path.starts_with('/') || path.contains("..") || path.contains('\n') {
         return Err(format!("chemin invalide (absolu, sans « .. ») : {path}"));
@@ -129,6 +131,7 @@ mod tests {
     fn file_restore_refuses_bad_input_before_any_prompt() {
         assert!(restore_snapshot_file("0".into(), "/etc/hosts".into()).is_err());
         assert!(restore_snapshot_file("12;r".into(), "/etc/hosts".into()).is_err());
+        assert!(restore_snapshot_file("2026-10-12_10;00".into(), "/etc/hosts".into()).is_err());
         assert!(restore_snapshot_file("12".into(), "etc/hosts".into()).is_err());
         assert!(restore_snapshot_file("12".into(), "/etc/../shadow".into()).is_err());
     }

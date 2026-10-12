@@ -35,7 +35,7 @@ Légende : FAIT = codé et testé (tests auto) · VM = codé mais pas encore vé
 | 25 | Réparation de l'amorçage : ordre EFI (remettre Linux en tête) | FAIT, vérifié en VM Debian UEFI (ordre appliqué puis restauré). Pas de grub-install à l'aveugle (risque de rendre la machine indémarrable) |
 | 26 | Partitionnement : créer, réduire (ext4), supprimer | FAIT, vérifié en VM Debian (20 vérifications, données intactes) ; 3 bugs trouvés par la VM et corrigés |
 | 27 | Clé USB bootable depuis un ISO (`write-iso`, USB uniquement) | FAIT, vérifié en VM Debian : écriture identique octet par octet sur une clé USB ; non-USB, disque système, partition, chemin piégé, fichier absent refusés |
-| 28 | Restauration d'un fichier depuis un instantané | FAIT pour Snapper (Omarchy), vérifié en VM : fichier remis, version actuelle gardée en .avant-restauration, copie jamais écrasée (bug trouvé et corrigé). Timeshift : À FAIRE |
+| 28 | Restauration d'un fichier depuis un instantané | FAIT pour Snapper et Timeshift (rsync ; btrfs codé), vérifié en VM Debian : fichier remis, version actuelle gardée en .avant-restauration et jamais écrasée, disque de sauvegarde démonté après coup, dossiers et fichiers absents refusés |
 | 29 | Benchmark compression / chiffrement | FAIT (SHA-256 + gzip, aucune dépendance) |
 
 ## Portabilité (30-35)
@@ -58,7 +58,7 @@ Légende : FAIT = codé et testé (tests auto) · VM = codé mais pas encore vé
 | 40 | Clippy à 0 warning | FAIT |
 | 41 | Bump de version automatique | FAIT (`outils/version.py X.Y.Z`) |
 | 42 | Notes de version dans latest.json | FAIT (titres des commits par défaut) |
-| 43 | Dépôt apt/dnf signé | À FAIRE |
+| 43 | Dépôts apt, rpm et pacman signés (VPS) | FAIT : `outils/depot.sh` + CI, dépôt pacman vérifié en local ; apt/rpm à vérifier au 1er run de release ; mise en place VPS à faire par le pote (`docs/depot-vps.md`) |
 | 44 | Sauvegarde de la clé de signature hors machine | À FAIRE (action humaine : copier `nitrux-updater.key` dans un coffre) |
 
 ## Interface (45-50)
@@ -86,10 +86,8 @@ Les points 22, 24, 25, 26, 27 et 28 écrivent sur des disques ou sur l'amorçage
 qu'avec la VM QEMU disponible : un code non vérifié ici pourrait partir en release dès que la PR est mergée.
 Le point 43 (dépôt apt/dnf signé) demande une décision : où l'héberger (VPS ou GitHub Pages) et une clé GPG dédiée.
 
-## Reprise (VM)
-Images et clés dans le scratchpad de session (`vm/`) : Debian 13 (`deb.qcow2`, noyau standard, clé USB `usb.qcow2`,
-disque jetable `scratch.qcow2`), Arch (`archvm.qcow2`). Scripts `verif-debian.sh`, `verif-arch.sh`, `verif-image.sh`.
-Prochaine étape : restauration fichier par fichier pour Timeshift (monter le disque de sauvegarde, copier depuis snapshots/<nom>/localhost).
+## Machines de test
+VM QEMU Debian 13 (UEFI, clé USB, disque jetable) et Arch dans `~/.cache/nitrux-vm/` (hors /tmp : le /tmp en RAM saturait). Scripts `verif-*.sh` à côté.
 
 ## Bloquants côté humain
 1. `gh auth refresh -h github.com -s workflow` : sans ce droit, GitHub refuse de pousser `.github/workflows/`.
