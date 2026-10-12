@@ -283,15 +283,24 @@ regenerate_grub_config() {
   return 1
 }
 
-# Sets KEY=VALUE in /etc/default/grub (replacing the line, or appending
-# it), through a temporary copy so a failure never leaves a half file.
-# VALUE is validated by the caller: digits or the word "saved" only.
+# Sets KEY=VALUE for GRUB (replacing the line, or appending it), through
+# a temporary copy so a failure never leaves a half file. VALUE is
+# validated by the caller: digits or the word "saved" only.
+# Where /etc/default/grub.d exists (Debian, Ubuntu), its *.cfg are sourced
+# AFTER the main file and override it -- the Debian cloud image's
+# 15_timeout.cfg silently undid a timeout set in /etc/default/grub (seen on
+# a VM). There the setting goes to 99-nitrux.cfg, sourced last.
 set_grub_default_key() {
   [ -f /etc/default/grub ] || die "/etc/default/grub not found: this machine does not boot with GRUB"
+  target=/etc/default/grub
+  if [ -d /etc/default/grub.d ]; then
+    target=/etc/default/grub.d/99-nitrux.cfg
+    [ -f "$target" ] || printf '# Réglages GRUB choisis dans NiTruX\n' > "$target"
+  fi
   awk -v k="$1" -v v="$2" 'BEGIN{done=0} $0 ~ "^"k"=" {print k"="v; done=1; next} {print} END{if(!done) print k"="v}' \
-    /etc/default/grub > /etc/default/grub.nitrux-tmp
-  chmod 644 /etc/default/grub.nitrux-tmp
-  mv /etc/default/grub.nitrux-tmp /etc/default/grub
+    "$target" > "$target.nitrux-tmp"
+  chmod 644 "$target.nitrux-tmp"
+  mv "$target.nitrux-tmp" "$target"
 }
 
 cmd="${1:-}"
@@ -399,7 +408,7 @@ case "$cmd" in
         # with GRUB_DEFAULT=saved, so say so instead of silently ignoring.
         value="${3:-}"
         case "$value" in ''|*[!0-9]*) die "grub entry must be a number: $value" ;; esac
-        grep -q '^GRUB_DEFAULT=saved' /etc/default/grub 2>/dev/null || die "GRUB_DEFAULT must be 'saved' for a one-time boot entry: set the default entry to 'saved' first"
+        cat /etc/default/grub /etc/default/grub.d/*.cfg 2>/dev/null | grep '^GRUB_DEFAULT=' | tail -n1 | grep -qx 'GRUB_DEFAULT=saved' || die "GRUB_DEFAULT must be 'saved' for a one-time boot entry: set the default entry to 'saved' first"
         if command -v grub-reboot >/dev/null 2>&1; then exec grub-reboot "$value"; fi
         if command -v grub2-reboot >/dev/null 2>&1; then exec grub2-reboot "$value"; fi
         die "grub-reboot not found"
