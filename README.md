@@ -19,7 +19,11 @@ Les actions nécessitant les droits administrateur (installation de paquets, for
 
 ## Installation
 
-Télécharger le dernier `.deb`, `.rpm` ou `.AppImage` depuis la [page des releases](https://github.com/Heiphaistos/NiTruX/releases).
+Télécharger le dernier `.deb`, `.rpm`, `.AppImage` ou `.pkg.tar.zst` (Arch, Omarchy) depuis la [page des releases](https://github.com/Heiphaistos/NiTruX/releases).
+
+Arch / Omarchy : `sudo pacman -U nitrux-bin-<version>-x86_64.pkg.tar.zst`. Cette copie se met ensuite à jour avec le système (`pacman -Syu`, ou `omarchy-update` sur Omarchy) ; les autres formats ont leur propre mise à jour automatique.
+
+Pour recevoir les mises à jour par le gestionnaire de paquets (apt, dnf, pacman), voir [docs/depot-vps.md](docs/depot-vps.md#côté-utilisateurs).
 
 ## Développement
 
