@@ -41,6 +41,7 @@ export const navigationCategories: NavCategory[] = [
     pages: [
       { id: "system-tools", label: "Commandes rapides", icon: "terminal" },
       { id: "terminal", label: "Terminal", icon: "square-terminal" },
+      { id: "ai-assistant", label: "Assistant IA", icon: "bot" },
     ],
   },
   {

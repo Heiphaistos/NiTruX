@@ -81,6 +81,7 @@ pub const EXTERNAL_TOOLS: &[ExternalTool] = &[
     tool("lspci", "pciutils", "pciutils", "pciutils", "Composants PCI, Pilotes"),
     tool("lsusb", "usbutils", "usbutils", "usbutils", "Périphériques USB"),
     tool("nmcli", "network-manager", "NetworkManager", "networkmanager", "WiFi Analyzer"),
+    tool("ollama", "", "ollama", "ollama", "Assistant IA local"),
     tool("pactl", "pulseaudio-utils", "pulseaudio-utils", "libpulse", "Sorties audio (Périphériques)"),
     tool("pkexec", "pkexec", "polkit", "polkit", "TOUTES les actions administrateur"),
     tool("powerprofilesctl", "power-profiles-daemon", "power-profiles-daemon", "power-profiles-daemon", "Profils d'alimentation (Optimisations)"),
