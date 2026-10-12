@@ -1,0 +1,53 @@
+# Paquet Arch Linux / Omarchy de NiTruX.
+#
+# Reprend le .deb de la release GitHub (même binaire, mêmes binaires pkexec et
+# règles polkit) et le marque comme géré par pacman : l'application laisse
+# alors ses mises à jour à pacman (ou à omarchy-update sur Omarchy) au lieu
+# de lancer son propre updater, qui ferait `dpkg -i` sur Arch.
+#
+# Construction locale à partir d'un .deb déjà construit :
+#   cp src-tauri/target/release/bundle/deb/Nitrux_<v>_amd64.deb packaging/arch/
+#   cd packaging/arch && makepkg -f
+# La CI (.github/workflows/release.yml) fait la même chose à chaque tag.
+
+pkgname=nitrux-bin
+pkgver=0.25.153
+pkgrel=1
+pkgdesc="Couteau suisse de maintenance et diagnostic pour Linux (NiTruX)"
+arch=('x86_64')
+url="https://github.com/Heiphaistos/NiTruX"
+license=('LicenseRef-NiTruX')
+depends=('webkit2gtk-4.1' 'gtk3' 'polkit' 'hicolor-icon-theme')
+optdepends=(
+  'bind: résolution DNS (Réseau)'
+  'bluez-utils: Bluetooth'
+  'clamav: antivirus'
+  'cronie: tâches planifiées'
+  'cups: imprimantes'
+  'curl: apps portables'
+  'docker: conteneurs Docker'
+  'efibootmgr: entrées EFI'
+  'flatpak: applications Flatpak'
+  'libpulse: sorties audio'
+  'lm_sensors: températures'
+  'networkmanager: analyseur Wi-Fi'
+  'pacman-contrib: liste des mises à jour à jour'
+  'pciutils: composants PCI, pilotes'
+  'smartmontools: santé S.M.A.R.T.'
+  'snapper: points de restauration (Omarchy)'
+  'timeshift: points de restauration'
+  'traceroute: traceroute'
+  'ufw: pare-feu'
+  'usbutils: périphériques USB'
+)
+provides=('nitrux')
+conflicts=('nitrux')
+options=('!debug')
+source=("Nitrux_${pkgver}_amd64.deb::${url}/releases/download/v${pkgver}/Nitrux_${pkgver}_amd64.deb")
+sha256sums=('SKIP')
+
+package() {
+  bsdtar -xf data.tar.* -C "${pkgdir}"
+  # Lu par la commande get_install_info : pacman possède cette copie.
+  install -Dm644 /dev/stdin "${pkgdir}/usr/lib/nitrux/managed-by" <<< "pacman"
+}

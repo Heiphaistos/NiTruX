@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dépendances système Tauri
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev libxdo-dev libssl-dev iputils-ping
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - run: npm test
+      - run: npx vue-tsc --noEmit
+      - run: cargo clippy --all-targets -- -D warnings
+        working-directory: src-tauri
+      - run: cargo test
+        working-directory: src-tauri
+
+  # Les parseurs lisent la sortie réelle des outils de chaque distribution.
+  rust-distros:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ["debian:trixie", "fedora:latest", "archlinux:latest"]
+    container: ${{ matrix.image }}
+    steps:
+      - name: Dépendances
+        run: |
+          case "${{ matrix.image }}" in
+            debian*) apt-get update && apt-get install -y build-essential curl git libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libssl-dev libxdo-dev iputils-ping procps ;;
+            fedora*) dnf install -y gcc gcc-c++ curl git webkit2gtk4.1-devel gtk3-devel librsvg2-devel openssl-devel libxdo-devel iputils procps-ng ;;
+            arch*)   pacman -Syu --noconfirm base-devel curl git webkit2gtk-4.1 gtk3 librsvg openssl xdotool iputils procps-ng ;;
+          esac
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test
+        working-directory: src-tauri

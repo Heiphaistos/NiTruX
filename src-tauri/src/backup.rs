@@ -134,7 +134,7 @@ pub fn list_backups() -> Result<Vec<BackupEntry>, String> {
             })
         })
         .collect();
-    backups.sort_by(|a, b| b.created_epoch_secs.cmp(&a.created_epoch_secs));
+    backups.sort_by_key(|b| std::cmp::Reverse(b.created_epoch_secs));
     Ok(backups)
 }
 
