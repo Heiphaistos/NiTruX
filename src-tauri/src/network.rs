@@ -212,10 +212,18 @@ fn read_listening_ports() -> Vec<ListeningPort> {
         .unwrap_or_default()
 }
 
+/// With systemd-resolved, /etc/resolv.conf only lists its local stub
+/// (127.0.0.53); the servers actually used are in its upstream file.
 fn read_dns_servers() -> Vec<String> {
-    fs::read_to_string("/etc/resolv.conf")
+    let servers = fs::read_to_string("/etc/resolv.conf")
         .map(|content| parse_resolv_conf(&content))
-        .unwrap_or_default()
+        .unwrap_or_default();
+    if servers.iter().all(|s| s == "127.0.0.53") {
+        if let Ok(upstream) = fs::read_to_string("/run/systemd/resolve/resolv.conf") {
+            return parse_resolv_conf(&upstream);
+        }
+    }
+    servers
 }
 
 fn read_hosts_file() -> String {
