@@ -29,7 +29,7 @@ use tauri::Manager;
 /// the invoked executable's path, with no visibility into argv, so a
 /// shared path across multiple actions is ambiguous to it -- confirmed
 /// live on a real polkit stack). Kept as a single source of truth here;
-/// `tauri.conf.json`'s `deb`/`rpm` file maps list the same 18 names for
+/// `tauri.conf.json`'s `deb`/`rpm` file maps list the same 19 names for
 /// the package-manager-driven install path.
 ///
 /// `nitrux-pkexec-delete-snapshot` (added alongside RestorePointsPage's
@@ -58,6 +58,7 @@ pub const PKEXEC_BINARY_NAMES: &[&str] = &[
     "nitrux-pkexec-clone-disk",
     "nitrux-pkexec-disk-image",
     "nitrux-pkexec-partition-table",
+    "nitrux-pkexec-restore-snapshot-file",
     "nitrux-pkexec-inventory",
 ];
 

@@ -34,6 +34,28 @@ onMounted(async () => {
   }
 });
 
+// Snapper only: one file back to its state in a snapshot. The helper keeps
+// the current version as <file>.avant-restauration.
+const restoreFor = ref<string | null>(null);
+const restorePath = ref("");
+const restoreBusy = ref(false);
+const restoreResult = ref<string | null>(null);
+const restoreError = ref<string | null>(null);
+
+async function restoreFile(handle: string) {
+  restoreBusy.value = true;
+  restoreError.value = null;
+  restoreResult.value = null;
+  try {
+    await invoke("restore_snapshot_file", { number: handle, path: restorePath.value });
+    restoreResult.value = `${restorePath.value} remis dans l'état de l'instantané ${handle} (version actuelle gardée en .avant-restauration).`;
+  } catch (e) {
+    restoreError.value = String(e);
+  } finally {
+    restoreBusy.value = false;
+  }
+}
+
 async function listSnapper() {
   await loadSnapshots();
   listed.value = !snapshotsError.value;
@@ -98,6 +120,8 @@ async function deleteSnapshot(date: string) {
     <NxCard v-if="snapshotCreateError" danger>{{ snapshotCreateError }}</NxCard>
     <NxCard v-if="snapshotsError" danger>{{ snapshotsError }}</NxCard>
     <NxCard v-if="deleteError" danger>{{ deleteError }}</NxCard>
+    <NxCard v-if="restoreError" danger>{{ restoreError }}</NxCard>
+    <NxCard v-if="restoreResult">{{ restoreResult }}</NxCard>
 
     <NxCard v-for="s in snapshots" :key="s.id" class="rp-snapshot">
       <div class="rp-row">
@@ -106,6 +130,13 @@ async function deleteSnapshot(date: string) {
         <NxButton v-if="confirmingDelete !== s.handle" variant="danger" :disabled="deleting !== null" @click="startConfirmDelete(s.handle)">
           Supprimer
         </NxButton>
+      </div>
+      <div v-if="backend === 'snapper'" class="rp-confirm-row">
+        <NxButton v-if="restoreFor !== s.handle" variant="ghost" @click="restoreFor = s.handle; restorePath = ''">Restaurer un fichier…</NxButton>
+        <template v-else>
+          <NxInput v-model="restorePath" placeholder="Chemin complet du fichier (ex : /etc/fstab)" :aria-label="`Fichier à restaurer depuis l'instantané ${s.handle}`" />
+          <NxButton :disabled="restoreBusy || !restorePath.startsWith('/')" @click="restoreFile(s.handle)">{{ restoreBusy ? "Restauration…" : "Restaurer" }}</NxButton>
+        </template>
       </div>
       <div v-if="confirmingDelete === s.handle" class="rp-confirm-row">
         <NxInput

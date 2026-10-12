@@ -19,6 +19,7 @@
 # nitrux-pkexec-quarantine-file, nitrux-pkexec-format-partition,
 # nitrux-pkexec-extend-partition, nitrux-pkexec-clone-disk,
 # nitrux-pkexec-disk-image, nitrux-pkexec-partition-table,
+# nitrux-pkexec-restore-snapshot-file,
 # nitrux-pkexec-system-tools, nitrux-pkexec-inventory. pkexec
 # resolves which action to authorize by matching the *executable path*
 # against each action's exec.path annotation -- it cannot see argv, so a
@@ -42,6 +43,7 @@
 #   nitrux-pkexec-troubleshoot troubleshoot <clean-cache|fix-broken|restart-network|vacuum-logs>
 #   nitrux-pkexec-create-snapshot create-snapshot
 #   nitrux-pkexec-delete-snapshot delete-snapshot <snapshot-name>
+#   nitrux-pkexec-restore-snapshot-file restore-snapshot-file <snapper-number> <absolute-path>
 #   nitrux-pkexec-quarantine-file quarantine-file <absolute-path>
 #   nitrux-pkexec-format-partition format-partition <device> <ext4|btrfs|xfs|vfat>
 #   nitrux-pkexec-extend-partition extend-partition <partition-device> <disk-device> <partnum>
@@ -589,6 +591,23 @@ case "$cmd" in
       exec snapper -c root create -c number -d "NiTruX manual snapshot"
     fi
     exec timeshift --create --comments "NiTruX manual snapshot"
+    ;;
+  restore-snapshot-file)
+    # One file back to its state in Snapper snapshot N (undochange N..0:
+    # undo what changed since N, for this path only). The current version is
+    # kept next to it first, as <file>.avant-restauration.
+    name="${2:-}"
+    path="${3:-}"
+    case "$name" in ''|*[!0-9]*|0) die "snapper snapshot numbers are positive digits only: $name" ;; esac
+    validate_quarantine_path "$path"
+    command -v snapper >/dev/null 2>&1 && snapper --csvout list-configs 2>/dev/null | grep -q '^root,' || die "file restore needs Snapper managing / (root config)"
+    if [ -e "$path" ] && [ ! -d "$path" ]; then
+      # An explicit test: noclobber (set -C) only guards shell redirections,
+      # cp would silently overwrite an earlier safety copy (seen on a VM).
+      [ ! -e "$path.avant-restauration" ] && [ ! -L "$path.avant-restauration" ] || die "$path.avant-restauration already exists (an earlier restore): move it away first"
+      cp -a -- "$path" "$path.avant-restauration"
+    fi
+    exec snapper -c root undochange "$name..0" "$path"
     ;;
   delete-snapshot)
     name="${2:-}"
