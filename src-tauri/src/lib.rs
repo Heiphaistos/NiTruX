@@ -248,6 +248,7 @@ pub fn run() {
             malwarescan::scan_for_malware,
             snapshots::list_snapshots,
             snapshots::get_snapshot_backend,
+            snapshots::restore_snapshot_file,
             packages::install::install_package,
             packages::install::uninstall_package,
             packages::install::upgrade_all_packages,

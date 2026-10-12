@@ -104,9 +104,34 @@ pub fn list_snapshots() -> Result<Vec<Snapshot>, String> {
     interpret_list_result(&stdout, code)
 }
 
+/// Puts one file back to its state in Snapper snapshot `number`; the
+/// helper keeps the current version as `<file>.avant-restauration`.
+#[tauri::command]
+pub fn restore_snapshot_file(number: String, path: String) -> Result<String, String> {
+    if number.is_empty() || number == "0" || !number.chars().all(|c| c.is_ascii_digit()) {
+        return Err(format!("numéro d'instantané invalide : {number}"));
+    }
+    if !path.starts_with('/') || path.contains("..") || path.contains('\n') {
+        return Err(format!("chemin invalide (absolu, sans « .. ») : {path}"));
+    }
+    subprocess::run_with_timeout(
+        "pkexec",
+        &["/usr/bin/nitrux-pkexec-restore-snapshot-file", "restore-snapshot-file", &number, &path],
+        Duration::from_secs(300),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn file_restore_refuses_bad_input_before_any_prompt() {
+        assert!(restore_snapshot_file("0".into(), "/etc/hosts".into()).is_err());
+        assert!(restore_snapshot_file("12;r".into(), "/etc/hosts".into()).is_err());
+        assert!(restore_snapshot_file("12".into(), "etc/hosts".into()).is_err());
+        assert!(restore_snapshot_file("12".into(), "/etc/../shadow".into()).is_err());
+    }
 
     #[test]
     fn parses_snapper_csv_and_skips_the_running_system() {

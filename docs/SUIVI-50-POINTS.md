@@ -1,7 +1,7 @@
 # Suivi des 50 points (audit du 2026-10-12)
 
 État au 2026-10-12, branche `fix/arch-wayland-locale-and-catalog` (PR #4).
-Tests : `npm test` 571/571, `cargo test` 507/507, `vue-tsc` et `clippy -D warnings` sans erreur.
+Tests : `npm test` 583/583, `cargo test` 512/512, `vue-tsc` et `clippy -D warnings` sans erreur.
 
 Légende : FAIT = codé et testé (tests auto) · VM = codé mais pas encore vérifié sur une VM · À FAIRE = non commencé.
 
@@ -33,9 +33,9 @@ Légende : FAIT = codé et testé (tests auto) · VM = codé mais pas encore vé
 | 23 | Export / import de la liste d'apps | FAIT |
 | 24 | GRUB : délai, entrée par défaut, « retenir le dernier choix », démarrage unique (grub-reboot), liste des entrées | FAIT, vérifié en VM Debian (grub.d) et Arch (/etc/default/grub) |
 | 25 | Réparation de l'amorçage : ordre EFI (remettre Linux en tête) | FAIT, vérifié en VM Debian UEFI (ordre appliqué puis restauré). Pas de grub-install à l'aveugle (risque de rendre la machine indémarrable) |
-| 26 | Partitionnement (créer, supprimer, réduire) | À FAIRE · VM |
+| 26 | Partitionnement : créer, réduire (ext4), supprimer | FAIT, vérifié en VM Debian (20 vérifications, données intactes) ; 3 bugs trouvés par la VM et corrigés |
 | 27 | Clé USB bootable depuis un ISO (`write-iso`, USB uniquement) | FAIT, vérifié en VM Debian : écriture identique octet par octet sur une clé USB ; non-USB, disque système, partition, chemin piégé, fichier absent refusés |
-| 28 | Restauration Timeshift fichier par fichier | À FAIRE · VM |
+| 28 | Restauration d'un fichier depuis un instantané | FAIT pour Snapper (Omarchy), vérifié en VM : fichier remis, version actuelle gardée en .avant-restauration, copie jamais écrasée (bug trouvé et corrigé). Timeshift : À FAIRE |
 | 29 | Benchmark compression / chiffrement | FAIT (SHA-256 + gzip, aucune dépendance) |
 
 ## Portabilité (30-35)
@@ -89,7 +89,7 @@ Le point 43 (dépôt apt/dnf signé) demande une décision : où l'héberger (VP
 ## Reprise (VM)
 Images et clés dans le scratchpad de session (`vm/`) : Debian 13 (`deb.qcow2`, noyau standard, clé USB `usb.qcow2`,
 disque jetable `scratch.qcow2`), Arch (`archvm.qcow2`). Scripts `verif-debian.sh`, `verif-arch.sh`, `verif-image.sh`.
-Prochaines étapes : 26 (partitionnement : créer, supprimer, réduire) et 28 (restauration Timeshift fichier par fichier).
+Prochaine étape : restauration fichier par fichier pour Timeshift (monter le disque de sauvegarde, copier depuis snapshots/<nom>/localhost).
 
 ## Bloquants côté humain
 1. `gh auth refresh -h github.com -s workflow` : sans ce droit, GitHub refuse de pousser `.github/workflows/`.
