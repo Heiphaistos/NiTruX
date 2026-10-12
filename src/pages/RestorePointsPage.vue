@@ -34,7 +34,7 @@ onMounted(async () => {
   }
 });
 
-// Snapper only: one file back to its state in a snapshot. The helper keeps
+// One file back to its state in a snapshot (Snapper or Timeshift). The helper keeps
 // the current version as <file>.avant-restauration.
 const restoreFor = ref<string | null>(null);
 const restorePath = ref("");
@@ -131,7 +131,7 @@ async function deleteSnapshot(date: string) {
           Supprimer
         </NxButton>
       </div>
-      <div v-if="backend === 'snapper'" class="rp-confirm-row">
+      <div class="rp-confirm-row">
         <NxButton v-if="restoreFor !== s.handle" variant="ghost" @click="restoreFor = s.handle; restorePath = ''">Restaurer un fichier…</NxButton>
         <template v-else>
           <NxInput v-model="restorePath" placeholder="Chemin complet du fichier (ex : /etc/fstab)" :aria-label="`Fichier à restaurer depuis l'instantané ${s.handle}`" />
