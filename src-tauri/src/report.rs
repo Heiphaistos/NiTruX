@@ -256,7 +256,7 @@ pub fn render_markdown(report: &SystemReport) -> String {
 }
 
 fn escape_html(s: &str) -> String {
-    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
+    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;").replace('\'', "&#39;")
 }
 
 pub fn render_html(report: &SystemReport) -> String {
@@ -591,6 +591,21 @@ pub fn save_pdf_report(base64_content: String) -> Result<ReportFile, String> {
     write_report_bytes_in(&reports_dir()?, &bytes, "pdf")
 }
 
+/// A stored text report's content, for comparing two of them. PDF is
+/// binary and refused.
+fn read_report_in(dir: &str, filename: &str) -> Result<String, String> {
+    validate_report_filename(filename)?;
+    if filename.ends_with(".pdf") {
+        return Err("un rapport PDF ne peut pas être comparé : choisissez un rapport texte, Markdown, JSON ou HTML".to_string());
+    }
+    std::fs::read_to_string(format!("{dir}/{filename}")).map_err(|e| format!("impossible de lire {filename} : {e}"))
+}
+
+#[tauri::command]
+pub fn read_report(filename: String) -> Result<String, String> {
+    read_report_in(&reports_dir()?, &filename)
+}
+
 #[tauri::command]
 pub fn delete_report(filename: String) -> Result<(), String> {
     delete_report_in(&reports_dir()?, &filename)
@@ -599,6 +614,18 @@ pub fn delete_report(filename: String) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reads_a_text_report_but_refuses_pdf_and_traversal() {
+        let dir = std::env::temp_dir().join(format!("nitrux-read-report-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let dir = dir.to_string_lossy().into_owned();
+        std::fs::write(format!("{dir}/rapport-1.txt"), "CPU: 4\n").unwrap();
+        assert_eq!(read_report_in(&dir, "rapport-1.txt").unwrap(), "CPU: 4\n");
+        assert!(read_report_in(&dir, "rapport-1.pdf").is_err());
+        assert!(read_report_in(&dir, "../../etc/passwd").is_err());
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
     use crate::system::CpuInfo;
 
     // Reference values obtained from `date -u -d @<epoch>` (real coreutils,

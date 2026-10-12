@@ -127,6 +127,9 @@ mod tests {
         // resolver (8.8.8.8 in containers/CI) returns no record at all.
         // Both are correct lookups; what must hold is that the call
         // succeeds and never invents a wrong address.
+        if !crate::subprocess::binary_in_path("dig") {
+            return; // dig is an optional tool; its absence is covered by the missing-tool hint tests
+        }
         let records = dns_lookup("localhost".to_string(), "A".to_string()).expect("should succeed");
         assert!(
             records.is_empty() || records.iter().any(|r| r == "127.0.0.1"),

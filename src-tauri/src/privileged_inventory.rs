@@ -276,7 +276,7 @@ mod tests {
     #[test]
     fn reads_smart_health_and_a_couple_of_attributes() {
         let out = "SMART overall-health self-assessment test result: PASSED\nPower On Hours: 12345\nPercentage Used: 3%\n";
-        let r = parse_smart("/dev/nvme0", &out);
+        let r = parse_smart("/dev/nvme0", out);
         assert_eq!(r.healthy, Some(true));
         assert!(r.attributes.iter().any(|a| a.key == "Usure estimée" && a.value == "3%"));
         let bad = parse_smart("/dev/sda", "SMART overall-health self-assessment test result: FAILED!\n");

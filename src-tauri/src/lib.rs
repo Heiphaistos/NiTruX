@@ -9,6 +9,7 @@ use sysinfo::System;
 pub(crate) static TEST_ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
 mod accounts;
+mod admin_history;
 mod backup;
 mod benchmark;
 mod bluetooth;
@@ -17,6 +18,7 @@ mod cache_size;
 mod certificates;
 mod crash_analyzer;
 mod dependencies;
+mod disk_image;
 mod disk_tree;
 mod disk_write;
 mod disks;
@@ -28,6 +30,10 @@ mod firewall;
 mod gpu;
 mod hardware;
 mod hardware_details;
+mod install_info;
+mod ollama;
+mod power_profiles;
+mod reboot_required;
 mod hardware_inventory;
 mod privileged_inventory;
 mod hosts_blocklist;
@@ -168,6 +174,16 @@ pub fn run() {
         .manage(terminal::TerminalState::default())
         .invoke_handler(tauri::generate_handler![
             system::get_system_snapshot,
+            install_info::get_install_info,
+            disk_image::list_whole_disks,
+            disk_image::write_iso_to_usb,
+            disk_image::restore_disk_image,
+            admin_history::get_admin_history,
+            reboot_required::get_reboot_required,
+            ollama::ollama_status,
+            ollama::ollama_chat,
+            power_profiles::get_power_profiles,
+            power_profiles::set_power_profile,
             accounts::get_user_accounts,
             sensors::get_sensor_snapshot,
             gpu::get_gpu_snapshot,
@@ -195,6 +211,7 @@ pub fn run() {
             report::save_text_report,
             report::save_pdf_report,
             report::delete_report,
+            report::read_report,
             certificates::get_certificates,
             benchmark::run_benchmark,
             disks::list_disks,
@@ -230,6 +247,8 @@ pub fn run() {
             privileged_inventory::run_security_audit,
             malwarescan::scan_for_malware,
             snapshots::list_snapshots,
+            snapshots::get_snapshot_backend,
+            snapshots::restore_snapshot_file,
             packages::install::install_package,
             packages::install::uninstall_package,
             packages::install::upgrade_all_packages,
@@ -250,6 +269,9 @@ pub fn run() {
             disk_write::format_partition,
             disk_write::extend_partition,
             disk_write::clone_disk,
+            disk_write::create_partition,
+            disk_write::delete_partition,
+            disk_write::shrink_partition,
             optimizations::get_optimization_snapshot,
             cache_size::get_cache_size_report,
             dependencies::scan_missing_dependencies,
@@ -259,7 +281,13 @@ pub fn run() {
             bluetooth::get_bluetooth_status,
             bluetooth::set_bluetooth_power,
             boot_manager::get_boot_manager_snapshot,
+            boot_manager::get_grub_entries,
+            boot_manager::set_grub_timeout,
+            boot_manager::set_grub_default,
+            boot_manager::grub_reboot_once,
+            boot_manager::set_efi_boot_order,
             scripts::run_script,
+            scripts::run_script_as_admin,
             trash::list_trash,
             trash::restore_trash_item,
             trash::delete_trash_item_permanently,

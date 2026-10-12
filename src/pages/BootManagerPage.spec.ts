@@ -13,7 +13,7 @@ describe("BootManagerPage", () => {
   it("shows GRUB defaults and EFI boot entries", async () => {
     const wrapper = mount(BootManagerPage);
     await vi.waitFor(() => expect(wrapper.text()).toContain("debian"));
-    expect(wrapper.text()).toContain("5");
+    expect((wrapper.find("#gs-timeout").element as HTMLInputElement).value).toBe("5");
     expect(wrapper.text()).toContain("quiet");
   });
 

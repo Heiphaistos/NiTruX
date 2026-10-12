@@ -26,6 +26,11 @@ pub struct PerfSample {
 }
 
 fn history_path() -> Result<PathBuf, String> {
+    Ok(data_dir()?.join("perf-history.jsonl"))
+}
+
+/// `$XDG_DATA_HOME/nitrux` (or `~/.local/share/nitrux`), created on demand.
+pub fn data_dir() -> Result<PathBuf, String> {
     let base = match std::env::var("XDG_DATA_HOME") {
         Ok(dir) if !dir.is_empty() => PathBuf::from(dir),
         _ => {
@@ -35,7 +40,7 @@ fn history_path() -> Result<PathBuf, String> {
     };
     let dir = base.join("nitrux");
     std::fs::create_dir_all(&dir).map_err(|e| format!("création de {} impossible : {e}", dir.display()))?;
-    Ok(dir.join("perf-history.jsonl"))
+    Ok(dir)
 }
 
 /// Parses a whole file, skipping any line that does not parse -- a

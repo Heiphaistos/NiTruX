@@ -7,6 +7,7 @@
 // (native repositories, Flathub, Snap Store) for the same app by name and
 // installs the first exact match.
 import { invoke } from "@tauri-apps/api/core";
+import type { AppCatalogEntry } from "@/data/appCatalog";
 
 export type InstallSource = "native" | "flatpak" | "snap";
 
@@ -115,5 +116,20 @@ export async function installWithFallback(
 
 export function describeFailure(attempts: InstallAttempt[]): string {
   if (attempts.length === 0) return "aucune source d'installation disponible pour cette application";
-  return attempts.map((a) => `${sourceLabel(a.candidate)} (${a.candidate.id}) : ${a.message}`).join("\n");
+  const lines = attempts.map((a) => `${sourceLabel(a.candidate)} (${a.candidate.id}) : ${a.message}`);
+  // Many apps missing from Arch's official repositories are in the AUR,
+  // which only an AUR helper (yay, paru) installs, as the user.
+  const pacman = attempts.find((a) => a.candidate.manager === "pacman");
+  if (pacman) lines.push(`Sur Arch/Omarchy, elle est peut-être dans l'AUR : yay -S ${pacman.candidate.id}`);
+  return lines.join("\n");
+}
+
+/** What to try, in order, to install a catalog entry with this machine's
+ *  native manager: the Arch name on pacman, the catalog's package name,
+ *  then the plain app id (Debian names like firefox-esr). */
+export function catalogCandidates(entry: AppCatalogEntry, manager: string | null): InstallCandidate[] {
+  if (entry.installMethod !== "apt") return [{ source: entry.installMethod, id: entry.packageId }];
+  if (!manager) return [];
+  const names = [manager === "pacman" ? entry.arch : undefined, entry.packageId, entry.id].filter((n): n is string => !!n);
+  return [...new Set(names)].map((id) => ({ source: "native" as const, id, manager }));
 }

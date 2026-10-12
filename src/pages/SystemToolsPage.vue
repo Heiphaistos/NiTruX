@@ -48,14 +48,16 @@ const filteredCatalog = computed<SystemTool[]>(() => {
   return result;
 });
 
-async function runTool(tool: SystemTool) {
+// asAdmin: the same command as root, through pkexec (password every time),
+// for the many diagnostics that only show everything to root.
+async function runTool(tool: SystemTool, asAdmin = false) {
   running.value = { ...running.value, [tool.id]: true };
   delete errors.value[tool.id];
   delete outputs.value[tool.id];
   try {
     const output = tool.privilegedAction
       ? await invoke<string>("run_system_tool", { action: tool.privilegedAction })
-      : await invoke<string>("run_script", { content: tool.command });
+      : await invoke<string>(asAdmin ? "run_script_as_admin" : "run_script", { content: tool.command });
     outputs.value = { ...outputs.value, [tool.id]: output || "(terminé, aucune sortie)" };
   } catch (e) {
     errors.value = { ...errors.value, [tool.id]: String(e) };
@@ -68,7 +70,7 @@ async function runTool(tool: SystemTool) {
 
 <template>
   <div class="st-page">
-    <NxSectionHeader title="Outils système" description="Commandes courantes en un clic, sans terminal." />
+    <NxSectionHeader title="Outils système" description="Commandes courantes en un clic, sans terminal. « En administrateur » les lance en root (mot de passe demandé)." />
 
     <div class="st-chips">
       <button
@@ -91,9 +93,12 @@ async function runTool(tool: SystemTool) {
           <NxBadge v-if="tool.privilegedAction" status="warning">root</NxBadge>
         </div>
         <p class="st-desc">{{ tool.description }}</p>
-        <NxButton :disabled="running[tool.id] === true" @click="runTool(tool)">
-          {{ running[tool.id] === true ? "Exécution..." : "Exécuter" }}
-        </NxButton>
+        <div class="st-actions">
+          <NxButton :disabled="running[tool.id] === true" @click="runTool(tool)">
+            {{ running[tool.id] === true ? "Exécution..." : "Exécuter" }}
+          </NxButton>
+          <NxButton v-if="!tool.privilegedAction" variant="ghost" :disabled="running[tool.id] === true" @click="runTool(tool, true)">En administrateur</NxButton>
+        </div>
         <pre v-if="outputs[tool.id]" class="st-output">{{ outputs[tool.id] }}</pre>
         <NxCard v-if="errors[tool.id]" danger class="st-error">{{ errors[tool.id] }}</NxCard>
       </NxCard>
@@ -109,7 +114,8 @@ async function runTool(tool: SystemTool) {
 .st-chip.active { color: var(--nx-text-primary); font-weight: 600; border-color: var(--nx-accent-primary); }
 .st-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
 .st-empty { color: var(--nx-text-secondary); font-size: 13px; }
-.st-card { display: flex; flex-direction: column; gap: 8px; }
+.st-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.st-card { display: flex; flex-direction: column; gap: 8px; content-visibility: auto; contain-intrinsic-size: auto 120px; }
 .st-card-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .st-desc { font-size: 12px; color: var(--nx-text-secondary); margin: 0; }
 .st-output { font-size: 11px; background: var(--nx-bg-base); padding: 8px; border-radius: 6px; max-height: 160px; overflow: auto; white-space: pre-wrap; word-break: break-word; }

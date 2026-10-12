@@ -4,7 +4,7 @@ import RestorePointsPage from "./RestorePointsPage.vue";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((cmd: string) => {
-    if (cmd === "list_snapshots") return Promise.resolve([{ id: "1", date: "2026-08-01" }]);
+    if (cmd === "list_snapshots") return Promise.resolve([{ id: "1", date: "2026-08-01", handle: "2026-08-01" }]);
     if (cmd === "create_snapshot") return Promise.resolve(null);
     return Promise.resolve(null);
   }),
@@ -20,9 +20,9 @@ describe("RestorePointsPage", () => {
 
   it("shows an empty-state message instead of a blank page when there are no snapshots", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
-    vi.mocked(invoke).mockImplementationOnce((cmd: string) =>
-      cmd === "list_snapshots" ? Promise.resolve([]) : Promise.resolve(null),
-    );
+    vi.mocked(invoke)
+      .mockImplementationOnce(() => Promise.resolve("timeshift"))
+      .mockImplementationOnce((cmd: string) => (cmd === "list_snapshots" ? Promise.resolve([]) : Promise.resolve(null)));
     const wrapper = mount(RestorePointsPage);
     await vi.waitFor(() => expect(wrapper.text()).toContain("Aucun instantané trouvé."));
   });
@@ -67,7 +67,7 @@ describe("RestorePointsPage", () => {
   it("shows an error message when the delete fails, without hiding the confirmation row", async () => {
     const { invoke } = await import("@tauri-apps/api/core");
     vi.mocked(invoke).mockImplementation((cmd: string) => {
-      if (cmd === "list_snapshots") return Promise.resolve([{ id: "1", date: "2026-08-01" }]);
+      if (cmd === "list_snapshots") return Promise.resolve([{ id: "1", date: "2026-08-01", handle: "2026-08-01" }]);
       if (cmd === "delete_snapshot") return Promise.reject("timeshift a échoué (code 1) : snapshot introuvable");
       return Promise.resolve(null);
     });
@@ -78,5 +78,51 @@ describe("RestorePointsPage", () => {
     await wrapper.findAll("button").find((b) => b.text() === "Confirmer la suppression")!.trigger("click");
 
     await vi.waitFor(() => expect(wrapper.text()).toContain("snapshot introuvable"));
+  });
+
+  it("with Snapper, lists only on request and deletes by snapshot number", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockClear();
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) => {
+      if (cmd === "get_snapshot_backend") return Promise.resolve("snapper");
+      if (cmd === "list_snapshots") return Promise.resolve([{ id: "12", date: "2026-10-01 10:00:00 — omarchy", handle: "12" }]);
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(RestorePointsPage);
+    const listButton = await vi.waitFor(() => {
+      const b = wrapper.findAll("button").find((b) => b.text().startsWith("Afficher les instantanés"));
+      expect(b).toBeDefined();
+      return b!;
+    });
+    expect(invoke).not.toHaveBeenCalledWith("list_snapshots");
+    await listButton.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("omarchy"));
+    await wrapper.findAll("button").find((b) => b.text() === "Supprimer")!.trigger("click");
+    await wrapper.find("input").setValue("12");
+    await wrapper.findAll("button").find((b) => b.text() === "Confirmer la suppression")!.trigger("click");
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("delete_snapshot", { name: "12" }));
+  });
+
+  it("restores one file from a Snapper snapshot", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockClear();
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) => {
+      if (cmd === "get_snapshot_backend") return Promise.resolve("snapper");
+      if (cmd === "list_snapshots") return Promise.resolve([{ id: "12", date: "2026-10-01", handle: "12" }]);
+      return Promise.resolve(null);
+    });
+    const wrapper = mount(RestorePointsPage);
+    const list = await vi.waitFor(() => {
+      const b = wrapper.findAll("button").find((b) => b.text().startsWith("Afficher les instantanés"));
+      expect(b).toBeDefined();
+      return b!;
+    });
+    await list.trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Restaurer un fichier"));
+    await wrapper.findAll("button").find((b) => b.text() === "Restaurer un fichier…")!.trigger("click");
+    await wrapper.find('input[aria-label^="Fichier à restaurer"]').setValue("/etc/fstab");
+    await wrapper.findAll("button").find((b) => b.text() === "Restaurer")!.trigger("click");
+    expect(invoke).toHaveBeenCalledWith("restore_snapshot_file", { number: "12", path: "/etc/fstab" });
+    await vi.waitFor(() => expect(wrapper.text()).toContain("version actuelle gardée"));
   });
 });

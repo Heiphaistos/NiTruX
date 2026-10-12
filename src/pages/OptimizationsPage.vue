@@ -6,6 +6,7 @@ import NxCard from "@/components/ui/NxCard.vue";
 import NxStatTile from "@/components/ui/NxStatTile.vue";
 import NxBadge from "@/components/ui/NxBadge.vue";
 import NxSectionHeader from "@/components/ui/NxSectionHeader.vue";
+import PowerProfilesCard from "@/components/PowerProfilesCard.vue";
 
 interface OptimizationSnapshot {
   enabled_services: string[];
@@ -35,7 +36,9 @@ const swappinessAdvice = computed(() => {
 
 <template>
   <div class="opt-page">
-    <NxSectionHeader title="Optimisations" description="Diagnostic système en lecture seule — aucune action n'est appliquée automatiquement." />
+    <NxSectionHeader title="Optimisations" description="Diagnostic système — rien n'est appliqué automatiquement ; seul le profil d'alimentation se change ici, sur votre choix." />
+
+    <PowerProfilesCard />
 
     <NxCard v-if="error" danger>{{ error }}</NxCard>
 

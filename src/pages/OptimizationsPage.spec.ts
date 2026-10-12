@@ -2,6 +2,10 @@ import { describe, it, expect, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import OptimizationsPage from "./OptimizationsPage.vue";
 
+// Tested on its own (PowerProfilesCard.spec.ts); its invoke() call would
+// consume this file's mockResolvedValueOnce values.
+vi.mock("@/components/PowerProfilesCard.vue", () => ({ default: { template: "<div />" } }));
+
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn().mockResolvedValue({
     enabled_services: ["accounts-daemon.service", "cron.service", "cups.service"],

@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import UpdatesPage from "./UpdatesPage.vue";
+import { pendingTerminalCommand } from "@/lib/terminalCommand";
 
 // `vi.hoisted` so this default is reachable both from the hoisted
 // `vi.mock` factory below and from `beforeEach` -- otherwise a test further
@@ -45,6 +46,32 @@ describe("UpdatesPage", () => {
     const button = wrapper.findAll("button").find((b) => b.text() === "Tout mettre à jour")!;
     await button.trigger("click");
     await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("upgrade_all_packages"));
+  });
+
+  it("on Omarchy, updates through omarchy-update in the terminal instead of pkexec", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) =>
+      cmd === "get_install_info" ? Promise.resolve({ distro_id: "omarchy", managed_by: null }) : defaultInvokeImpl(cmd),
+    );
+    const wrapper = mount(UpdatesPage);
+    const button = await vi.waitFor(() => {
+      const b = wrapper.findAll("button").find((b) => b.text().includes("omarchy-update"));
+      expect(b).toBeDefined();
+      return b!;
+    });
+    await button.trigger("click");
+    expect(pendingTerminalCommand.value).toBe("omarchy-update");
+    expect(wrapper.emitted("navigate")).toEqual([["terminal"]]);
+    expect(invoke).not.toHaveBeenCalledWith("upgrade_all_packages");
+  });
+
+  it("warns when an installed update needs a reboot", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation((cmd: string) =>
+      cmd === "get_reboot_required" ? Promise.resolve("le noyau a été mis à jour") : defaultInvokeImpl(cmd),
+    );
+    const wrapper = mount(UpdatesPage);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Redémarrage nécessaire : le noyau a été mis à jour"));
   });
 
   it("shows an empty-state message when there are no updates", async () => {

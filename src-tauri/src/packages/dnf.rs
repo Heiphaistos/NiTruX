@@ -49,7 +49,7 @@ fn interpret_check_update_result(output: &str, stderr: &str, code: i32) -> Resul
     match code {
         0 | 100 => Ok(output.lines().filter_map(parse_dnf_line).collect()),
         _ if stderr.trim().is_empty() => Err(format!("dnf check-update a rencontré une erreur (code {code})")),
-        _ => Err(format!("dnf check-update a rencontré une erreur (code {code}) : {}", stderr.trim())),
+        _ => Err(format!("dnf check-update a rencontré une erreur (code {code}) : {}", crate::subprocess::explain_error(stderr.trim()))),
     }
 }
 

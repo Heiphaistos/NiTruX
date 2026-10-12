@@ -37,4 +37,26 @@
     </defaults>
     <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/nitrux-pkexec-clone-disk</annotate>
   </action>
+
+  <action id="org.heiphaistos.nitrux.disk-image">
+    <description>Écrire une image sur un disque</description>
+    <message>NiTruX veut écrire une image sur un disque (son contenu actuel sera effacé)</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/nitrux-pkexec-disk-image</annotate>
+  </action>
+
+  <action id="org.heiphaistos.nitrux.partition-table">
+    <description>Créer, supprimer ou réduire une partition</description>
+    <message>NiTruX veut modifier la table de partitions d'un disque</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/nitrux-pkexec-partition-table</annotate>
+  </action>
 </policyconfig>

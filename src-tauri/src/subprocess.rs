@@ -22,8 +22,15 @@ use std::time::Duration;
 /// package format launched NiTruX itself; a `.deb`/`.rpm` install never had
 /// this variable set in the first place, so removing an unset variable is a
 /// no-op there.
+///
+/// `LC_ALL=C.UTF-8` for the same reason: every parser in this app matches
+/// English output ("packets transmitted", "Model name:"), and on a French
+/// desktop `ping` prints "paquets transmis" -- reproduced on Arch, where
+/// the ping page answered "aucune réponse de ping" for a reachable host.
+/// UTF-8 rather than plain `C` so file names with accents stay intact.
 fn sanitize_child_env(command: &mut Command) {
     command.env_remove("LD_LIBRARY_PATH");
+    command.env("LC_ALL", "C.UTF-8");
 }
 
 /// Which package provides each external binary NiTruX shells out to, per
@@ -60,25 +67,33 @@ const fn tool(
 
 pub const EXTERNAL_TOOLS: &[ExternalTool] = &[
     tool("bluetoothctl", "bluez", "bluez", "bluez-utils", "Bluetooth"),
+    // An empty column: the tool has no meaning on that family (hidden there).
+    tool("checkupdates", "", "", "pacman-contrib", "Mises à jour (liste à jour sous Arch)"),
     tool("clamscan", "clamav", "clamav", "clamav", "Antivirus"),
     tool("crontab", "cron", "cronie", "cronie", "Tâches planifiées (Processus)"),
     tool("curl", "curl", "curl", "curl", "Apps portables"),
     tool("dig", "dnsutils", "bind-utils", "bind", "Résolution DNS (Réseau)"),
     tool("docker", "docker.io", "moby-engine", "docker", "Conteneurs Docker (Réseau)"),
     tool("efibootmgr", "efibootmgr", "efibootmgr", "efibootmgr", "Boot Manager (entrées EFI)"),
+    tool("firewall-cmd", "firewalld", "firewalld", "firewalld", "Pare-feu (Fedora, openSUSE)"),
     tool("flatpak", "flatpak", "flatpak", "flatpak", "Applications Flatpak"),
+    tool("fwupdmgr", "fwupd", "fwupd", "fwupd", "Mises à jour du firmware"),
     tool("lpstat", "cups-client", "cups-client", "cups", "Imprimantes (Périphériques)"),
     tool("lspci", "pciutils", "pciutils", "pciutils", "Composants PCI, Pilotes"),
     tool("lsusb", "usbutils", "usbutils", "usbutils", "Périphériques USB"),
     tool("nmcli", "network-manager", "NetworkManager", "networkmanager", "WiFi Analyzer"),
+    tool("ollama", "", "ollama", "ollama", "Assistant IA local"),
+    tool("openssl", "openssl", "openssl", "openssl", "Certificats"),
     tool("pactl", "pulseaudio-utils", "pulseaudio-utils", "libpulse", "Sorties audio (Périphériques)"),
-    tool("pkexec", "policykit-1", "polkit", "polkit", "TOUTES les actions administrateur"),
+    tool("pkexec", "pkexec", "polkit", "polkit", "TOUTES les actions administrateur"),
+    tool("powerprofilesctl", "power-profiles-daemon", "power-profiles-daemon", "power-profiles-daemon", "Profils d'alimentation (Optimisations)"),
     tool("sensors", "lm-sensors", "lm_sensors", "lm_sensors", "Températures"),
     tool("smartctl", "smartmontools", "smartmontools", "smartmontools", "Santé S.M.A.R.T. des disques"),
+    tool("snapper", "snapper", "snapper", "snapper", "Points de restauration (btrfs, Omarchy)"),
+    tool("testdisk", "testdisk", "testdisk", "testdisk", "Récupération de fichiers effacés (PhotoRec, TestDisk)"),
     tool("timeshift", "timeshift", "timeshift", "timeshift", "Points de restauration"),
     tool("traceroute", "traceroute", "traceroute", "traceroute", "Traceroute (Réseau)"),
     tool("ufw", "ufw", "ufw", "ufw", "Pare-feu"),
-    tool("xrandr", "x11-xserver-utils", "xrandr", "xorg-xrandr", "Moniteurs (Périphériques)"),
 ];
 
 /// Which distribution family this system is, decided by which package
@@ -165,6 +180,9 @@ pub fn missing_binary_hint(program: &str) -> Option<String> {
     Some(match install_command_for_this_system() {
         Some((install, column)) => {
             let package = [tool.debian, tool.fedora, tool.arch][column];
+            if package.is_empty() {
+                return None;
+            }
             format!("installez le paquet « {package} » : {install} {package}")
         }
         None => format!(
@@ -193,6 +211,14 @@ fn spawn_error(program: &str, e: std::io::Error) -> String {
 ///   exited non-zero, or it did not finish within `timeout`. In the timeout
 ///   case the child process is sent `SIGKILL` before returning.
 pub fn run_with_timeout(program: &str, args: &[&str], timeout: Duration) -> Result<String, String> {
+    let result = run_with_timeout_unlogged(program, args, timeout);
+    if program == "pkexec" {
+        crate::admin_history::record(args, result.as_ref().map(|_| ()).map_err(String::as_str));
+    }
+    result
+}
+
+fn run_with_timeout_unlogged(program: &str, args: &[&str], timeout: Duration) -> Result<String, String> {
     let mut command = Command::new(resolve_program(program));
     command.args(args).stdout(Stdio::piped()).stderr(Stdio::piped());
     sanitize_child_env(&mut command);
@@ -219,22 +245,62 @@ pub fn run_with_timeout(program: &str, args: &[&str], timeout: Duration) -> Resu
                     .map(|c| c.to_string())
                     .unwrap_or_else(|| "inconnu".to_string());
                 let stderr = String::from_utf8_lossy(&output.stderr);
-                Err(format!("{program} a échoué (code {code}) : {}", stderr.trim()))
+                Err(format!("{program} a échoué (code {code}) : {}", explain_error(stderr.trim())))
             }
         }
         Ok(Err(e)) => Err(format!("erreur en lisant la sortie de {program} : {e}")),
         Err(mpsc::RecvTimeoutError::Timeout) => {
-            // Best-effort kill; the reader thread above simply exits once
-            // the child dies, there is nothing left to join.
-            let _ = Command::new("kill").arg("-9").arg(pid.to_string()).status();
-            Err(format!(
-                "{program} a dépassé le délai de {timeout:?} et a été arrêté"
-            ))
+            Err(kill_after_timeout(program, pid, timeout))
         }
         Err(mpsc::RecvTimeoutError::Disconnected) => Err(format!(
             "le processus {program} s'est terminé de façon inattendue"
         )),
     }
+}
+
+/// Kills a child that overran its timeout. A pkexec child already running
+/// as root cannot be killed by this unprivileged process: say so rather
+/// than claim it stopped.
+pub fn kill_after_timeout(program: &str, pid: u32, timeout: Duration) -> String {
+    let killed = Command::new("kill").arg("-9").arg(pid.to_string()).status().is_ok_and(|s| s.success());
+    if killed {
+        format!("{program} a dépassé le délai de {timeout:?} et a été arrêté")
+    } else {
+        format!("{program} a dépassé le délai de {timeout:?} ; il tourne avec les droits administrateur et n'a pas pu être arrêté : l'action peut encore se terminer en arrière-plan")
+    }
+}
+
+/// Tools run under `LC_ALL=C.UTF-8` (see `sanitize_child_env`), so their
+/// messages arrive in English: translate the ones users actually hit, and
+/// add what to do when the raw message does not say it.
+pub fn explain_error(message: &str) -> String {
+    const PHRASES: &[(&str, &str)] = &[
+        ("Permission denied", "permission refusée"),
+        ("Operation not permitted", "opération non permise"),
+        ("No such file or directory", "fichier ou dossier introuvable"),
+        ("No space left on device", "plus d'espace disque"),
+        ("Read-only file system", "système de fichiers en lecture seule"),
+        ("Device or resource busy", "périphérique ou ressource occupé"),
+        ("Connection refused", "connexion refusée"),
+        ("Connection timed out", "délai de connexion dépassé"),
+        ("Network is unreachable", "réseau injoignable"),
+        ("Temporary failure in name resolution", "échec temporaire de la résolution de nom"),
+        ("Name or service not known", "nom ou service inconnu"),
+        ("command not found", "commande introuvable"),
+        ("Request dismissed", "authentification annulée"),
+        ("Not authorized", "non autorisé"),
+    ];
+    let mut out = message.to_string();
+    for (en, fr) in PHRASES {
+        out = out.replace(en, fr);
+    }
+    if message.contains("failed retrieving file") || message.contains("404") && message.contains("pacman") {
+        out.push_str(" — la base de paquets est périmée : lancez d'abord une mise à jour complète du système (Mises à jour > Tout mettre à jour).");
+    }
+    if message.contains("Could not get lock") || message.contains("unable to lock database") {
+        out.push_str(" — un autre gestionnaire de paquets est en cours d'exécution : attendez qu'il termine puis réessayez.");
+    }
+    out
 }
 
 /// Like `run_with_timeout`, but sets additional environment variables on
@@ -276,15 +342,12 @@ pub fn run_with_timeout_env(
                     .map(|c| c.to_string())
                     .unwrap_or_else(|| "inconnu".to_string());
                 let stderr = String::from_utf8_lossy(&output.stderr);
-                Err(format!("{program} a échoué (code {code}) : {}", stderr.trim()))
+                Err(format!("{program} a échoué (code {code}) : {}", explain_error(stderr.trim())))
             }
         }
         Ok(Err(e)) => Err(format!("erreur en lisant la sortie de {program} : {e}")),
         Err(mpsc::RecvTimeoutError::Timeout) => {
-            let _ = Command::new("kill").arg("-9").arg(pid.to_string()).status();
-            Err(format!(
-                "{program} a dépassé le délai de {timeout:?} et a été arrêté"
-            ))
+            Err(kill_after_timeout(program, pid, timeout))
         }
         Err(mpsc::RecvTimeoutError::Disconnected) => Err(format!(
             "le processus {program} s'est terminé de façon inattendue"
@@ -321,6 +384,23 @@ pub fn run_capturing_exit_code(
     args: &[&str],
     timeout: Duration,
 ) -> Result<(String, String, i32), String> {
+    let result = run_capturing_exit_code_unlogged(program, args, timeout);
+    if program == "pkexec" {
+        let outcome = match &result {
+            Ok((_, _, 0)) => Ok(()),
+            Ok((_, stderr, code)) => Err(format!("code {code} : {}", stderr.trim())),
+            Err(e) => Err(e.clone()),
+        };
+        crate::admin_history::record(args, outcome.as_ref().map(|_| ()).map_err(String::as_str));
+    }
+    result
+}
+
+fn run_capturing_exit_code_unlogged(
+    program: &str,
+    args: &[&str],
+    timeout: Duration,
+) -> Result<(String, String, i32), String> {
     let mut command = Command::new(resolve_program(program));
     command.args(args).stdout(Stdio::piped()).stderr(Stdio::piped());
     sanitize_child_env(&mut command);
@@ -347,10 +427,7 @@ pub fn run_capturing_exit_code(
         }
         Ok(Err(e)) => Err(format!("erreur en lisant la sortie de {program} : {e}")),
         Err(mpsc::RecvTimeoutError::Timeout) => {
-            let _ = Command::new("kill").arg("-9").arg(pid.to_string()).status();
-            Err(format!(
-                "{program} a dépassé le délai de {timeout:?} et a été arrêté"
-            ))
+            Err(kill_after_timeout(program, pid, timeout))
         }
         Err(mpsc::RecvTimeoutError::Disconnected) => Err(format!(
             "le processus {program} s'est terminé de façon inattendue"
@@ -365,10 +442,26 @@ mod tests {
     #[test]
     fn finds_a_tool_in_sbin_even_when_path_does_not_list_it() {
         // Debian's default user PATH has no /usr/sbin. `ldconfig` lives in
-        // /usr/sbin or /sbin on every glibc distribution.
-        let found = locate_program_in("ldconfig", Some("/usr/bin:/bin".into()));
+        // /usr/sbin or /sbin on every glibc distribution (on merged-/usr
+        // distributions like Arch, /usr/sbin links to /usr/bin), so an empty
+        // PATH forces the sbin fallback.
+        let found = locate_program_in("ldconfig", Some("/nonexistent".into()));
         assert!(found.is_some_and(|p| p.to_string_lossy().contains("sbin")), "ldconfig should be found in an sbin directory");
         assert!(run_with_timeout("ldconfig", &["--version"], Duration::from_secs(5)).is_ok());
+    }
+
+    #[test]
+    fn translates_common_tool_errors_and_adds_what_to_do() {
+        assert_eq!(explain_error("cannot open: Permission denied"), "cannot open: permission refusée");
+        assert!(explain_error("error: failed retrieving file 'x.pkg.tar.zst'").contains("mise à jour complète"));
+        assert!(explain_error("error: unable to lock database").contains("autre gestionnaire"));
+        assert_eq!(explain_error("rien à traduire"), "rien à traduire");
+    }
+
+    #[test]
+    fn pins_children_to_the_c_utf8_locale_so_parsers_see_english() {
+        let out = run_with_timeout("sh", &["-c", "echo $LC_ALL"], Duration::from_secs(5)).unwrap();
+        assert_eq!(out.trim(), "C.UTF-8");
     }
 
     #[test]
@@ -456,9 +549,7 @@ mod tests {
         for t in EXTERNAL_TOOLS {
             assert!(
                 !t.binary.is_empty()
-                    && !t.debian.is_empty()
-                    && !t.fedora.is_empty()
-                    && !t.arch.is_empty()
+                    && !(t.debian.is_empty() && t.fedora.is_empty() && t.arch.is_empty())
                     && !t.feature.is_empty()
             );
             assert!(t.binary > previous, "{} is out of order / duplicated", t.binary);

@@ -11,6 +11,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
+    setupFiles: ["./vitest.setup.ts"],
     exclude: ["**/node_modules/**", "**/.git/**", "**/.worktrees/**"],
     // Vitest 4 defaults to the `forks` pool: one OS process per test file.
     // This repo is developed from WSL2 against /mnt/d (DrvFs), where a
@@ -30,5 +31,7 @@ export default defineConfig({
     // spec file never executed -- never trust the failure count alone.
     pool: "threads",
     maxWorkers: 2,
+    // QuickInstallPage mounts the full ~650-app catalog; 5 s is not enough under load.
+    testTimeout: 20000,
   },
 });

@@ -22,7 +22,8 @@ use base64::{engine::general_purpose::STANDARD, Engine as _};
 const PKEXEC_WRITE_HOSTS: &str = "/usr/bin/nitrux-pkexec-write-hosts";
 const PKEXEC_SET_DNS: &str = "/usr/bin/nitrux-pkexec-set-dns";
 const PKEXEC_FIREWALL_RULE: &str = "/usr/bin/nitrux-pkexec-firewall-rule";
-const WRITE_TIMEOUT: Duration = Duration::from_secs(15);
+// Includes the time the user spends typing the password, like the other pkexec calls.
+const WRITE_TIMEOUT: Duration = Duration::from_secs(60);
 
 /// A `/etc/hosts` file with no content, or one missing a `localhost`
 /// mapping, would break basic name resolution on the target machine —
@@ -101,13 +102,14 @@ fn validate_port_proto(value: &str) -> Result<(), String> {
 
 /// Base64-encodes `content` and pipes it to `pkexec <helper> <subcommand>`
 /// on stdin, as the helper's `write-hosts`/`set-dns` subcommands expect.
-///
-/// Unlike `subprocess::run_with_timeout`, this does not yet enforce the
-/// `timeout` argument with a kill-on-expiry watchdog — it relies on
-/// `pkexec`'s own prompt/exec behavior returning in bounded time. Unifying
-/// this with the argv-only timeout helper in `subprocess.rs` is a
-/// reasonable future improvement, not something this task builds.
-fn run_pkexec_with_stdin(helper_path: &str, subcommand: &str, content: &str, _timeout: Duration) -> Result<String, String> {
+/// The child is killed once `timeout` expires, like `subprocess::run_with_timeout`.
+fn run_pkexec_with_stdin(helper_path: &str, subcommand: &str, content: &str, timeout: Duration) -> Result<String, String> {
+    let result = run_pkexec_with_stdin_unlogged(helper_path, subcommand, content, timeout);
+    crate::admin_history::record(&[helper_path, subcommand], result.as_ref().map(|_| ()).map_err(String::as_str));
+    result
+}
+
+fn run_pkexec_with_stdin_unlogged(helper_path: &str, subcommand: &str, content: &str, timeout: Duration) -> Result<String, String> {
     let encoded = STANDARD.encode(content.as_bytes());
 
     let mut child = Command::new("pkexec")
@@ -128,9 +130,18 @@ fn run_pkexec_with_stdin(helper_path: &str, subcommand: &str, content: &str, _ti
             .map_err(|e| format!("erreur en écrivant sur le stdin de pkexec : {e}"))?;
     }
 
-    let output = child
-        .wait_with_output()
-        .map_err(|e| format!("erreur en lisant la sortie de pkexec : {e}"))?;
+    let pid = child.id();
+    let (tx, rx) = std::sync::mpsc::channel();
+    // `wait_with_output` closes stdin first, so the helper sees EOF.
+    std::thread::spawn(move || {
+        let _ = tx.send(child.wait_with_output());
+    });
+    let output = match rx.recv_timeout(timeout) {
+        Ok(result) => result.map_err(|e| format!("erreur en lisant la sortie de pkexec : {e}"))?,
+        Err(_) => {
+            return Err(crate::subprocess::kill_after_timeout("pkexec", pid, timeout));
+        }
+    };
 
     if output.status.success() {
         Ok(String::from_utf8_lossy(&output.stdout).into_owned())
@@ -141,7 +152,7 @@ fn run_pkexec_with_stdin(helper_path: &str, subcommand: &str, content: &str, _ti
             .map(|c| c.to_string())
             .unwrap_or_else(|| "inconnu".to_string());
         let stderr = String::from_utf8_lossy(&output.stderr);
-        Err(format!("pkexec a échoué (code {code}) : {}", stderr.trim()))
+        Err(format!("pkexec a échoué (code {code}) : {}", crate::subprocess::explain_error(stderr.trim())))
     }
 }
 
@@ -162,20 +173,27 @@ pub fn set_dns_servers(content: String) -> Result<(), String> {
 #[tauri::command]
 pub fn add_firewall_rule(port_proto: String) -> Result<String, String> {
     validate_port_proto(&port_proto)?;
+    if crate::firewall::uses_firewalld() {
+        return crate::firewall::firewalld_port(&port_proto, true);
+    }
     crate::subprocess::run_with_timeout(
         "pkexec",
         &[PKEXEC_FIREWALL_RULE, "firewall-rule", "add", &port_proto],
-        Duration::from_secs(15),
+        // Includes typing the password, like every other pkexec call.
+        Duration::from_secs(60),
     )
 }
 
 #[tauri::command]
 pub fn remove_firewall_rule(port_proto: String) -> Result<String, String> {
     validate_port_proto(&port_proto)?;
+    if crate::firewall::uses_firewalld() {
+        return crate::firewall::firewalld_port(&port_proto, false);
+    }
     crate::subprocess::run_with_timeout(
         "pkexec",
         &[PKEXEC_FIREWALL_RULE, "firewall-rule", "remove", &port_proto],
-        Duration::from_secs(15),
+        Duration::from_secs(60),
     )
 }
 

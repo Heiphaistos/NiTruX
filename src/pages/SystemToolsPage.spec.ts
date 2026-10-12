@@ -116,4 +116,12 @@ describe("SystemToolsPage", () => {
 
     expect(wrapper.text()).not.toContain("Linux DEV 6.12.0 x86_64");
   });
+
+  it("runs a catalog command as root through run_script_as_admin on request", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const wrapper = mount(SystemToolsPage);
+    const card = wrapper.findAll(".st-card").find((c) => c.text().includes("Informations noyau"))!;
+    await card.findAll("button").find((b) => b.text() === "En administrateur")!.trigger("click");
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("run_script_as_admin", { content: "uname -a" }));
+  });
 });

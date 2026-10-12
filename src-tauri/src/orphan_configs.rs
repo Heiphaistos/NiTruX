@@ -154,7 +154,7 @@ pub fn list_orphan_configs() -> Result<Vec<OrphanConfig>, String> {
     scan_dir(&home.join(".config"), "configuration", &installed, &mut orphans);
     scan_dir(&home.join(".local/share"), "données", &installed, &mut orphans);
     scan_dir(&home.join(".cache"), "cache", &installed, &mut orphans);
-    orphans.sort_by(|a, b| b.size_bytes.cmp(&a.size_bytes));
+    orphans.sort_by_key(|o| std::cmp::Reverse(o.size_bytes));
     Ok(orphans)
 }
 

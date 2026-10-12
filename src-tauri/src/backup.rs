@@ -47,7 +47,7 @@ fn interpret_tar_result(dest_path: String, stderr: &str, code: i32) -> Result<St
     match code {
         0 | 1 => Ok(dest_path),
         _ if stderr.trim().is_empty() => Err(format!("tar a rencontré une erreur (code {code})")),
-        _ => Err(format!("tar a rencontré une erreur (code {code}) : {}", stderr.trim())),
+        _ => Err(format!("tar a rencontré une erreur (code {code}) : {}", crate::subprocess::explain_error(stderr.trim()))),
     }
 }
 
@@ -134,7 +134,7 @@ pub fn list_backups() -> Result<Vec<BackupEntry>, String> {
             })
         })
         .collect();
-    backups.sort_by(|a, b| b.created_epoch_secs.cmp(&a.created_epoch_secs));
+    backups.sort_by_key(|b| std::cmp::Reverse(b.created_epoch_secs));
     Ok(backups)
 }
 
@@ -224,7 +224,7 @@ mod tests {
         )
         .expect_err("exit 2 should be a real error");
         assert!(
-            err.contains("Permission denied"),
+            err.contains("permission refusée"),
             "the real reason from stderr must not be silently dropped: {err}"
         );
     }

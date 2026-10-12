@@ -2,6 +2,9 @@ import { describe, it, expect, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import DataRecoveryPage from "./DataRecoveryPage.vue";
 
+// Tested on its own; its invoke() would consume this file's Once mocks.
+vi.mock("@/components/RecoveryToolsCard.vue", () => ({ default: { template: "<div />" } }));
+
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((cmd: string) => {
     if (cmd === "list_trash") {
