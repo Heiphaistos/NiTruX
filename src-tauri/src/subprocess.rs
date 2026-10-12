@@ -88,6 +88,7 @@ pub const EXTERNAL_TOOLS: &[ExternalTool] = &[
     tool("powerprofilesctl", "power-profiles-daemon", "power-profiles-daemon", "power-profiles-daemon", "Profils d'alimentation (Optimisations)"),
     tool("sensors", "lm-sensors", "lm_sensors", "lm_sensors", "Températures"),
     tool("smartctl", "smartmontools", "smartmontools", "smartmontools", "Santé S.M.A.R.T. des disques"),
+    tool("snapper", "snapper", "snapper", "snapper", "Points de restauration (btrfs, Omarchy)"),
     tool("testdisk", "testdisk", "testdisk", "testdisk", "Récupération de fichiers effacés (PhotoRec, TestDisk)"),
     tool("timeshift", "timeshift", "timeshift", "timeshift", "Points de restauration"),
     tool("traceroute", "traceroute", "traceroute", "traceroute", "Traceroute (Réseau)"),

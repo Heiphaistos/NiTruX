@@ -45,7 +45,7 @@
 #   nitrux-pkexec-format-partition format-partition <device> <ext4|btrfs|xfs|vfat>
 #   nitrux-pkexec-extend-partition extend-partition <partition-device> <disk-device> <partnum>
 #   nitrux-pkexec-clone-disk clone-disk <disk-device> <dest-image-path>
-#   nitrux-pkexec-inventory inventory <dmi-memory|dmi-system|firmware-key|security-audit|smart /dev/X>
+#   nitrux-pkexec-inventory inventory <dmi-memory|dmi-system|firmware-key|security-audit|snapper-list|smart /dev/X>
 #   nitrux-pkexec-system-tools system-tool <apt-autoremove|journal-vacuum-size|rebuild-ld-cache|systemd-reload|fstrim-all|rebuild-locate-db|regenerate-grub>
 set -eu
 
@@ -463,11 +463,23 @@ case "$cmd" in
     esac
     ;;
   create-snapshot)
+    # Snapper when it manages / (Omarchy, openSUSE, Fedora on btrfs), the
+    # same test the app uses to pick the backend; Timeshift otherwise.
+    if command -v snapper >/dev/null 2>&1 && snapper --csvout list-configs 2>/dev/null | grep -q '^root,'; then
+      exec snapper -c root create -c number -d "NiTruX manual snapshot"
+    fi
     exec timeshift --create --comments "NiTruX manual snapshot"
     ;;
   delete-snapshot)
     name="${2:-}"
     validate_snapshot_name "$name"
+    if command -v snapper >/dev/null 2>&1 && snapper --csvout list-configs 2>/dev/null | grep -q '^root,'; then
+      case "$name" in
+        *[!0-9]*) die "snapper snapshot numbers are digits only: $name" ;;
+        0) die "snapshot 0 is the running system, refusing" ;;
+      esac
+      exec snapper -c root delete "$name"
+    fi
     # --yes: this runs non-interactively under pkexec with no TTY for
     # timeshift's own confirmation prompt to attach to; without it the
     # process would just hang until the caller's own timeout killed it.
@@ -560,6 +572,10 @@ case "$cmd" in
         # the log...): the report itself is what matters, not the status.
         smartctl -a "$dev" || true
         exit 0
+        ;;
+      snapper-list)
+        command -v snapper >/dev/null 2>&1 || die "snapper is not installed"
+        exec snapper --csvout -c root list --columns number,date,description
         ;;
       firmware-key)
         # OEM Windows licence key embedded in the ACPI MSDM table (the key
