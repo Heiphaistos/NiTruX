@@ -1,7 +1,7 @@
 # Suivi des 50 points (audit du 2026-10-12)
 
 État au 2026-10-12, branche `fix/arch-wayland-locale-and-catalog` (PR #4).
-Tests : `npm test` 583/583, `cargo test` 512/512, `vue-tsc` et `clippy -D warnings` sans erreur.
+Tests : `npm test` 577/577, `cargo test` 512/512, `vue-tsc` et `clippy -D warnings` sans erreur.
 
 Légende : FAIT = codé et testé (tests auto) · VM = codé mais pas encore vérifié sur une VM · À FAIRE = non commencé.
 
