@@ -31,10 +31,10 @@ Légende : FAIT = codé et testé (tests auto) · VM = codé mais pas encore vé
 | 21 | Récupération PhotoRec / TestDisk (terminal intégré) | FAIT |
 | 22 | Image disque : restauration (`restore-image`) | FAIT, vérifié en VM Debian : écriture identique octet par octet ; disque système, disque monté et image trop grande refusés |
 | 23 | Export / import de la liste d'apps | FAIT |
-| 24 | GRUB : délai, entrée par défaut, grub-reboot, liste des entrées | HELPER ÉCRIT, NON VÉRIFIÉ VM, pas encore d'écran ni de commande Rust |
-| 25 | Réparation du chargeur d'amorçage | HELPER ÉCRIT (`efi-bootorder` : remettre Linux en tête de l'ordre EFI ; pas de grub-install à l'aveugle), NON VÉRIFIÉ VM, pas encore d'écran |
+| 24 | GRUB : délai, entrée par défaut, « retenir le dernier choix », démarrage unique (grub-reboot), liste des entrées | FAIT, vérifié en VM Debian (grub.d) et Arch (/etc/default/grub) |
+| 25 | Réparation de l'amorçage : ordre EFI (remettre Linux en tête) | FAIT, vérifié en VM Debian UEFI (ordre appliqué puis restauré). Pas de grub-install à l'aveugle (risque de rendre la machine indémarrable) |
 | 26 | Partitionnement (créer, supprimer, réduire) | À FAIRE · VM |
-| 27 | Clé USB bootable depuis un ISO (`write-iso`, USB uniquement) | FAIT · VM partielle : refus (non-USB, système, partition, chemin, fichier absent) vérifiés ; écriture réelle sur clé USB à revérifier (noyau VM sans USB au 1er essai, corrigé) |
+| 27 | Clé USB bootable depuis un ISO (`write-iso`, USB uniquement) | FAIT, vérifié en VM Debian : écriture identique octet par octet sur une clé USB ; non-USB, disque système, partition, chemin piégé, fichier absent refusés |
 | 28 | Restauration Timeshift fichier par fichier | À FAIRE · VM |
 | 29 | Benchmark compression / chiffrement | FAIT (SHA-256 + gzip, aucune dépendance) |
 
@@ -78,6 +78,7 @@ Légende : FAIT = codé et testé (tests auto) · VM = codé mais pas encore vé
 - Construit automatiquement par `release.yml` à chaque tag `vX.Y.Z`.
 
 ## Corrigé en route
+- GRUB : sur Debian/Ubuntu, `/etc/default/grub.d/*.cfg` écrasait les réglages (image cloud : délai forcé à 0) → écriture dans `grub.d/99-nitrux.cfg`, lecture dans le même ordre que GRUB.
 - Ajout/retrait de règle ufw : délai de 15 s qui incluait la saisie du mot de passe → 60 s.
 
 ## Volontairement en attente de la VM
@@ -88,8 +89,7 @@ Le point 43 (dépôt apt/dnf signé) demande une décision : où l'héberger (VP
 ## Reprise (VM)
 Images et clés dans le scratchpad de session (`vm/`) : Debian 13 (`deb.qcow2`, noyau standard, clé USB `usb.qcow2`,
 disque jetable `scratch.qcow2`), Arch (`archvm.qcow2`). Scripts `verif-debian.sh`, `verif-arch.sh`, `verif-image.sh`.
-Prochaines étapes : relancer `verif-image.sh` (écriture USB), écrire et lancer la vérification GRUB/EFI, puis
-commandes Rust + écran pour 24/25, puis 26 (partitionnement) et 28 (restauration Timeshift fichier par fichier).
+Prochaines étapes : 26 (partitionnement : créer, supprimer, réduire) et 28 (restauration Timeshift fichier par fichier).
 
 ## Bloquants côté humain
 1. `gh auth refresh -h github.com -s workflow` : sans ce droit, GitHub refuse de pousser `.github/workflows/`.
