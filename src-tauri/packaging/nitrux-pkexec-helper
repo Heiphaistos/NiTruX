@@ -273,7 +273,22 @@ write_image_to_disk() {
   image_size=$(stat -c %s "$image")
   disk_size=$(blockdev --getsize64 "$disk")
   [ "$image_size" -le "$disk_size" ] || die "image ($image_size bytes) is larger than $disk ($disk_size bytes)"
-  dd if="$image" of="$disk" bs=4M conv=fsync oflag=direct status=none
+  # The image is read with the requesting user's rights, not root's: an
+  # image the user cannot read (/etc/shadow, another user's files) cannot be
+  # copied onto a disk they can then read back.
+  if [ -n "${PKEXEC_UID:-}" ]; then
+    setpriv --reuid="$PKEXEC_UID" --regid="$(id -g "$PKEXEC_UID")" --init-groups test -r "$image" \
+      || die "you cannot read $image yourself"
+    # sh has no pipefail: a read failing halfway would otherwise end as a
+    # "successful" partial write. The reader's status goes through a file.
+    status_file=$(mktemp)
+    { setpriv --reuid="$PKEXEC_UID" --regid="$(id -g "$PKEXEC_UID")" --init-groups cat -- "$image" || echo failed > "$status_file"; } \
+      | dd of="$disk" bs=4M iflag=fullblock conv=fsync oflag=direct status=none
+    read_failed=$(cat "$status_file"); rm -f "$status_file"
+    [ -z "$read_failed" ] || die "reading $image failed: $disk is only partly written"
+  else
+    dd if="$image" of="$disk" bs=4M conv=fsync oflag=direct status=none
+  fi
   sync
   echo "written: $image -> $disk ($image_size bytes)"
 }
@@ -601,10 +616,17 @@ case "$cmd" in
     path="${3:-}"
     validate_snapshot_name "$name"
     validate_quarantine_path "$path"
+    # The safety copy is created with O_EXCL (noclobber redirection), which
+    # never follows a symlink and never reuses an existing file, so nothing
+    # planted at that name can redirect this root write elsewhere.
     keep_current() {
-      if [ -e "$path" ] && [ ! -d "$path" ]; then
-        [ ! -e "$path.avant-restauration" ] && [ ! -L "$path.avant-restauration" ] || die "$path.avant-restauration already exists (an earlier restore): move it away first"
-        cp -a -- "$path" "$path.avant-restauration"
+      if [ -f "$path" ] && [ ! -L "$path" ]; then
+        ( set -C; cat -- "$path" > "$path.avant-restauration" ) 2>/dev/null \
+          || die "$path.avant-restauration already exists (an earlier restore): move it away first"
+        chmod --reference="$path" -- "$path.avant-restauration"
+        chown --reference="$path" -- "$path.avant-restauration"
+      elif [ -e "$path" ] || [ -L "$path" ]; then
+        die "$path is not a regular file: only regular files are restored"
       fi
     }
     if command -v snapper >/dev/null 2>&1 && snapper --csvout list-configs 2>/dev/null | grep -q '^root,'; then
@@ -637,7 +659,9 @@ case "$cmd" in
     [ -e "$source_file" ] || [ -L "$source_file" ] || die "$path is not in snapshot $name"
     [ ! -d "$source_file" ] || die "$path is a folder in the snapshot: restore its files one at a time"
     keep_current
-    cp -a -- "$source_file" "$path"
+    # --remove-destination: replace whatever is at $path (even a symlink
+    # swapped in meanwhile) instead of writing through it.
+    cp -a --remove-destination -- "$source_file" "$path"
     echo "restored: $path from $name"
     ;;
   delete-snapshot)
