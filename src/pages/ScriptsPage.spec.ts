@@ -52,6 +52,16 @@ describe("ScriptsPage", () => {
     expect(invoke).toHaveBeenCalledWith("run_script", { content: "echo hello" });
   });
 
+  it("runs a saved script as root only through run_script_as_admin", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const wrapper = mount(ScriptsPage);
+    await wrapper.find("input[placeholder*='Nom']").setValue("Root");
+    await wrapper.find("textarea").setValue("dmesg | tail");
+    await wrapper.findAll("button").find((b) => b.text() === "Enregistrer")!.trigger("click");
+    await wrapper.findAll("button").find((b) => b.text() === "En administrateur")!.trigger("click");
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("run_script_as_admin", { content: "dmesg | tail" }));
+  });
+
   it("rejects a whitespace-only script name instead of saving an unidentifiable entry", async () => {
     // Regression guard for the actual gap: saveScript only checked
     // `newName.value === ""`, which a whitespace-only name (e.g. "   ")
