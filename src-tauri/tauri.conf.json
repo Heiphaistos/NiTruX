@@ -69,7 +69,8 @@
           "/usr/bin/nitrux-pkexec-extend-partition": "packaging/nitrux-pkexec-helper",
           "/usr/bin/nitrux-pkexec-clone-disk": "packaging/nitrux-pkexec-helper",
           "/usr/bin/nitrux-pkexec-inventory": "packaging/nitrux-pkexec-helper",
-          "/usr/bin/nitrux-pkexec-disk-image": "packaging/nitrux-pkexec-helper"
+          "/usr/bin/nitrux-pkexec-disk-image": "packaging/nitrux-pkexec-helper",
+          "/usr/bin/nitrux-pkexec-partition-table": "packaging/nitrux-pkexec-helper"
         }
       },
       "rpm": {
@@ -96,7 +97,8 @@
           "/usr/bin/nitrux-pkexec-extend-partition": "packaging/nitrux-pkexec-helper",
           "/usr/bin/nitrux-pkexec-clone-disk": "packaging/nitrux-pkexec-helper",
           "/usr/bin/nitrux-pkexec-inventory": "packaging/nitrux-pkexec-helper",
-          "/usr/bin/nitrux-pkexec-disk-image": "packaging/nitrux-pkexec-helper"
+          "/usr/bin/nitrux-pkexec-disk-image": "packaging/nitrux-pkexec-helper",
+          "/usr/bin/nitrux-pkexec-partition-table": "packaging/nitrux-pkexec-helper"
         }
       }
     },
