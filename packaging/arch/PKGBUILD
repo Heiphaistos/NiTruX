@@ -11,7 +11,7 @@
 # La CI (.github/workflows/release.yml) fait la même chose à chaque tag.
 
 pkgname=nitrux-bin
-pkgver=0.25.155
+pkgver=0.25.156
 pkgrel=1
 pkgdesc="Couteau suisse de maintenance et diagnostic pour Linux (NiTruX)"
 arch=('x86_64')
