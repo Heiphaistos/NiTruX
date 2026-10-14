@@ -12,7 +12,7 @@ jobs:
   test:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Dépendances système Tauri
         run: |
           sudo apt-get update
@@ -51,7 +51,7 @@ jobs:
             fedora*) dnf install -y gcc gcc-c++ curl git webkit2gtk4.1-devel gtk3-devel librsvg2-devel openssl-devel libxdo-devel iputils procps-ng iproute openssl ca-certificates ;;
             arch*)   pacman -Syu --noconfirm base-devel curl git webkit2gtk-4.1 gtk3 librsvg openssl xdotool iputils procps-ng ;;
           esac
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
       - run: cargo test
         working-directory: src-tauri
@@ -62,7 +62,7 @@ jobs:
   e2e:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Dépendances système
         run: |
           sudo apt-get update
