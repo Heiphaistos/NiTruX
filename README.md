@@ -35,6 +35,10 @@ npm run tauri dev    # lancer en mode développement
 npm run tauri build  # construire les paquets .deb/.rpm/.AppImage
 ```
 
+### Mises à jour automatiques
+
+Au démarrage, NiTruX vérifie en silence s'il existe une nouvelle version (réglage « Vérifier les mises à jour automatiquement » dans Préférences, actif par défaut). Le bouton « Rechercher une mise à jour » force la vérification. Les charges sont signées (minisign) et refusées si la signature est invalide ; les copies gérées par pacman (Arch/Omarchy) se mettent à jour avec le système.
+
 ### Tests
 
 ```bash

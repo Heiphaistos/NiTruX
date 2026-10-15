@@ -1,8 +1,11 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { setActivePinia, createPinia } from "pinia";
 import SettingsPreferencesPage from "./SettingsPreferencesPage.vue";
 import { usePreferencesStore } from "@/stores/preferencesStore";
+
+const checkForUpdate = vi.fn().mockResolvedValue(false);
+vi.mock("@/lib/autoUpdate", () => ({ checkForUpdate: (...a: unknown[]) => checkForUpdate(...a) }));
 
 describe("SettingsPreferencesPage", () => {
   beforeEach(() => {
@@ -53,5 +56,14 @@ describe("SettingsPreferencesPage", () => {
     await cpuInput.setValue("");
     await cpuInput.trigger("change");
     expect(store.cpuAlertThreshold).toBe(80);
+  });
+
+  it("toggles automatic update checks and runs a manual check", async () => {
+    const wrapper = mount(SettingsPreferencesPage);
+    const store = usePreferencesStore();
+    await wrapper.find('input[type="checkbox"]').setValue(false);
+    expect(store.autoUpdateEnabled).toBe(false);
+    await wrapper.find(".pref-update-btn").trigger("click");
+    expect(checkForUpdate).toHaveBeenCalledWith(false);
   });
 });

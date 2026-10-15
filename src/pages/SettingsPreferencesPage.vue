@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from "vue";
+import { checkForUpdate } from "@/lib/autoUpdate";
 import { usePreferencesStore } from "@/stores/preferencesStore";
 import NxCard from "@/components/ui/NxCard.vue";
 import NxInput from "@/components/ui/NxInput.vue";
@@ -12,6 +14,16 @@ const REFRESH_INTERVAL_OPTIONS = [
   { value: "2000", label: "2 secondes" },
   { value: "5000", label: "5 secondes" },
 ];
+
+const checking = ref(false);
+async function onCheckUpdate() {
+  checking.value = true;
+  try {
+    await checkForUpdate(false);
+  } finally {
+    checking.value = false;
+  }
+}
 
 function onIntervalChange(value: string) {
   preferences.setDashboardRefreshIntervalMs(Number(value));
@@ -112,6 +124,21 @@ function onDiskThresholdChange(event: Event) {
         </label>
       </div>
     </NxCard>
+
+    <NxCard class="pref-card">
+      <label class="pref-label">
+        <input
+          type="checkbox"
+          :checked="preferences.autoUpdateEnabled"
+          aria-label="Vérifier les mises à jour automatiquement"
+          @change="preferences.setAutoUpdateEnabled(($event.target as HTMLInputElement).checked)"
+        />
+        Vérifier les mises à jour automatiquement
+      </label>
+      <button type="button" class="pref-update-btn" :disabled="checking" @click="onCheckUpdate">
+        {{ checking ? "Recherche en cours…" : "Rechercher une mise à jour" }}
+      </button>
+    </NxCard>
   </div>
 </template>
 
@@ -119,6 +146,17 @@ function onDiskThresholdChange(event: Event) {
 .pref-page { padding: 24px; display: flex; flex-direction: column; gap: 12px; }
 .pref-card { display: flex; flex-direction: column; gap: 8px; }
 .pref-label { font-size: 13px; color: var(--nx-text-secondary); display: flex; align-items: center; gap: 8px; }
+.pref-update-btn {
+  align-self: flex-start;
+  padding: 6px 12px;
+  border-radius: var(--nx-style-radius);
+  border: var(--nx-style-border-width) solid var(--nx-style-border-color);
+  background: var(--nx-style-bg);
+  color: var(--nx-text-primary);
+  font-family: var(--nx-style-font-family);
+  font-size: 13px;
+  cursor: pointer;
+}
 .pref-threshold-row { display: flex; gap: 16px; flex-wrap: wrap; }
 .pref-threshold-field { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--nx-text-secondary); }
 .pref-threshold-input {
