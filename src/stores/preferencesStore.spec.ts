@@ -92,4 +92,17 @@ describe("preferencesStore", () => {
     store[action](NaN);
     expect(store[field]).toBeGreaterThanOrEqual(1);
   });
+
+  it("auto-update defaults to on, persists off, and survives an old save without the field", () => {
+    expect(usePreferencesStore().autoUpdateEnabled).toBe(true);
+    usePreferencesStore().setAutoUpdateEnabled(false);
+    expect(JSON.parse(localStorage.getItem("nitrux-preferences")!).autoUpdateEnabled).toBe(false);
+
+    setActivePinia(createPinia());
+    localStorage.setItem("nitrux-preferences", JSON.stringify({
+      defaultScanDirectory: "", dashboardRefreshIntervalMs: 2000,
+      cpuAlertThreshold: 80, ramAlertThreshold: 80, diskAlertThreshold: 85,
+    }));
+    expect(usePreferencesStore().autoUpdateEnabled).toBe(true);
+  });
 });

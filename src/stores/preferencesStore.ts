@@ -8,6 +8,7 @@ export interface Preferences {
   cpuAlertThreshold: number;
   ramAlertThreshold: number;
   diskAlertThreshold: number;
+  autoUpdateEnabled: boolean;
 }
 
 const DEFAULTS: Preferences = {
@@ -16,6 +17,7 @@ const DEFAULTS: Preferences = {
   cpuAlertThreshold: 80,
   ramAlertThreshold: 80,
   diskAlertThreshold: 85,
+  autoUpdateEnabled: true,
 };
 
 // The <input type="number" min="1" max="100"> attributes on the settings
@@ -49,7 +51,8 @@ function readPersistedPreferences(): Preferences {
   if (!stored) return { ...DEFAULTS };
   try {
     const parsed: unknown = JSON.parse(stored);
-    return isPreferences(parsed) ? parsed : { ...DEFAULTS };
+    // Older saves predate autoUpdateEnabled: keep them, default the new field.
+    return isPreferences(parsed) ? { ...DEFAULTS, ...parsed } : { ...DEFAULTS };
   } catch {
     return { ...DEFAULTS };
   }
@@ -76,6 +79,10 @@ export const usePreferencesStore = defineStore("preferences", {
     },
     setRamAlertThreshold(value: number) {
       this.ramAlertThreshold = clampThreshold(value, DEFAULTS.ramAlertThreshold);
+      persist({ ...this.$state });
+    },
+    setAutoUpdateEnabled(value: boolean) {
+      this.autoUpdateEnabled = value;
       persist({ ...this.$state });
     },
     setDiskAlertThreshold(value: number) {
