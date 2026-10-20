@@ -10,7 +10,7 @@
 # Facultatif : NITRUX_GPG_PRIVATE_KEY (clé GPG des dépôts, armure ASCII, sans
 # phrase de passe) -- les dépôts apt/rpm/pacman sont alors construits et
 # joints en artefact « depot », à envoyer sur le VPS :
-#   rsync -a --delete depot/ root@VPS_HOST:/var/www/nitrux-depot/
+#   rsync -a --delete depot/ "$VPS_HOST":/var/www/nitrux-depot/
 name: Release
 
 on:

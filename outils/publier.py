@@ -60,9 +60,16 @@ CLES_POSSIBLES = [
     "D:/mdp/tauri-updater-keys/nitrux-updater.key",
     "/mnt/d/mdp/tauri-updater-keys/nitrux-updater.key",
 ]
-VPS = "root@VPS_HOST"
 VPS_DIR = "/var/www/nitrux-maj"
 BASE_URL = "https://nitrite.heiphaistos.org/maj-linux"
+
+
+def vps_host():
+    """Cible SSH (utilisateur@hote) lue dans VPS_HOST : jamais versionnee."""
+    h = os.environ.get("VPS_HOST", "").strip()
+    if not h:
+        raise SystemExit("VPS_HOST non defini (ex : export VPS_HOST=utilisateur@hote)")
+    return h
 
 
 def version():
@@ -159,6 +166,7 @@ def main():
     )
     p.add_argument("--bundle", default=BUNDLE, help="dossier des bundles construits")
     a = p.parse_args()
+    vps = None if a.sans_televersement else vps_host()
     if a.notes is None:
         a.notes = notes_par_defaut()
     v = version()
@@ -204,9 +212,9 @@ def main():
     if a.sans_televersement:
         print("[canal] pret dans %s (non televerse)" % prep)
         return 0
-    print("[canal] televersement vers %s:%s" % (VPS, VPS_DIR))
+    print("[canal] televersement vers %s:%s" % (vps, VPS_DIR))
     fichiers = [os.path.join(prep, n) for n in sorted(os.listdir(prep))]
-    executer(["scp", "-o", "BatchMode=yes"] + fichiers + ["%s:%s/" % (VPS, VPS_DIR)])
+    executer(["scp", "-o", "BatchMode=yes"] + fichiers + ["%s:%s/" % (vps, VPS_DIR)])
     print("  -> %s/latest.json" % BASE_URL)
     return 0
 

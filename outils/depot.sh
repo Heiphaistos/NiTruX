@@ -23,7 +23,6 @@ set -euo pipefail
 SOURCE="${1:?usage : outils/depot.sh <dossier-des-paquets> [--televerser]}"
 RACINE="$(cd "$(dirname "$0")/.." && pwd)"
 SORTIE="${NITRUX_DEPOT_OUT:-$RACINE/release/_depot}"
-VPS="root@VPS_HOST"
 VPS_DIR="/var/www/nitrux-depot"
 KEY="${NITRUX_GPG_KEY:?NITRUX_GPG_KEY : identifiant de la clé GPG des dépôts}"
 
@@ -100,6 +99,6 @@ fi
 
 echo "Dépôts prêts dans $SORTIE"
 if [ "${2:-}" = "--televerser" ]; then
-  rsync -a --delete -e "ssh -o BatchMode=yes" "$SORTIE/" "$VPS:$VPS_DIR/"
+  rsync -a --delete -e "ssh -o BatchMode=yes" "$SORTIE/" "${VPS_HOST:?VPS_HOST non défini (utilisateur@hote)}:$VPS_DIR/"
   echo "  -> https://nitrite.heiphaistos.org/depot/"
 fi

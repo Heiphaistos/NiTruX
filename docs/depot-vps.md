@@ -37,7 +37,7 @@ La CI (`release.yml`) construit les dépôts dans l'artefact `depot` du run.
 Le télécharger, puis :
 
 ```bash
-rsync -a --delete depot/ root@VPS_HOST:/var/www/nitrux-depot/
+rsync -a --delete depot/ "$VPS_HOST":/var/www/nitrux-depot/
 ```
 
 Ou en local, avec la clé dans le trousseau :
